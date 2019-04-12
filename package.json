@@ -1,0 +1,23 @@
+{
+  "name": "commission",
+  "version": "1.0.0",
+  "description": "tools to generate commission for Lissome staff",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bgausden/Commission.git"
+  },
+  "author": "Barry Gausden <barry@gausden.org> (http://twitter.com/bgausden)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bgausden/Commission/issues"
+  },
+  "homepage": "https://github.com/bgausden/Commission#readme",
+  "dependencies": {
+    "typescript": "^3.4.3",
+    "xlsx": "^0.14.2"
+  }
+}
