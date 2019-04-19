@@ -47,5 +47,6 @@ let workbook = XLSX.readFile(filePath);
 console.log(workbook.SheetNames);
 let sheetName = workbook.SheetNames[0];
 console.log(sheetName);
+// TODO: delete first two rows of sheet. Contains date range and a blank line
 let wbJSON = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName])
 console.log(prettyJSON.render(wbJSON));
