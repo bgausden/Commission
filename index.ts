@@ -1,46 +1,6 @@
 import XLSX from "xlsx";
 import prettyJSON from "prettyjson";
-/* 
-pass excel file name as parameter
-read the excel file
-find employee lines by locating line beginning with "Stylists"
-foreach employee
-    check for commission structure e.g hurdle
-    calculate services commission
-generate report
-push into talenox
-*/
 
-// Button callback if we're doing things via a web page
-async function onButtonClicked() {
-    return await selectFile(
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-}
-
-/**
- * Select file(s). If we're doing things via a web page.
- * @param {String} contentType The content type of files you wish to select. For instance "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" to select an Excel file.
- * @returns {Promise<File|File[]>} A promise of a file or array of files in case the multiple parameter is true.
- */
-function selectFile(contentType: string) {
-    return new Promise<File>(resolve => {
-        let input = document.createElement("input");
-        input.type = "file";
-        input.accept = contentType;
-
-        input.onchange = _ => {
-            let files: File[];
-            if (input.files !== null) {
-                files = Array.from(input.files);
-                resolve(files[0]);
-            } else {
-                resolve();
-            }
-        };
-        input.click();
-    });
-}
 
 type TstaffName = string;
 type Ttips = number;
@@ -55,27 +15,44 @@ const totalFor: string = "Total for ";
 const tipsFor: string = "Tips:";
 const commissionFor: string = "Sales Commission:";
 const baseEarnings: string = "Base Earnings";
+const apptDate: string = "Appointment Date";
+const revenue = "Revenue";
 const filePath: string = "Payroll Sample Report.xlsx";
 const readOptions = { raw: true, blankrows: true, sheetrows: 50 };
 const wb = XLSX.readFile(filePath, readOptions);
 // console.log(workbook.SheetNames);
 const sheetName = wb.SheetNames[0];
 //console.log(sheetName);
-// TODO: delete first two rows of sheet. Contains date range and a blank line
 const ws: XLSX.WorkSheet = wb.Sheets[wb.SheetNames[0]];
 const wsRange = ws["!ref"];
 const payroll = new Map<TstaffName, TcommissionComponents>();
 
 let maxRows = 0;
 
+function revenueCol(wsaa: any[][]):number {
+    const maxSearchRows = Math.max(20,wsaa.length);
+    for (let i = 0; i < maxSearchRows; i++) {
+        const rowLength = wsaa[i].length
+        for (let j = 0; j < rowLength; j++) {
+            const cell = wsaa[i][j];
+            if (cell === revenue) {
+                return j
+            }            
+        }
+    }
+    throw("Cannof find Revenue column")
+}
+
 if (wsRange !== undefined) {
+    // probably all redundant
     const startA1 = wsRange.slice(0, wsRange.indexOf(":"));
     const endA1 = wsRange.slice(wsRange.indexOf(":") + 1);
     // console.log(startA1+" "+endA1)
     const startRef = XLSX.utils.decode_cell(startA1);
     const endRef = XLSX.utils.decode_cell(endA1);
     // console.log(startRef+" "+endRef)
-    maxRows = endRef.r - startRef.r;
+    // maxRows = endRef.r - startRef.r;
+    maxRows = endRef.r
 } else {
     throw "Worksheet range is empty. Empty worksheet?";
 }
@@ -85,9 +62,13 @@ if (wsRange !== undefined) {
 // let test = ws["A1"].v;
 
 // Using option {header:1} returns an array of arrays
-const wsj: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+// Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off 
+// wsaa is our worksheet presented as an array of arrays (row major)
+const wsaa: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows:false});
+maxRows = wsaa.length;
+const revenueColumn = revenueCol(wsaa);
 for (let i = 0; i < maxRows; i++) {
-    const element = wsj[i][0];
+    const element = wsaa[i][0];
     if (element !== undefined) {
         // if we've found a line beginning with "Total for " then we've got to the subtotals and total for a staff member
         if ((element as string).slice(0, totalFor.length) === totalFor) {
@@ -96,9 +77,10 @@ for (let i = 0; i < maxRows; i++) {
             );
             let commissionComponents: [number, number, number] = [0, 0, 0];
             // find and process tips, product commission and services commission
+            // go back 3 lines from the "Total for:" line - the tips and product commission should be in that range . Note tips and or product commission may not exist.
             console.log("Payroll details for: " + staffName);
-            for (let j = 4; j >= 0; j--) {
-                let payComponent: string = wsj[i - j][0];
+            for (let j = 3; j >= 0; j--) {
+                let payComponent: string = wsaa[i - j][0];
                 if (payComponent !== undefined) {
                     let value = 0;
                     if (
@@ -107,9 +89,9 @@ for (let i = 0; i < maxRows; i++) {
                         payComponent.slice(0, totalFor.length) === totalFor
                     ) {
                         // work out what the value is for the Tip or Commission
-                        const maxRowIndex = wsj[i - j].length - 1;
-                        if (wsj[i - j][maxRowIndex] !== undefined) {
-                            value = wsj[i - j][maxRowIndex];
+                        const maxRowIndex = wsaa[i - j].length - 1;
+                        if (wsaa[i - j][maxRowIndex] !== undefined) {
+                            value = wsaa[i - j][maxRowIndex];
                             if (payComponent === tipsFor) {
                                 payComponent = "Tips:";
                                 commissionComponents[tipsIndex] = value;
@@ -129,12 +111,12 @@ for (let i = 0; i < maxRows; i++) {
                         ) {
                             payComponent = "Services Commission:";
                             for (let k = maxRowIndex; k >= 1; k--) {
-                                if (wsj[i - j][k] !== undefined) {
+                                if (wsaa[i - j][k] !== undefined) {
                                     // if the cell above the current iterated cell === "Base Earnings"
-                                    if (wsj[i - (j + 1)][k] === baseEarnings) {
+                                    if (wsaa[i - (j + 1)][k] === baseEarnings) {
                                         const re = /[^0-9.-]+/g;
                                         value = parseFloat(
-                                            (wsj[i - j][k] as string).replace(
+                                            (wsaa[i - j][k] as string).replace(
                                                 re,
                                                 ""
                                             )
@@ -153,8 +135,7 @@ for (let i = 0; i < maxRows; i++) {
 
                     if (j == 0) {
                         payroll.set(staffName, commissionComponents);
-                        console.log(payroll);
-
+                        // console.log(payroll);
                         console.log("==========");
                     }
                 }
