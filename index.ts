@@ -44,10 +44,12 @@ interface IstaffCommConfig {
     poolsWith: [string];
 }
 
+const staffIDOffset = 1;
 const tipsIndex = 0;
 const productCommissionIndex = 1;
 const serviceCommissionIndex = 2;
 
+const idHash: string = "ID #:";
 const totalFor: string = "Total for ";
 const tipsFor: string = "Tips:";
 const commissionFor: string = "Sales Commission:";
@@ -59,7 +61,7 @@ const hurdle1RateStr = "hurdle1Rate";
 const hurdle2LevelStr = "hurdle2Level";
 const hurdle2RateStr = "hurdle2Rate";
 
-const filePath: string = "Payroll Sample Report.xlsx";
+const filePath: string = "Sample Payroll Report with ID.xlsx";
 const readOptions = { raw: true, blankrows: true, sheetrows: 50 };
 const wb = XLSX.readFile(filePath, readOptions);
 //console.log(sheetName);
@@ -226,15 +228,8 @@ function calcServiceCommission(commMap: TcommMap) {
                 }
             }
 
-            if (baseRate <= 0) {
-            }
-
-            if (staffName === "Wong, Rex") {
-                console.log("Rex")
-            }
-            // pay some commission on service revenue
-
             if (hurdle1Level <= 0) {
+                // no hurdle. All servicesRev pays comm at baseRate
                 baseRevenue = servicesRev;
                 hurdle1Revenue = 0;
                 hurdle1Level = 0;
@@ -320,9 +315,13 @@ for (let i = 0; i < maxRows; i++) {
     if (element !== undefined) {
         // if we've found a line beginning with "Total for " then we've got to the subtotals and total for a staff member
         if ((element as string).slice(0, totalFor.length) === totalFor) {
-            const staffName: string = (element as string).slice(
-                totalFor.length
-            );
+            const staffName: string = (element as string)
+                .slice(totalFor.length)
+                .trim();
+            const idElement: string = wsaa[i][staffIDOffset] as string;
+            // TODO: add staffID to the comm and serviceComm maps
+            // staffID isn't on the Total row - it's on the first row of this client's section. Need to go back there to retrieve the staffID
+            // const staffID: string = (idElement as string).split(":")[1].trim();
             // keep track of the last totals row (for the previous employee) because we'll need to search back to this row to locate all of the revenue numbers for the current staff member.
             prevTotalForRow = currentTotalForRow;
             currentTotalForRow = i;

@@ -6,9 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const xlsx_1 = __importDefault(require("xlsx"));
 const staffHurdle_json_1 = __importDefault(require("./staffHurdle.json"));
 const prettyjson_1 = __importDefault(require("prettyjson"));
+const staffIDOffset = 1;
 const tipsIndex = 0;
 const productCommissionIndex = 1;
 const serviceCommissionIndex = 2;
+const idHash = "ID #:";
 const totalFor = "Total for ";
 const tipsFor = "Tips:";
 const commissionFor = "Sales Commission:";
@@ -18,7 +20,7 @@ const hurdle1LevelStr = "hurdle1Level";
 const hurdle1RateStr = "hurdle1Rate";
 const hurdle2LevelStr = "hurdle2Level";
 const hurdle2RateStr = "hurdle2Rate";
-const filePath = "Payroll Sample Report.xlsx";
+const filePath = "Sample Payroll Report with ID.xlsx";
 const readOptions = { raw: true, blankrows: true, sheetrows: 50 };
 const wb = xlsx_1.default.readFile(filePath, readOptions);
 //console.log(sheetName);
@@ -162,13 +164,8 @@ function calcServiceCommission(commMap) {
                     throw "Invalid hurdle1Rate";
                 }
             }
-            if (baseRate <= 0) {
-            }
-            if (staffName === "Wong, Rex") {
-                console.log("Rex");
-            }
-            // pay some commission on service revenue
             if (hurdle1Level <= 0) {
+                // no hurdle. All servicesRev pays comm at baseRate
                 baseRevenue = servicesRev;
                 hurdle1Revenue = 0;
                 hurdle1Level = 0;
@@ -247,14 +244,19 @@ for (let i = 0; i < maxRows; i++) {
     if (element !== undefined) {
         // if we've found a line beginning with "Total for " then we've got to the subtotals and total for a staff member
         if (element.slice(0, totalFor.length) === totalFor) {
-            const staffName = element.slice(totalFor.length);
+            const staffName = element
+                .slice(totalFor.length)
+                .trim();
+            const idElement = wsaa[i][staffIDOffset];
+            // TODO: add staffID to the comm and serviceComm maps
+            const staffID = idElement.split(":")[1].trim();
             // keep track of the last totals row (for the previous employee) because we'll need to search back to this row to locate all of the revenue numbers for the current staff member.
             prevTotalForRow = currentTotalForRow;
             currentTotalForRow = i;
             let commissionComponents = [0, 0, 0];
             // find and process tips, product commission and services commission
             // go back 3 lines from the "Total for:" line - the tips and product commission should be in that range . Note tips and or product commission may not exist.
-            console.log("Payroll details for: " + staffName);
+            console.log("Payroll details for: " + staffName + " : " + staffID);
             for (let j = 3; j >= 0; j--) {
                 let payComponent = wsaa[i - j][0];
                 if (payComponent !== undefined) {
