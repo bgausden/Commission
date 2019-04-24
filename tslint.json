@@ -1,0 +1,13 @@
+{
+    "extends": "tslint:recommended",
+    "defaultSeverity": "warn",
+    "rules": {
+        "variable-name": [
+            true,
+            "ban-keywords",
+            "check-format",
+            "allow-pascal-case",
+            "require-const-for-all-caps"
+        ]
+    }
+}
