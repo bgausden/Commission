@@ -1,5 +1,6 @@
 {
-    "Au Yeung, Tracey": {
+    "025": {
+        "staffName": "Tracy",
         "mbCommRate": 0.45,
         "baseRate": 0.45,
         "hurdle1Level": 0,
@@ -7,7 +8,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Chan, Kate": {
+    "012": {
+        "staffName": "Kate",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -15,7 +17,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Cheng, Wing": {
+    "021": {
+        "staffName": "Wing",
         "mbCommRate": 1.0,
         "baseRate": 0.05,
         "hurdle1Level": 0,
@@ -23,7 +26,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Cheung, Mandy": {
+    "015": {
+        "staffName": "Mandy",
         "mbCommRate": 1.0,
         "baseRate": 0.05,
         "hurdle1Level": 0,
@@ -31,7 +35,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Fensham, Rennie": {
+    "018": {
+        "staffName": "Rennie",
         "mbCommRate": 0.5,
         "baseRate": 0.5,
         "hurdle1Level": 0,
@@ -39,7 +44,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Fong, Sam": {
+    "020": {
+        "staffName": "Sam",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -47,7 +53,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Guilfoyle, Sioban": {
+    "001": {
+        "staffName": "Sioban",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -55,7 +62,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Hockly, Tamara": {
+    "033": {
+        "staffName": "Tamara",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -63,7 +71,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Ho, Anson": {
+    "006": {
+        "staffName": "Anson",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -72,7 +81,8 @@
         "hurdle2Rate": 0,
         "poolsWith": ["Wong, Ari"]
     },
-    "Ho, Ava": {
+    "024": {
+        "staffName": "Ava",
         "mbCommRate": 0.6,
         "baseRate": 0.6,
         "hurdle1Level": 0,
@@ -80,7 +90,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Law, Kay": {
+    "036": {
+        "staffName": "Kay",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -88,7 +99,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Lee, Candy": {
+    "003": {
+        "staffName": "Candy",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -96,7 +108,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Lee, Coey": {
+    "032": {
+        "staffName": "Coey",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -104,7 +117,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Lo, Chris": {
+    "008": {
+        "staffName": "Chris",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -112,7 +126,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Lo, Chrissie": {
+    "027": {
+        "staffName": "Chrissie",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -120,7 +135,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Loennborn, Elizabeth": {
+    "035": {
+        "staffName": "ElizabethL",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -128,7 +144,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Mak, Tony": {
+    "026": {
+        "staffName": "Tony",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -136,7 +153,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Mayers, Kat": {
+    "037": {
+        "staffName": "Kat",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -144,7 +162,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Ng, Davy": {
+    "009": {
+        "staffName": "Davy",
         "mbCommRate": 1.0,
         "baseRate": 0.5,
         "hurdle1Level": 0,
@@ -152,7 +171,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Nogueras, Marriane": {
+    "016": {
+        "staffName": "Marriane",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -160,7 +180,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Sarpomaa, Cynthia": {
+    "028": {
+        "staffName": "Cynthia",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -168,7 +189,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Snyman, Yentl": {
+    "022": {
+        "staffName": "Yentl",
         "mbCommRate": 0.5,
         "baseRate": 0.5,
         "hurdle1Level": 0,
@@ -176,7 +198,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    " Spoerri, Melody": {
+    "017": {
+        "staffName": "Melody",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -184,7 +207,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Tsui, Jay": {
+    "004": {
+        "staffName": "Jay",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -192,7 +216,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Wilson, Keith": {
+    "023": {
+        "staffName": "Keith",
         "mbCommRate": 0.6,
         "baseRate": 0.6,
         "hurdle1Level": 0,
@@ -200,7 +225,8 @@
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
-    "Wong, Ari": {
+    "007": {
+        "staffName": "Ari",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 0,
@@ -209,20 +235,13 @@
         "hurdle2Rate": 0,
         "poolsWith": ["Ho, Anson"]
     },
-    "Wong, Rex": {
+    "019": {
+        "staffName": "Rex",
         "mbCommRate": 1.0,
         "baseRate": 0,
         "hurdle1Level": 45000,
         "hurdle1Rate": 0.4,
         "hurdle2Level": 80000,
         "hurdle2Rate": 0.5
-    },
-    "Spoerri, Melody": {
-        "mbCommRate": 1.0,
-        "baseRate": 0,
-        "hurdle1Level": 0,
-        "hurdle1Rate": 0,
-        "hurdle2Level": 0,
-        "hurdle2Rate": 0
     }
 }

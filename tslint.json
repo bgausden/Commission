@@ -8,6 +8,7 @@
             "check-format",
             "allow-pascal-case",
             "require-const-for-all-caps"
-        ]
+        ],
+        "object-literal-sort-keys": false
     }
 }

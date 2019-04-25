@@ -15,8 +15,16 @@ type TserviceCommission = number;
 type TbaseComm = number;
 type Thurdle1Comm = number;
 type Thurdle2Comm = number;
-// tslint:disable-next-line: interface-name
-interface IserviceComm {
+
+interface IStaffInfo {
+    found: boolean;
+    staffID?: TStaffID;
+    firstName?: string;
+    lastName?: string;
+}
+
+interface IServiceComm {
+    staffName: string;
     serviceComm: number;
     serviceRevenue: number;
     base: {
@@ -37,11 +45,21 @@ interface IserviceComm {
         hurdle2Amt: number;
     };
 }
-type TserviceCommMap = Map<TstaffName, IserviceComm>;
-type TcommComponents = [Ttips, TproductCommission, TserviceCommission];
-type TcommMap = Map<TstaffName, TcommComponents>;
+type TServiceCommMap = Map<TstaffName, IServiceComm>;
+type TCommComponents = [Ttips, TproductCommission, TserviceCommission];
+type TCommMap = Map<TstaffName, TCommComponents>;
+type TStaffID = string;
+
+interface IStaffNames {
+    firstName: string;
+    lastName: string;
+}
+
+// TODO: make this a singleton
+type TStaffMap = Map<TStaffID, IStaffNames>;
 
 interface IStaffCommConfig {
+    staffName: string;
     mbCommRate: number;
     baseRate: number;
     hurdle1Level: number;
@@ -51,12 +69,11 @@ interface IStaffCommConfig {
     poolsWith: [string];
 }
 
-const STAFF_ID_OFFSET = 1;
 const TIPS_INDEX = 0;
 const PROD_COMM_INDEX = 1;
 const SERV_COMM_INDEX = 2;
 
-const ID_HASH: string = "ID #:";
+const ID_HASH: string = "Staff ID #:";
 const TOTAL_FOR: string = "Total for ";
 const TIPS_FOR: string = "Tips:";
 const COMM_FOR: string = "Sales Commission:";
@@ -67,15 +84,18 @@ const HURDLE_1_LEVEL = "hurdle1Level";
 const HURDLE_1_RATE = "hurdle1Rate";
 const HURDLE_2_LEVEL = "hurdle2Level";
 const HURDLE_2_RATE = "hurdle2Rate";
+const HURDLE_3_LEVEL = "hurdle3Level";
+const HURDLE_3_RATE = "hurdle3Rate";
 
 const FILE_PATH: string = "Sample Payroll Report with ID.xlsx";
 const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 50 };
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS);
-// console.log(sheetName);
 const WS: XLSX.WorkSheet = WB.Sheets[WB.SheetNames[0]];
-const COMM_MAP = new Map<TstaffName, TcommComponents>();
-const SERVICE_COMM_MAP: TserviceCommMap = new Map<TstaffName, IserviceComm>();
-const EMPTY_SERV_COMM: IserviceComm = {
+const commMap = new Map<TstaffName, TCommComponents>();
+const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>();
+const serviceCommMap: TServiceCommMap = new Map<TstaffName, IServiceComm>();
+const emptyServComm: IServiceComm = {
+    staffName: "",
     base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
     hurdle1: {
         hurdle1Amt: 0,
@@ -126,7 +146,7 @@ function stripToNumeric(n: string | number): number {
     if (typeof n === "string") {
         x = parseFloat(n.trim().replace(/[^0-9.-]+/g, ""));
         if (isNaN(x)) {
-            console.log(n + "Warning: " + n + " interpreted as a non-numeric.");
+            // console.log(n + "Warning: " + n + " interpreted as a non-numeric.");
             x = 0;
         }
     } else {
@@ -135,20 +155,61 @@ function stripToNumeric(n: string | number): number {
     return x;
 }
 
+function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
+    /*     assume the staffID can be found in the STAFF_ID_COL column.
+    staffID will begin with "ID#: " the will need to be stored  in the serviceCommMap and
+    commComponents maps along with First and Last name.
+    First column should contain a string similar to LastName, FirstName Staff ID #: StaffID
+ */
+
+    const firstNameIndex = 1;
+    const lastNameIndex = 0;
+    const staffNameIndex = 0;
+    const staffIDIndex = 1;
+    // tslint:disable-next-line: no-shadowed-variable
+
+    const testString = wsArray[idRow][staffNameIndex];
+    const regex = new RegExp("^.*,.*" + ID_HASH);
+    if (regex.test(testString)) {
+        const staffInfo: string[] | undefined =
+            testString !== undefined
+                ? (testString as string).split(ID_HASH)
+                : undefined;
+        if (staffInfo !== undefined) {
+            return {
+                found: true,
+                firstName: staffInfo[staffNameIndex]
+                    .split(",")
+                    [firstNameIndex].trim(),
+                lastName: staffInfo[staffNameIndex]
+                    .split(",")
+                    [lastNameIndex].trim(),
+                staffID: staffInfo[staffIDIndex].trim(),
+            };
+        } else {
+            return { found: false };
+        }
+    } else {
+        return { found: false };
+    }
+}
+
 function sumRevenue(
     wsArray: any[][],
-    currentTotal: number,
-    prevTotal: number,
-    revColumn: number,
+    currentTotalRow: number,
+    // tslint:disable-next-line: no-shadowed-variable
+    currentIDRow: number,
+    // tslint:disable-next-line: no-shadowed-variable
+    revCol: number,
 ): number {
     /* starting on the staff member's totals row, sum all the numeric values in the revenue column
     back as far as the prior staff member's totals row + 1. Use this as the service revenue so we can ignore
     how staff commissions are configured in MB. */
-    const NUM_SEARCH_ROWS = currentTotal - prevTotal - 1;
-    const REV_COLUMN = revColumn;
+    const numSearchRows = currentTotalRow - currentIDRow - 1;
+    const revColumn = revCol;
     let serviceRevenue = 0;
-    for (let i = 1; i <= NUM_SEARCH_ROWS; i++) {
-        let revenueCellContents = wsArray[currentTotal - i][REV_COLUMN];
+    for (let i = 1; i <= numSearchRows; i++) {
+        let revenueCellContents = wsArray[currentTotalRow - i][revColumn];
         if (revenueCellContents !== undefined) {
             if (typeof revenueCellContents === "string") {
                 revenueCellContents = stripToNumeric(revenueCellContents);
@@ -168,29 +229,30 @@ function sumRevenue(
     return serviceRevenue;
 }
 
-function calcServiceCommission(cm: TcommMap) {
+function calcServiceCommission(cm: TCommMap) {
     /* iterate through commissionComponents
     for each entry, locate corresponding hurdles
     calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next
     store the amounts payable in a new Map where the key is the staff name and the value is an array containing
     [baseCommission, hurdle1Commission, hurdle2Commission]
     Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool*/
-    const SH = staffHurdle as { [key: string]: any }; // get an iterable version of the staffHurdle import
-    const SHM = new Map<TstaffName, any>();
-    Object.keys(SH).forEach((k) => SHM.set(k, SH[k])); // iterate through staffHurdle and build a Map
-    cm.forEach((commComponents, staffName) => {
+    const sh = staffHurdle as { [key: string]: any }; // get an iterable version of the staffHurdle import
+    const shm = new Map<TStaffID, any>();
+    Object.keys(sh).forEach((k) => shm.set(k, sh[k])); // iterate through staffHurdle and build a Map
+    // tslint:disable-next-line: no-shadowed-variable
+    cm.forEach((commComponents, staffID) => {
         // console.log(staffName, commComponents);
-        if (SHM.has(staffName)) {
+        if (shm.has(staffID)) {
             // we have a matching prop in staffHurdle for the current payroll key
             // clone emptyServiceComm as a temp we can fill and then add to the serviceCommMap
-            const TEMP_SERV_COM: IserviceComm = {
-                ...EMPTY_SERV_COMM,
-                base: { ...EMPTY_SERV_COMM.base },
-                hurdle1: { ...EMPTY_SERV_COMM.hurdle1 },
-                hurdle2: { ...EMPTY_SERV_COMM.hurdle2 },
+            const tempServComm: IServiceComm = {
+                ...emptyServComm,
+                base: { ...emptyServComm.base },
+                hurdle1: { ...emptyServComm.hurdle1 },
+                hurdle2: { ...emptyServComm.hurdle2 },
             };
-            const SERVICE_REV = commComponents[SERV_COMM_INDEX];
-            const STAFF_COMM_CONFIG: IStaffCommConfig = SHM.get(staffName);
+            const serviceRev = commComponents[SERV_COMM_INDEX];
+            const staffCommConfig: IStaffCommConfig = shm.get(staffID);
 
             let baseRevenue = 0;
             let baseRate: number = 0;
@@ -201,59 +263,69 @@ function calcServiceCommission(cm: TcommMap) {
             let hurdle2Level = 0;
             let hurdle2Rate = 0;
 
-            if (STAFF_COMM_CONFIG.hasOwnProperty(BASE_RATE)) {
-                baseRate = stripToNumeric(STAFF_COMM_CONFIG.baseRate);
+            if (staffCommConfig.hasOwnProperty(BASE_RATE)) {
+                baseRate = stripToNumeric(staffCommConfig.baseRate);
                 if (!checkRate(baseRate)) {
                     throw new Error("Invalid baseRate");
                 }
             }
 
-            if (STAFF_COMM_CONFIG.hasOwnProperty("hurdle1Level")) {
-                hurdle1Level = stripToNumeric(STAFF_COMM_CONFIG.hurdle1Level);
-                hurdle1Rate = stripToNumeric(STAFF_COMM_CONFIG.hurdle1Rate);
+            if (staffCommConfig.hasOwnProperty(HURDLE_1_LEVEL)) {
+                hurdle1Level = stripToNumeric(staffCommConfig.hurdle1Level);
+                hurdle1Rate = stripToNumeric(staffCommConfig.hurdle1Rate);
                 if (!checkRate(hurdle1Rate)) {
                     console.log(
-                        "Fatal: Error with " +
-                            staffName +
-                            "'s commission config in staffHurdle.json",
+                        `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`,
                     );
                     throw new Error("Invalid hurdle1Rate");
                 }
             }
 
-            if (STAFF_COMM_CONFIG.hasOwnProperty("hurdle2Level")) {
-                hurdle2Level = stripToNumeric(STAFF_COMM_CONFIG.hurdle2Level);
-                hurdle2Rate = stripToNumeric(STAFF_COMM_CONFIG.hurdle2Rate);
+            if (staffCommConfig.hasOwnProperty(HURDLE_2_LEVEL)) {
+                hurdle2Level = stripToNumeric(staffCommConfig.hurdle2Level);
+                hurdle2Rate = stripToNumeric(staffCommConfig.hurdle2Rate);
                 if (!checkRate(hurdle2Rate)) {
-                    throw new Error("Invalid hurdle1Rate");
+                    console.log(
+                        `Fatal: Error with ID ${staffID}'s commission config in staffHurdle.json`,
+                    );
+                    throw new Error("Invalid hurdle2Rate");
                 }
             }
 
+            /*             if (staffCommConfig.hasOwnProperty(HURDLE_3_LEVEL)) {
+                hurdle3Level = stripToNumeric(staffCommConfig.hurdle3Level);
+                hurdle3Rate = stripToNumeric(staffCommConfig.hurdle3Rate);
+                if (!checkRate(hurdle3Rate)) {
+                    console.log(`Fatal: Error with ${staffID}'s commission config in staffHurdle.json`)
+                    throw new Error("Invalid hurdle3Rate");
+                }
+            } */
+
             if (hurdle1Level <= 0) {
                 // no hurdle. All servicesRev pays comm at baseRate
-                baseRevenue = SERVICE_REV;
+                baseRevenue = serviceRev;
                 hurdle1Revenue = 0;
                 hurdle1Level = 0;
                 hurdle2Revenue = 0;
                 hurdle2Level = 0;
             } else {
                 // there is a hurdle1
-                if (SERVICE_REV > hurdle1Level) {
+                if (serviceRev > hurdle1Level) {
                     if (hurdle2Level > 0) {
                         // service revenue  that falls between hurdle1 and hurdle2 generate comm at the hurdle1 Rate
                         hurdle1Revenue = Math.min(
-                            SERVICE_REV - hurdle1Level,
+                            serviceRev - hurdle1Level,
                             hurdle2Level - hurdle1Level,
                         );
-                        if (SERVICE_REV > hurdle2Level) {
+                        if (serviceRev > hurdle2Level) {
                             // service revenue above hurdle2Level generates comm at the hurdle2Rate
-                            hurdle2Revenue = SERVICE_REV - hurdle2Level;
+                            hurdle2Revenue = serviceRev - hurdle2Level;
                         } else {
                             hurdle2Revenue = 0;
                         }
                     } else {
                         // no hurdle2 so all revenue above hurdle1 generates comm at the hurdle1 rate
-                        hurdle1Revenue = SERVICE_REV - hurdle1Level;
+                        hurdle1Revenue = serviceRev - hurdle1Level;
                     }
                 } else {
                     hurdle1Revenue = 0;
@@ -266,37 +338,40 @@ function calcServiceCommission(cm: TcommMap) {
             // commComponents is an array containing [tips, productCommission, serviceCommission]
             // commComponents[serviceCommissionIndex] = servicesComm;
 
-            TEMP_SERV_COM.serviceRevenue = SERVICE_REV;
+            const sn = staffMap.get(staffID);
+            if (sn !== undefined) {
+                tempServComm.staffName = sn.firstName;
+            }
 
-            TEMP_SERV_COM.base.baseCommRevenue = baseRevenue;
-            TEMP_SERV_COM.base.baseCommRate = baseRate;
-            const BASE_COMM_AMT = baseRevenue * baseRate;
-            TEMP_SERV_COM.base.baseCommAmt = BASE_COMM_AMT;
+            tempServComm.serviceRevenue = serviceRev;
 
-            TEMP_SERV_COM.hurdle1.hurdle1Revenue = hurdle1Revenue;
-            TEMP_SERV_COM.hurdle1.hurdle1Level = hurdle1Level;
-            TEMP_SERV_COM.hurdle1.hurdle1Rate = hurdle1Rate;
-            const HURDLE_1_AMT = hurdle1Revenue * hurdle1Rate;
-            TEMP_SERV_COM.hurdle1.hurdle1Amt = HURDLE_1_AMT;
+            tempServComm.base.baseCommRevenue = baseRevenue;
+            tempServComm.base.baseCommRate = baseRate;
+            const baseCommAmt = baseRevenue * baseRate;
+            tempServComm.base.baseCommAmt = baseCommAmt;
 
-            TEMP_SERV_COM.hurdle2.hurdle2Revenue = hurdle2Revenue;
-            TEMP_SERV_COM.hurdle2.hurdle2Level = hurdle2Level;
-            TEMP_SERV_COM.hurdle2.hurdle2Rate = hurdle2Rate;
-            const HURDLE_2_AMT = hurdle2Revenue * hurdle2Rate;
-            TEMP_SERV_COM.hurdle2.hurdle2Amt = HURDLE_2_AMT;
+            tempServComm.hurdle1.hurdle1Revenue = hurdle1Revenue;
+            tempServComm.hurdle1.hurdle1Level = hurdle1Level;
+            tempServComm.hurdle1.hurdle1Rate = hurdle1Rate;
+            const hurdle1Amt = hurdle1Revenue * hurdle1Rate;
+            tempServComm.hurdle1.hurdle1Amt = hurdle1Amt;
 
-            TEMP_SERV_COM.serviceComm =
-                BASE_COMM_AMT + HURDLE_1_AMT + HURDLE_2_AMT;
+            tempServComm.hurdle2.hurdle2Revenue = hurdle2Revenue;
+            tempServComm.hurdle2.hurdle2Level = hurdle2Level;
+            tempServComm.hurdle2.hurdle2Rate = hurdle2Rate;
+            const hurdle2Amt = hurdle2Revenue * hurdle2Rate;
+            tempServComm.hurdle2.hurdle2Amt = hurdle2Amt;
 
-            SERVICE_COMM_MAP.set(staffName, TEMP_SERV_COM);
+            tempServComm.serviceComm = baseCommAmt + hurdle1Amt + hurdle2Amt;
 
-            console.log(staffName);
-            console.log(prettyjson.render(SERVICE_COMM_MAP.get(staffName)));
+            serviceCommMap.set(staffID, tempServComm);
+
+            console.log(staffID);
+            console.log(prettyjson.render(serviceCommMap.get(staffID)));
             console.log("=========");
         } else {
             throw new Error(
-                staffName +
-                    " doesn't appear in staffHurdle.json (commission setup file)",
+                `${staffID} doesn't appear in staffHurdle.json (commission setup file)`,
             );
         }
     });
@@ -305,40 +380,55 @@ function calcServiceCommission(cm: TcommMap) {
 // Using option {header:1} returns an array of arrays
 // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off
 // wsaa is our worksheet presented as an array of arrays (row major)
-const WSAA: any[][] = XLSX.utils.sheet_to_json(WS, {
+const wsaa: any[][] = XLSX.utils.sheet_to_json(WS, {
     blankrows: false,
     header: 1,
 });
-maxRows = WSAA.length;
-const REVENUE_COLUMN = revenueCol(WSAA);
-let prevTotalForRow = 0;
+maxRows = wsaa.length;
+let staffID: TStaffID | undefined;
+let staffName: TstaffName | undefined;
+let staffNames;
+const revCol = revenueCol(wsaa);
+let currentIDRow = -1;
 let currentTotalForRow = 0;
 // start building commission components working through the rows of the spreadsheet (array of arrays)
 for (let i = 0; i < maxRows; i++) {
-    const ELEMENT = WSAA[i][0];
-    if (ELEMENT !== undefined) {
-        // if we've found a line beginning with "Total for " then we've got to the subtotals
-        // and total for a staff member
-        if ((ELEMENT as string).slice(0, TOTAL_FOR.length) === TOTAL_FOR) {
-            const STAFF_NAME: string = (ELEMENT as string)
-                .slice(TOTAL_FOR.length)
-                .trim();
-            const ID_ELEMENT: string = WSAA[i][STAFF_ID_OFFSET] as string;
-            // TODO: add staffID to the comm and serviceComm maps
-            // staffID isn't on the Total row - it's on the first row of this client's section.
-            // Need to go back there to retrieve the staffID
-            // const staffID: string = (idElement as string).split(":")[1].trim();
+    const element = wsaa[i][0];
+    if (element !== undefined) {
+        // Check if this line contans a staffID
+        if (staffID === undefined) {
+            const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, i);
+            if (staffInfo.found) {
+                // found staffID so keep a note of which row it's on
+                currentIDRow = i;
+                staffID = staffInfo.staffID;
+                staffName = `${staffInfo.firstName} ${staffInfo.lastName}`;
+                staffNames = {
+                    firstName: !!staffInfo.firstName ? staffInfo.firstName : "",
+                    lastName: !!staffInfo.lastName ? staffInfo.lastName : "",
+                };
+            }
+        }
+        const testString: string = (element as string).slice(
+            0,
+            TOTAL_FOR.length,
+        );
+        if (testString === TOTAL_FOR) {
+            /*         if we've found a line beginning with "Total for " then we've got to the subtotals
+        and total for a staff member */
+
             // keep track of the last totals row (for the previous employee) because we'll need to search
             // back to this row to locate all of the revenue numbers for the current staff member.
-            prevTotalForRow = currentTotalForRow;
+            // currentIDRow = currentTotalForRow;
             currentTotalForRow = i;
-            const COMM_COMPONENTS: [number, number, number] = [0, 0, 0];
+            // const staffID = getStaffID(wsaa, prevTotalForRow);
+            const commComponents: [number, number, number] = [0, 0, 0];
             // find and process tips, product commission and services commission
             // go back 3 lines from the "Total for:" line - the tips and product commission should be in that range .
             // Note tips and or product commission may not exist.
-            console.log("Payroll details for: " + STAFF_NAME);
+            console.log(`Payroll details for  ${staffID} ${staffName}`);
             for (let j = 3; j >= 0; j--) {
-                let payComponent: string = WSAA[i - j][0];
+                let payComponent: string = wsaa[i - j][0];
                 if (payComponent !== undefined) {
                     let value = 0;
                     if (
@@ -347,16 +437,17 @@ for (let i = 0; i < maxRows; i++) {
                         payComponent.slice(0, TOTAL_FOR.length) === TOTAL_FOR
                     ) {
                         // work out what the value is for the Tip or Commission
-                        const maxRowIndex = WSAA[i - j].length - 1;
-                        if (WSAA[i - j][maxRowIndex] !== undefined) {
-                            value = WSAA[i - j][maxRowIndex];
+                        // by looking at the last cell in the row
+                        const maxRowIndex = wsaa[i - j].length - 1;
+                        if (wsaa[i - j][maxRowIndex] !== undefined) {
+                            value = wsaa[i - j][maxRowIndex];
                             if (payComponent === TIPS_FOR) {
                                 payComponent = "Tips:";
-                                COMM_COMPONENTS[TIPS_INDEX] = value;
+                                commComponents[TIPS_INDEX] = value;
                             }
                             if (payComponent === COMM_FOR) {
                                 payComponent = "Product Commission:";
-                                COMM_COMPONENTS[PROD_COMM_INDEX] = value;
+                                commComponents[PROD_COMM_INDEX] = value;
                             }
                         } else {
                             value = 0;
@@ -367,24 +458,39 @@ for (let i = 0; i < maxRows; i++) {
                         ) {
                             payComponent = "Services Revenue:";
                             value = sumRevenue(
-                                WSAA,
+                                wsaa,
                                 currentTotalForRow,
-                                prevTotalForRow,
-                                REVENUE_COLUMN,
+                                currentIDRow,
+                                revCol,
                             );
-                            COMM_COMPONENTS[SERV_COMM_INDEX] = value;
+                            commComponents[SERV_COMM_INDEX] = value;
                         }
                         console.log(payComponent + " " + value);
                         value = 0;
                     }
 
                     if (j === 0) {
-                        COMM_MAP.set(STAFF_NAME, COMM_COMPONENTS);
+                        if (!!staffID) {
+                            commMap.set(staffID, commComponents);
+                            if (staffNames !== undefined) {
+                                staffMap.set(staffID, staffNames);
+                            } else {
+                                throw new Error(
+                                    `Fatal: Missing staffNames for staff: ${staffName}`,
+                                );
+                            }
+                        } else {
+                            throw new Error(
+                                `Fatal: Missing staffID for staff: ${staffName}`,
+                            );
+                        }
                         console.log("==========");
                     }
                 }
             }
+            staffID = undefined;
+            staffNames = undefined;
         }
     }
 }
-calcServiceCommission(COMM_MAP);
+calcServiceCommission(commMap);
