@@ -73,13 +73,13 @@
     },
     "006": {
         "staffName": "Anson",
-        "mbCommRate": 1.0,
-        "baseRate": 0,
+        "mbCommRate": 0.33,
+        "baseRate": 0.33,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["Wong, Ari"]
+        "poolsWith": ["007"]
     },
     "024": {
         "staffName": "Ava",
@@ -103,10 +103,12 @@
         "staffName": "Candy",
         "mbCommRate": 1.0,
         "baseRate": 0,
-        "hurdle1Level": 0,
-        "hurdle1Rate": 0,
-        "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle1Level": 48000,
+        "hurdle1Rate": 0.1,
+        "hurdle2Level": 82000,
+        "hurdle2Rate": 0.11,
+        "hurdle3Level": 96000,
+        "hurdle3Rate": 0.12
     },
     "032": {
         "staffName": "Coey",
@@ -227,13 +229,13 @@
     },
     "007": {
         "staffName": "Ari",
-        "mbCommRate": 1.0,
-        "baseRate": 0,
+        "mbCommRate": 0.33,
+        "baseRate": 0.33,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["Ho, Anson"]
+        "poolsWith": ["006"]
     },
     "019": {
         "staffName": "Rex",
