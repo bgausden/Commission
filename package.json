@@ -18,9 +18,11 @@
   "homepage": "https://github.com/bgausden/Commission#readme",
   "dependencies": {
     "prettyjson": "^1.2.1",
+    "typescript": "^3.4.5",
     "xlsx": "^0.14.2"
   },
   "devDependencies": {
-    "@types/prettyjson": "0.0.29"
+    "@types/prettyjson": "0.0.29",
+    "ts-node": "^8.1.0"
   }
 }

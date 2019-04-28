@@ -7,10 +7,20 @@
         {
             "type": "node",
             "request": "launch",
-            "preLaunchTask": "build",
+            // "preLaunchTask": "build",
             "name": "Launch Program",
             "program": "${workspaceFolder}/index.js",
             "outFiles": ["${workspaceFolder}/**/*.js"]
+        },
+        {
+            "name": "Current TS File",
+            "type": "node",
+            "request": "launch",
+            "args": ["${relativeFile}"],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
