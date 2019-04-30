@@ -216,6 +216,12 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
                 ? (testString as string).split(ID_HASH)
                 : undefined;
         if (staffInfo !== undefined) {
+            if (staffInfo[staffIDIndex].trim() === undefined) {
+                // Missing Staff ID in MB?
+                throw new Error(`${staffInfo[staffNameIndex]
+                .split(",")} ${staffInfo[staffNameIndex]
+                    .split(",")} does not appear to have a Staff ID in MB`);
+            }
             return {
                 found: true,
                 firstName: staffInfo[staffNameIndex]
@@ -548,6 +554,7 @@ function main() {
     let currentIDRow = -1;
     let currentTotalForRow = 0;
     // start building commission components working through the rows of the spreadsheet (array of arrays)
+    // ignore the first row which contains the date range for the report
     for (let i = 0; i < maxRows; i++) {
         const element = wsaa[i][0];
         if (element !== undefined) {
@@ -568,6 +575,10 @@ function main() {
                             : "",
                     };
                     staffMap.set(staffID!, staffNames);
+                } else {
+                    /* throw new Error(
+                        `Fatal: Staff Member in MB Payroll Report has no StaffID. Fix and re-run Payroll Report`,
+                    ); */
                 }
             }
 
