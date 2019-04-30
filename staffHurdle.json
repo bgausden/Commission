@@ -245,5 +245,23 @@
         "hurdle1Rate": 0.4,
         "hurdle2Level": 80000,
         "hurdle2Rate": 0.5
+    },
+    "029": {
+        "staffName": "Catherine",
+        "mbCommRate": 1.0,
+        "baseRate": 0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0
+    },
+    "030": {
+        "staffName": "Meghan",
+        "mbCommRate": 1.0,
+        "baseRate": 0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0
     }
 }
