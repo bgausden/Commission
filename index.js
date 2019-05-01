@@ -20,6 +20,7 @@ const TOTAL_FOR = "Total for ";
 const TIPS_FOR = "Tips:";
 const COMM_FOR = "Sales Commission:";
 const REVENUE = "Revenue";
+const REV_PER_SESS = "Rev. per Session";
 const BASE_RATE = "baseRate";
 const HURDLE_1_LEVEL = "hurdle1Level";
 const HURDLE_1_RATE = "hurdle1Rate";
@@ -81,12 +82,12 @@ function revenueCol(wsArray) {
         const rowLength = wsArray[i].length;
         for (let j = 0; j < rowLength; j++) {
             const cell = wsArray[i][j];
-            if (cell === REVENUE) {
+            if (cell === REV_PER_SESS) {
                 return j;
             }
         }
     }
-    throw new Error("Cannot find Revenue column");
+    throw new Error("Cannot find Revenue per session column");
 }
 function stripToNumeric(n) {
     const numericOnly = /[^0-9.-]+/g;
@@ -95,7 +96,6 @@ function stripToNumeric(n) {
         // strip out everything except 0-9, "." and "-"
         x = parseFloat(n.replace(numericOnly, ""));
         if (isNaN(x)) {
-            // console.log(n + "Warning: " + n + " interpreted as a non-numeric.");
             x = 0;
         }
     }
@@ -122,6 +122,12 @@ function getStaffIDAndName(wsArray, idRow) {
             ? testString.split(ID_HASH)
             : undefined;
         if (staffInfo !== undefined) {
+            if (staffInfo[staffIDIndex].trim() === undefined) {
+                // Missing Staff ID in MB?
+                throw new Error(`${staffInfo[staffNameIndex]
+                    .split(",")} ${staffInfo[staffNameIndex]
+                    .split(",")} does not appear to have a Staff ID in MB`);
+            }
             return {
                 found: true,
                 firstName: staffInfo[staffNameIndex]
@@ -182,7 +188,6 @@ function calcServiceCommission(staffID, serviceRev) {
     Object.keys(sh).forEach((k) => shm.set(k, sh[k])); // iterate through staffHurdle and build a Map
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
-    // console.log(staffName, commComponents);
     if (shm.has(staffID)) {
         // we have a matching prop in staffHurdle for the current payroll key
         // clone emptyServiceComm as a temp we can fill and then add to the serviceCommMap
@@ -314,15 +319,11 @@ function calcServiceCommission(staffID, serviceRev) {
         serviceCommMap.set(staffID, tempServComm);
         console.log(staffID);
         console.log(prettyjson_1.default.render(serviceCommMap.get(staffID)));
-        console.log("=========");
     }
     else {
         throw new Error(`${staffID} doesn't appear in staffHurdle.json (commission setup file)`);
     }
     // });
-    if (staffID = "003") {
-        console.log("Candy");
-    }
     return totalServiceComm;
 }
 function createPaymentSpreadsheet(cm, sm) {
@@ -367,16 +368,19 @@ function createPaymentSpreadsheet(cm, sm) {
                         payment.amount = commMapEntry[TIPS_INDEX];
                         payment.type = "Tips";
                         payment.remarks = TIPS_REMARK;
+                        payments.push(payment);
                         break;
                     case PROD_COMM_INDEX:
                         payment.amount = commMapEntry[PROD_COMM_INDEX];
                         payment.type = "Commission (Irregular)";
                         payment.remarks = PRODUCT_COMM_REMARK;
+                        payments.push(payment);
                         break;
                     case SERV_COMM_INDEX:
                         payment.type = "Commission (Irregular)";
                         payment.amount = commMapEntry[SERV_COMM_INDEX];
                         payment.remarks = SERVICES_COMM_REMARK;
+                        payments.push(payment);
                         break;
                     case SERV_REV_INDEX:
                         // do nothing
@@ -385,15 +389,9 @@ function createPaymentSpreadsheet(cm, sm) {
                         throw new Error("Commission Map has more entries than expected.");
                         break;
                 }
-                payments.push(payment);
-                // console.log(prettyjson.render(payment));
-                // console.log(" ");
             }
         }
-        // console.log("++++++++++++++");
     });
-    // console.log("————————————————");
-    // console.log(prettyjson.render(payments));
     const PAYMENTS_WB_NAME = "Talenox Payments.xlsx";
     const PAYMENTS_WS_NAME = "Payments";
     const paymentsWB = xlsx_1.default.utils.book_new();
@@ -417,6 +415,7 @@ function main() {
     let currentIDRow = -1;
     let currentTotalForRow = 0;
     // start building commission components working through the rows of the spreadsheet (array of arrays)
+    // ignore the first row which contains the date range for the report
     for (let i = 0; i < maxRows; i++) {
         const element = wsaa[i][0];
         if (element !== undefined) {
@@ -437,6 +436,11 @@ function main() {
                             : "",
                     };
                     staffMap.set(staffID, staffNames);
+                }
+                else {
+                    /* throw new Error(
+                        `Fatal: Staff Member in MB Payroll Report has no StaffID. Fix and re-run Payroll Report`,
+                    ); */
                 }
             }
             const testString = element.slice(0, TOTAL_FOR.length);
@@ -480,8 +484,8 @@ function main() {
                                 if (payComponent === COMM_FOR) {
                                     payComponent = "Product Commission:";
                                     commComponents[PROD_COMM_INDEX] = value;
+                                    console.log(`${payComponent} ${value}`);
                                 }
-                                console.log(`${payComponent} ${value}`);
                             }
                             else {
                                 value = 0;

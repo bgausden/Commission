@@ -107,6 +107,7 @@ const TOTAL_FOR: string = "Total for ";
 const TIPS_FOR: string = "Tips:";
 const COMM_FOR: string = "Sales Commission:";
 const REVENUE = "Revenue";
+const REV_PER_SESS = "Rev. per Session";
 
 const BASE_RATE = "baseRate";
 const HURDLE_1_LEVEL = "hurdle1Level";
@@ -172,12 +173,12 @@ function revenueCol(wsArray: any[][]): number {
         const rowLength = wsArray[i].length;
         for (let j = 0; j < rowLength; j++) {
             const cell = wsArray[i][j];
-            if (cell === REVENUE) {
+            if (cell === REV_PER_SESS) {
                 return j;
             }
         }
     }
-    throw new Error("Cannot find Revenue column");
+    throw new Error("Cannot find Revenue per session column");
 }
 
 function stripToNumeric(n: string | number): number {
@@ -506,16 +507,19 @@ function createPaymentSpreadsheet(cm: TCommMap, sm: TStaffMap) {
                         payment.amount = commMapEntry[TIPS_INDEX];
                         payment.type = "Tips";
                         payment.remarks = TIPS_REMARK;
+                        payments.push(payment);
                         break;
                     case PROD_COMM_INDEX:
                         payment.amount = commMapEntry[PROD_COMM_INDEX];
                         payment.type = "Commission (Irregular)";
                         payment.remarks = PRODUCT_COMM_REMARK;
+                        payments.push(payment);
                         break;
                     case SERV_COMM_INDEX:
                         payment.type = "Commission (Irregular)";
                         payment.amount = commMapEntry[SERV_COMM_INDEX];
                         payment.remarks = SERVICES_COMM_REMARK;
+                        payments.push(payment);
                         break;
                     case SERV_REV_INDEX:
                         // do nothing
@@ -526,7 +530,6 @@ function createPaymentSpreadsheet(cm: TCommMap, sm: TStaffMap) {
                         );
                         break;
                 }
-                payments.push(payment);
             }
         }
     });
@@ -629,8 +632,8 @@ function main() {
                                 if (payComponent === COMM_FOR) {
                                     payComponent = "Product Commission:";
                                     commComponents[PROD_COMM_INDEX] = value;
+                                    console.log(`${payComponent} ${value}`);
                                 }
-                                console.log(`${payComponent} ${value}`);
                             } else {
                                 value = 0;
                             }
