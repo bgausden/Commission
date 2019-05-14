@@ -8,6 +8,8 @@ import prettyjson from "prettyjson";
 import XLSX from "xlsx";
 import staffHurdle from "./staffHurdle.json";
 
+const FILE_PATH: string = "Payroll Report.xlsx";
+
 type TStaffName = string;
 type TTips = number;
 type TProductCommission = number;
@@ -121,7 +123,6 @@ const SERVICES_COMM_REMARK = "Services commission";
 const TIPS_REMARK = "Tips";
 const PRODUCT_COMM_REMARK = "Product commission";
 
-const FILE_PATH: string = "Sample Payroll Report with ID.xlsx";
 const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 50 };
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS);
 const WS: XLSX.WorkSheet = WB.Sheets[WB.SheetNames[0]];
