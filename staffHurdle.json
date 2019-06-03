@@ -87,8 +87,8 @@
     },
     "024": {
         "staffName": "Ava",
-        "mbCommRate": 0.6,
-        "baseRate": 0.6,
+        "mbCommRate": 0.4,
+        "baseRate": 0.4,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -146,7 +146,7 @@
     "035": {
         "staffName": "ElizabethL",
         "mbCommRate": 1.0,
-        "baseRate": 0.76,
+        "baseRate": 0.0,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -155,9 +155,9 @@
     "026": {
         "staffName": "Tony",
         "mbCommRate": 1.0,
-        "baseRate": 0.5,
-        "hurdle1Level": 0,
-        "hurdle1Rate": 0,
+        "baseRate": 0,
+        "hurdle1Level": 28571.4285714,
+        "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
