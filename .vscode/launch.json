@@ -9,7 +9,7 @@
             "request": "launch",
             // "preLaunchTask": "build",
             "name": "Launch Program",
-            "program": "${workspaceFolder}/index.js",
+            "program": "${workspaceFolder}/dist/index.js",
             "outFiles": ["${workspaceFolder}/**/*.js"]
         },
         {
