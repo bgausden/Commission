@@ -1,8 +1,7 @@
 /// tslint:disable
 // tslint:disable: no-console
 
-// TODO:  add a 3rd hurdle level
-// TODO:  output excel file (google sheet) containing one row for each commission payment type (tip, product, service)
+// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 
 import prettyjson from "prettyjson";
 import XLSX from "xlsx";
