@@ -12,7 +12,7 @@
         "staffName": "Kate",
         "mbCommRate": 1.0,
         "baseRate": 0,
-        "hurdle1Level": 25000,
+        "hurdle1Level": 30000,
         "hurdle1Rate": 0.1,
         "hurdle2Level": 52000,
         "hurdle2Rate": 0.11,
@@ -137,11 +137,13 @@
     "027": {
         "staffName": "Chrissie",
         "mbCommRate": 1.0,
-        "baseRate": 0.5,
-        "hurdle1Level": 0,
-        "hurdle1Rate": 0,
-        "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "baseRate": 0.0,
+        "hurdle1Level": 30303.03030303030303030303,
+        "hurdle1Rate": 0.33,
+        "hurdle2Level": 100000,
+        "hurdle2Rate": 0.37,
+        "hurdle3Level": 150000,
+        "hurdle3Rate": 0.38
     },
     "035": {
         "staffName": "ElizabethL",
@@ -191,9 +193,9 @@
     "028": {
         "staffName": "Cynthia",
         "mbCommRate": 1.0,
-        "baseRate": 0.5,
-        "hurdle1Level": 0,
-        "hurdle1Rate": 0,
+        "baseRate": 0,
+        "hurdle1Level": 45945.945945945,
+        "hurdle1Rate": 0.37,
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
