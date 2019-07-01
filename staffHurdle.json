@@ -277,7 +277,34 @@
     "038": {
         "staffName": "Danielle",
         "mbCommRate": 0,
-        "baseRate": 0,
+        "baseRate": 0.55,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0
+    },
+    "039": {
+        "staffName": "Monita",
+        "mbCommRate": 0,
+        "baseRate": 0.5,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0
+    },
+    "040": {
+        "staffName": "Anu",
+        "mbCommRate": 0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0
+    },
+    "041": {
+        "staffName": "Sonal",
+        "mbCommRate": 0,
+        "baseRate": 0.0,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
