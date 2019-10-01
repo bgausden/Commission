@@ -3,6 +3,7 @@
 
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 
+import {config} from "node-config-ts";
 import prettyjson from "prettyjson";
 import XLSX from "xlsx";
 import staffHurdle from "./staffHurdle.json";
@@ -533,8 +534,8 @@ function createPaymentSpreadsheet(cm: TCommMap, sm: TStaffMap) {
             }
         }
     });
-    const PAYMENTS_WB_NAME = "Talenox Payments.xlsx";
-    const PAYMENTS_WS_NAME = "Payments";
+    const PAYMENTS_WB_NAME: string = config.PAYMENTS_WB_NAME;
+    const PAYMENTS_WS_NAME: string = config.PAYMENTS_WS_NAME;
     const paymentsWB = XLSX.utils.book_new();
     const paymentsWS = XLSX.utils.json_to_sheet(payments, { skipHeader: true });
     XLSX.utils.book_append_sheet(paymentsWB, paymentsWS, PAYMENTS_WS_NAME);
