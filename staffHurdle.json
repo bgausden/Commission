@@ -338,5 +338,14 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0
+    },
+    "045": {
+        "staffName": "Erica",
+        "mbCommRate": 0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0
     }
 }
