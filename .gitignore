@@ -11,3 +11,6 @@ index.js.map
 .DS_Store
 dist/staffHurdle.json
 ~$Payroll Report.xlsx
+*.xls
+*.xlsx
+
