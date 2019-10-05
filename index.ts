@@ -8,7 +8,8 @@ import prettyjson from "prettyjson";
 import XLSX from "xlsx";
 import staffHurdle from "./staffHurdle.json";
 
-const FILE_PATH: string = "Payroll Report.xlsx";
+// const FILE_PATH: string = "Payroll Report.xlsx";
+const FILE_PATH = config.PAYROLL_WB_NAME;
 
 type TStaffName = string;
 type TTips = number;
