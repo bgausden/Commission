@@ -349,5 +349,16 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0
+    },
+    "047": {
+        "staffName": "Crystal",
+        "mbCommRate": 1.0,
+        "baseRate": 0,
+        "hurdle1Level": 30000,
+        "hurdle1Rate": 0.1,
+        "hurdle2Level": 52000,
+        "hurdle2Rate": 0.11,
+        "hurdle3Level": 61000,
+        "hurdle3Rate": 0.12
     }
 }
