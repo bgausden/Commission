@@ -1,9 +1,8 @@
-/// tslint:disable
 // tslint:disable: no-console
 
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 
-import {config} from "node-config-ts";
+import { config } from "node-config-ts";
 import prettyjson from "prettyjson";
 import XLSX from "xlsx";
 import staffHurdle from "./staffHurdle.json";
@@ -221,9 +220,11 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
         if (staffInfo !== undefined) {
             if (staffInfo[staffIDIndex].trim() === undefined) {
                 // Missing Staff ID in MB?
-                throw new Error(`${staffInfo[staffNameIndex]
-                .split(",")} ${staffInfo[staffNameIndex]
-                    .split(",")} does not appear to have a Staff ID in MB`);
+                throw new Error(
+                    `${staffInfo[staffNameIndex].split(",")} ${staffInfo[
+                        staffNameIndex
+                    ].split(",")} does not appear to have a Staff ID in MB`
+                );
             }
             return {
                 found: true,
@@ -249,7 +250,7 @@ function sumRevenue(
     // tslint:disable-next-line: no-shadowed-variable
     currentIDRow: number,
     // tslint:disable-next-line: no-shadowed-variable
-    revCol: number,
+    revCol: number
 ): number {
     /* starting on the staff member's totals row, sum all the numeric values in the revenue column
     back as far as the prior staff member's totals row + 1. Use this as the service revenue so we can ignore
@@ -280,7 +281,7 @@ function sumRevenue(
 
 function calcServiceCommission(
     staffID: TStaffID,
-    serviceRev: TServiceRevenue,
+    serviceRev: TServiceRevenue
 ): number {
     /* iterate through commissionComponents
     for each entry, locate corresponding hurdles
@@ -291,7 +292,7 @@ function calcServiceCommission(
     let totalServiceComm: number;
     const sh = staffHurdle as { [key: string]: any }; // get an iterable version of the staffHurdle import
     const shm = new Map<TStaffID, any>();
-    Object.keys(sh).forEach((k) => shm.set(k, sh[k])); // iterate through staffHurdle and build a Map
+    Object.keys(sh).forEach(k => shm.set(k, sh[k])); // iterate through staffHurdle and build a Map
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
     if (shm.has(staffID)) {
@@ -331,7 +332,7 @@ function calcServiceCommission(
             hurdle1Rate = stripToNumeric(staffCommConfig.hurdle1Rate);
             if (!checkRate(hurdle1Rate)) {
                 console.log(
-                    `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`,
+                    `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`
                 );
                 throw new Error("Invalid hurdle1Rate");
             }
@@ -342,7 +343,7 @@ function calcServiceCommission(
             hurdle2Rate = stripToNumeric(staffCommConfig.hurdle2Rate);
             if (!checkRate(hurdle2Rate)) {
                 console.log(
-                    `Fatal: Error with ID ${staffID}'s commission config in staffHurdle.json`,
+                    `Fatal: Error with ID ${staffID}'s commission config in staffHurdle.json`
                 );
                 throw new Error("Invalid hurdle2Rate");
             }
@@ -353,7 +354,7 @@ function calcServiceCommission(
             hurdle3Rate = stripToNumeric(staffCommConfig.hurdle3Rate);
             if (!checkRate(hurdle3Rate)) {
                 console.log(
-                    `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`,
+                    `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`
                 );
                 throw new Error("Invalid hurdle3Rate");
             }
@@ -374,7 +375,7 @@ function calcServiceCommission(
                     // service revenue  that falls between hurdle1 and hurdle2 generate comm at the hurdle1 Rate
                     hurdle1Revenue = Math.min(
                         serviceRev - hurdle1Level,
-                        hurdle2Level - hurdle1Level,
+                        hurdle2Level - hurdle1Level
                     );
                     if (serviceRev > hurdle2Level) {
                         if (hurdle3Level > 0) {
@@ -384,7 +385,7 @@ function calcServiceCommission(
                                 the difference between hurdle3 and hurdle2 */
                             hurdle2Revenue = Math.min(
                                 serviceRev - hurdle2Level,
-                                hurdle3Level - hurdle2Level,
+                                hurdle3Level - hurdle2Level
                             );
                             if (serviceRev > hurdle3Level) {
                                 hurdle3Revenue = serviceRev - hurdle3Level;
@@ -454,7 +455,7 @@ function calcServiceCommission(
         console.log(prettyjson.render(serviceCommMap.get(staffID)));
     } else {
         throw new Error(
-            `${staffID} doesn't appear in staffHurdle.json (commission setup file)`,
+            `${staffID} doesn't appear in staffHurdle.json (commission setup file)`
         );
     }
     // });
@@ -497,7 +498,7 @@ function createPaymentSpreadsheet(cm: TCommMap, sm: TStaffMap) {
         const serviceCommMapEntry = cm.get(sid);
         if (serviceCommMapEntry === undefined) {
             throw new Error(
-                `Empty serviceCommMap entry return for staffID ${sid}`,
+                `Empty serviceCommMap entry return for staffID ${sid}`
             );
         } else {
             for (let k = 0; k < commMapEntry.length; k++) {
@@ -528,7 +529,7 @@ function createPaymentSpreadsheet(cm: TCommMap, sm: TStaffMap) {
                         break;
                     default:
                         throw new Error(
-                            "Commission Map has more entries than expected.",
+                            "Commission Map has more entries than expected."
                         );
                         break;
                 }
@@ -589,7 +590,7 @@ function main() {
 
             const testString: string = (element as string).slice(
                 0,
-                TOTAL_FOR.length,
+                TOTAL_FOR.length
             );
             if (testString === TOTAL_FOR) {
                 /*         if we've found a line beginning with "Total for " then we've got to the subtotals
@@ -648,7 +649,7 @@ function main() {
                                     wsaa,
                                     currentTotalForRow,
                                     currentIDRow,
-                                    revCol,
+                                    revCol
                                 );
                                 commComponents[SERV_REV_INDEX] = value;
                                 console.log(`${payComponent} ${value}`);
@@ -657,7 +658,7 @@ function main() {
                                 const serviceRevenue = value;
                                 value = calcServiceCommission(
                                     staffID!,
-                                    serviceRevenue, // value is the the total services revenue calculated above
+                                    serviceRevenue // value is the the total services revenue calculated above
                                 );
                                 commComponents[SERV_COMM_INDEX] = value;
                                 console.log(`${payComponent} ${value}`);
@@ -677,7 +678,7 @@ function main() {
                                 } */
                             } else {
                                 throw new Error(
-                                    `Fatal: Missing staffID for staff: ${staffName}`,
+                                    `Fatal: Missing staffID for staff: ${staffName}`
                                 );
                             }
                             console.log("==========");
