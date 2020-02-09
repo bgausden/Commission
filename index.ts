@@ -359,35 +359,35 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
                 hurdle2Level = 0; */
         } else {
             // there is a hurdle1
-            baseRevenue = Math.max(serviceRev - hurdle1Level, 0)
+            baseRevenue = Math.round(Math.max(serviceRev - hurdle1Level, 0)*100)/100
             if (serviceRev > hurdle1Level) {
                 if (hurdle2Level > 0) {
                     // service revenue  that falls between hurdle1 and hurdle2 generate comm at the hurdle1 Rate
-                    hurdle1Revenue = Math.min(serviceRev - hurdle1Level, hurdle2Level - hurdle1Level)
+                    hurdle1Revenue = Math.round(Math.min(serviceRev - hurdle1Level, hurdle2Level - hurdle1Level)*100)/100
                     if (serviceRev > hurdle2Level) {
                         if (hurdle3Level > 0) {
                             // have  a hurdle3
                             /* revenue applicable to hurdle2 is either the amount of service revenue above
                                 hurdle2 or if the revenue exceeds hurdle3, the amount of revenue equal to
                                 the difference between hurdle3 and hurdle2 */
-                            hurdle2Revenue = Math.min(serviceRev - hurdle2Level, hurdle3Level - hurdle2Level)
+                            hurdle2Revenue = Math.round(Math.min(serviceRev - hurdle2Level, hurdle3Level - hurdle2Level)*100)/100
                             if (serviceRev > hurdle3Level) {
-                                hurdle3Revenue = serviceRev - hurdle3Level
+                                hurdle3Revenue = Math.round((serviceRev - hurdle3Level)*100)/100
                             } else {
                                 // service revenue doesn't exceed hurdle3. All rev above hurdle 2 is hurdle2Revenue
-                                hurdle2Revenue = serviceRev - hurdle2Level
+                                hurdle2Revenue = Math.round((serviceRev - hurdle2Level)*100)/100
                             }
                         } else {
                             // no hurdle3level so all revenue above hurdle2 generates comm at the hurdle2 rate
-                            hurdle2Revenue = serviceRev - hurdle2Level
+                            hurdle2Revenue = Math.round((serviceRev - hurdle2Level)*100)/100
                         }
                     } else {
                         // service revenue doesn't exceed hurdle2
-                        hurdle1Revenue = serviceRev - hurdle1Level
+                        hurdle1Revenue = Math.round((serviceRev - hurdle1Level)*100)/100
                     }
                 } else {
                     // no hurdle2 so all revenue above hurdle1 generates comm at the hurdle1 rate
-                    hurdle1Revenue = serviceRev - hurdle1Level
+                    hurdle1Revenue = Math.round((serviceRev - hurdle1Level)*100/100)
                 }
             } else {
                 hurdle1Revenue = 0
@@ -409,28 +409,28 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
 
         tempServComm.base.baseCommRevenue = baseRevenue
         tempServComm.base.baseCommRate = baseRate
-        const baseCommAmt = baseRevenue * baseRate
-        tempServComm.base.baseCommAmt = baseCommAmt
+        const baseCommPayout = baseRevenue * baseRate
+        tempServComm.base.baseCommAmt = Math.round(baseCommPayout*100)/100
 
         tempServComm.hurdle1.hurdle1Revenue = hurdle1Revenue
         tempServComm.hurdle1.hurdle1Level = hurdle1Level
         tempServComm.hurdle1.hurdle1Rate = hurdle1Rate
-        const hurdle1Amt = hurdle1Revenue * hurdle1Rate
-        tempServComm.hurdle1.hurdle1PayOut = hurdle1Amt
+        const hurdle1Payout = hurdle1Revenue * hurdle1Rate
+        tempServComm.hurdle1.hurdle1PayOut = Math.round(hurdle1Payout*100)/100
 
         tempServComm.hurdle2.hurdle2Revenue = hurdle2Revenue
         tempServComm.hurdle2.hurdle2Level = hurdle2Level
         tempServComm.hurdle2.hurdle2Rate = hurdle2Rate
-        const hurdle2Amt = hurdle2Revenue * hurdle2Rate
-        tempServComm.hurdle2.hurdle2Payout = hurdle2Amt
+        const hurdle2Payout = hurdle2Revenue * hurdle2Rate
+        tempServComm.hurdle2.hurdle2Payout = Math.round(hurdle2Payout*100)/100
 
         tempServComm.hurdle3.hurdle3Revenue = hurdle3Revenue
         tempServComm.hurdle3.hurdle3Level = hurdle3Level
         tempServComm.hurdle3.hurdle3Rate = hurdle3Rate
-        const hurdle3Amt = hurdle3Revenue * hurdle3Rate
-        tempServComm.hurdle3.hurdle3Payout = hurdle3Amt
+        const hurdle3Payout = hurdle3Revenue * hurdle3Rate
+        tempServComm.hurdle3.hurdle3Payout = Math.round(hurdle3Payout*100)/100
 
-        totalServiceComm = baseCommAmt + hurdle1Amt + hurdle2Amt + hurdle3Amt
+        totalServiceComm = Math.round((baseCommPayout + hurdle1Payout + hurdle2Payout + hurdle3Payout)*100)/100
         tempServComm.serviceComm = totalServiceComm
 
         serviceCommMap.set(staffID, tempServComm)
@@ -539,7 +539,6 @@ function main() {
     let currentTotalForRow = 0
     // start building commission components working through the rows of the spreadsheet (array of arrays)
     // ignore the first row which contains the date range for the report
-    console.dir(wsaa[26])
     for (let i = 0; i < maxRows; i++) {
         const element = wsaa[i][0]
         if (element !== undefined) {
