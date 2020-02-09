@@ -51,19 +51,19 @@ interface IServiceComm {
         hurdle1Revenue: number
         hurdle1Level: number
         hurdle1Rate: number
-        hurdle1Amt: number
+        hurdle1PayOut: number
     }
     hurdle2: {
         hurdle2Revenue: number
         hurdle2Level: number
         hurdle2Rate: number
-        hurdle2Amt: number
+        hurdle2Payout: number
     }
     hurdle3: {
         hurdle3Revenue: number
         hurdle3Level: number
         hurdle3Rate: number
-        hurdle3Amt: number
+        hurdle3Payout: number
     }
 }
 type TServiceCommMap = Map<TStaffName, IServiceComm>
@@ -93,16 +93,19 @@ interface IStaffCommConfig {
 }
 
 const TOTAL_FOR_REGEX = /Total for /
+const DOCTYPE_HTML = /DOCTYPE html/
 
 const TIPS_INDEX = 0
 const PROD_COMM_INDEX = 1
 const SERV_COMM_INDEX = 2
 const SERV_REV_INDEX = 3
 
-const STAFF_ID_HASH: string = "Staff ID #:"
-const TOTAL_FOR: string = "Total for "
-const TIPS_FOR: string = "Tips:"
-const COMM_FOR: string = "Sales Commission:"
+const FIRST_SHEET = 0
+
+const STAFF_ID_HASH = "Staff ID #:"
+const TOTAL_FOR = "Total for "
+const TIPS_FOR = "Tips:"
+const COMM_FOR = "Sales Commission:"
 const REVENUE = "Revenue"
 const REV_PER_SESS = "Rev. per Session"
 
@@ -118,9 +121,9 @@ const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
 
-const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 50 }
+/* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
-const WS: XLSX.WorkSheet = WB.Sheets[WB.SheetNames[0]]
+const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
 const commMap = new Map<TStaffName, TCommComponents>()
 const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
 const serviceCommMap: TServiceCommMap = new Map<TStaffName, IServiceComm>()
@@ -128,19 +131,19 @@ const emptyServComm: IServiceComm = {
     staffName: "",
     base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
     hurdle1: {
-        hurdle1Amt: 0,
+        hurdle1PayOut: 0,
         hurdle1Level: 0,
         hurdle1Rate: 0,
         hurdle1Revenue: 0,
     },
     hurdle2: {
-        hurdle2Amt: 0,
+        hurdle2Payout: 0,
         hurdle2Level: 0,
         hurdle2Rate: 0,
         hurdle2Revenue: 0,
     },
     hurdle3: {
-        hurdle3Amt: 0,
+        hurdle3Payout: 0,
         hurdle3Level: 0,
         hurdle3Rate: 0,
         hurdle3Revenue: 0,
@@ -149,7 +152,14 @@ const emptyServComm: IServiceComm = {
     serviceRevenue: 0,
 }
 
-let maxRows = 0
+// let maxRows = 0
+
+function readExcelFile(fileName: string): XLSX.WorkSheet {
+    const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
+    const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
+    const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]]
+    return WS
+}
 
 function checkRate(rate: any): boolean {
     if (typeof rate === "number") {
@@ -179,7 +189,7 @@ function revenueCol(wsArray: any[][]): number {
 
 function stripToNumeric(n: string | number): number {
     const numericOnly = /[^0-9.-]+/g
-    let x = 0
+    let x: number
     if (typeof n === "string") {
         // strip out everything except 0-9, "." and "-"
         x = parseFloat(n.replace(numericOnly, ""))
@@ -215,9 +225,9 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
             if (staffInfo[staffIDIndex].trim() === "") {
                 // Missing Staff ID in MB?
                 throw new Error(
-                    `${staffInfo[staffNameIndex].split(",")[1]} ${staffInfo[staffNameIndex].split(
-                        ","
-                    )[0]} does not appear to have a Staff ID in MB`
+                    `${staffInfo[staffNameIndex].split(",")[1]} ${
+                        staffInfo[staffNameIndex].split(",")[0]
+                    } does not appear to have a Staff ID in MB`
                 )
             }
             return {
@@ -349,6 +359,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
                 hurdle2Level = 0; */
         } else {
             // there is a hurdle1
+            baseRevenue = Math.max(serviceRev - hurdle1Level, 0)
             if (serviceRev > hurdle1Level) {
                 if (hurdle2Level > 0) {
                     // service revenue  that falls between hurdle1 and hurdle2 generate comm at the hurdle1 Rate
@@ -405,26 +416,25 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
         tempServComm.hurdle1.hurdle1Level = hurdle1Level
         tempServComm.hurdle1.hurdle1Rate = hurdle1Rate
         const hurdle1Amt = hurdle1Revenue * hurdle1Rate
-        tempServComm.hurdle1.hurdle1Amt = hurdle1Amt
+        tempServComm.hurdle1.hurdle1PayOut = hurdle1Amt
 
         tempServComm.hurdle2.hurdle2Revenue = hurdle2Revenue
         tempServComm.hurdle2.hurdle2Level = hurdle2Level
         tempServComm.hurdle2.hurdle2Rate = hurdle2Rate
         const hurdle2Amt = hurdle2Revenue * hurdle2Rate
-        tempServComm.hurdle2.hurdle2Amt = hurdle2Amt
+        tempServComm.hurdle2.hurdle2Payout = hurdle2Amt
 
         tempServComm.hurdle3.hurdle3Revenue = hurdle3Revenue
         tempServComm.hurdle3.hurdle3Level = hurdle3Level
         tempServComm.hurdle3.hurdle3Rate = hurdle3Rate
         const hurdle3Amt = hurdle3Revenue * hurdle3Rate
-        tempServComm.hurdle3.hurdle3Amt = hurdle3Amt
+        tempServComm.hurdle3.hurdle3Payout = hurdle3Amt
 
         totalServiceComm = baseCommAmt + hurdle1Amt + hurdle2Amt + hurdle3Amt
         tempServComm.serviceComm = totalServiceComm
 
         serviceCommMap.set(staffID, tempServComm)
 
-        console.log(staffID)
         console.log(prettyjson.render(serviceCommMap.get(staffID)))
     } else {
         throw new Error(`${staffID} doesn't appear in staffHurdle.json (commission setup file)`)
@@ -512,6 +522,7 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
 }
 
 function main() {
+    const WS = readExcelFile(config.PAYMENTS_WB_NAME)
     // Using option {header:1} returns an array of arrays
     // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off
     // wsaa is our worksheet presented as an array of arrays (row major)
@@ -519,7 +530,7 @@ function main() {
         blankrows: false,
         header: 1,
     })
-    maxRows = wsaa.length
+    const maxRows = wsaa.length
     let staffID: TStaffID | undefined
     let staffName: TStaffName | undefined
     let staffNames
@@ -528,6 +539,7 @@ function main() {
     let currentTotalForRow = 0
     // start building commission components working through the rows of the spreadsheet (array of arrays)
     // ignore the first row which contains the date range for the report
+    console.dir(wsaa[26])
     for (let i = 0; i < maxRows; i++) {
         const element = wsaa[i][0]
         if (element !== undefined) {
@@ -598,7 +610,7 @@ function main() {
                                 payComponent = "Services Revenue:"
                                 value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
                                 commComponents[SERV_REV_INDEX] = value
-                                console.log(`${payComponent} ${value}`)
+                                //console.log(`${payComponent} ${value}`)
                                 // set services comm to zero for now. Will fill-in later
                                 payComponent = "Services Commission"
                                 const serviceRevenue = value
@@ -607,7 +619,7 @@ function main() {
                                     serviceRevenue // value is the the total services revenue calculated above
                                 )
                                 commComponents[SERV_COMM_INDEX] = value
-                                console.log(`${payComponent} ${value}`)
+                                // console.log(`${payComponent} ${value}`)
                             }
                             value = 0
                         }
