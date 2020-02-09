@@ -6,91 +6,17 @@ import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import staffHurdle from "./staffHurdle.json"
+import { ITalenoxPayment } from "./ITalenoxPayment"
+import { IStaffInfo } from "./IStaffInfo"
+import { IServiceComm } from "./IServiceComm"
+import { IStaffCommConfig } from "./IStaffCommConfig"
+import { IStaffNames } from "./IStaffNames"
+import { TStaffID, TServiceCommMap, TCommComponents, TStaffName, TStaffMap, TServiceRevenue, TCommMap } from "./types.js"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
 
-type TStaffName = string
-type TTips = number
-type TProductCommission = number
-type TServiceCommission = number
-type TServiceRevenue = number
-type TBaseComm = number
-type THurdle1Comm = number
-type THurdle2Comm = number
-type THurdle3Comm = number
 
-type TTalenoxPaymentType = "Commission (Irregular)" | "Tips"
-
-interface ITalenoxPayment {
-    staffID: TStaffID
-    firstName: string
-    lastName: string
-    type: TTalenoxPaymentType | undefined
-    amount: number
-    remarks: string
-}
-
-interface IStaffInfo {
-    found: boolean
-    staffID?: TStaffID
-    firstName?: string
-    lastName?: string
-}
-
-interface IServiceComm {
-    staffName: string
-    serviceComm: number
-    serviceRevenue: number
-    base: {
-        baseCommRevenue: number
-        baseCommRate: number
-        baseCommAmt: number
-    }
-    hurdle1: {
-        hurdle1Revenue: number
-        hurdle1Level: number
-        hurdle1Rate: number
-        hurdle1PayOut: number
-    }
-    hurdle2: {
-        hurdle2Revenue: number
-        hurdle2Level: number
-        hurdle2Rate: number
-        hurdle2Payout: number
-    }
-    hurdle3: {
-        hurdle3Revenue: number
-        hurdle3Level: number
-        hurdle3Rate: number
-        hurdle3Payout: number
-    }
-}
-type TServiceCommMap = Map<TStaffName, IServiceComm>
-type TCommComponents = [TTips, TProductCommission, TServiceCommission, TServiceRevenue]
-type TCommMap = Map<TStaffName, TCommComponents>
-type TStaffID = string
-
-interface IStaffNames {
-    firstName: string
-    lastName: string
-}
-
-// TODO: make this a singleton
-type TStaffMap = Map<TStaffID, IStaffNames>
-
-interface IStaffCommConfig {
-    staffName: string
-    mbCommRate: number
-    baseRate: number
-    hurdle1Level: number
-    hurdle1Rate: number
-    hurdle2Level: number
-    hurdle2Rate: number
-    hurdle3Level: number
-    hurdle3Rate: number
-    poolsWith: [string]
-}
 
 const TOTAL_FOR_REGEX = /Total for /
 const DOCTYPE_HTML = /DOCTYPE html/

@@ -15,3 +15,15 @@ dist/staffHurdle.json
 *.xlsx
 
 config/Config.d.ts
+dist/IServiceComm.js
+dist/IServiceComm.js.map
+dist/IStaffCommConfig.js
+dist/IStaffCommConfig.js.map
+dist/IStaffInfo.js
+dist/IStaffInfo.js.map
+dist/IStaffNames.js
+dist/IStaffNames.js.map
+dist/ITalenoxPayment.js
+dist/ITalenoxPayment.js.map
+dist/types.js
+dist/types.js.map
