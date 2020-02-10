@@ -1,4 +1,7 @@
-// tslint:disable: no-console
+/* eslint-disable capitalized-comments */
+/* eslint-disable no-console */
+/* eslint-disable id-blacklist */
+/* eslint-disable @typescript-eslint/semi */
 
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 
@@ -11,12 +14,18 @@ import { IStaffInfo } from "./IStaffInfo"
 import { IServiceComm } from "./IServiceComm"
 import { IStaffCommConfig } from "./IStaffCommConfig"
 import { IStaffNames } from "./IStaffNames"
-import { TStaffID, TServiceCommMap, TCommComponents, TStaffName, TStaffMap, TServiceRevenue, TCommMap } from "./types.js"
+import {
+    TStaffID,
+    TServiceCommMap,
+    TCommComponents,
+    TStaffName,
+    TStaffMap,
+    TServiceRevenue,
+    TCommMap,
+} from "./types.js"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
-
-
 
 const TOTAL_FOR_REGEX = /Total for /
 const DOCTYPE_HTML = /DOCTYPE html/
@@ -139,7 +148,7 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
     const lastNameIndex = 0
     const staffNameIndex = 0
     const staffIDIndex = 1
-    // tslint:disable-next-line: no-shadowed-variable
+    // eslint:disable-next-line: no-shadowed-variable
 
     const testString = wsArray[idRow][staffNameIndex]
     const regex = new RegExp("^.*,.*" + STAFF_ID_HASH)
@@ -285,35 +294,37 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
                 hurdle2Level = 0; */
         } else {
             // there is a hurdle1
-            baseRevenue = Math.round(Math.max(serviceRev - hurdle1Level, 0)*100)/100
+            baseRevenue = Math.round(Math.max(serviceRev - hurdle1Level, 0) * 100) / 100
             if (serviceRev > hurdle1Level) {
                 if (hurdle2Level > 0) {
                     // service revenue  that falls between hurdle1 and hurdle2 generate comm at the hurdle1 Rate
-                    hurdle1Revenue = Math.round(Math.min(serviceRev - hurdle1Level, hurdle2Level - hurdle1Level)*100)/100
+                    hurdle1Revenue =
+                        Math.round(Math.min(serviceRev - hurdle1Level, hurdle2Level - hurdle1Level) * 100) / 100
                     if (serviceRev > hurdle2Level) {
                         if (hurdle3Level > 0) {
                             // have  a hurdle3
                             /* revenue applicable to hurdle2 is either the amount of service revenue above
                                 hurdle2 or if the revenue exceeds hurdle3, the amount of revenue equal to
                                 the difference between hurdle3 and hurdle2 */
-                            hurdle2Revenue = Math.round(Math.min(serviceRev - hurdle2Level, hurdle3Level - hurdle2Level)*100)/100
+                            hurdle2Revenue =
+                                Math.round(Math.min(serviceRev - hurdle2Level, hurdle3Level - hurdle2Level) * 100) / 100
                             if (serviceRev > hurdle3Level) {
-                                hurdle3Revenue = Math.round((serviceRev - hurdle3Level)*100)/100
+                                hurdle3Revenue = Math.round((serviceRev - hurdle3Level) * 100) / 100
                             } else {
                                 // service revenue doesn't exceed hurdle3. All rev above hurdle 2 is hurdle2Revenue
-                                hurdle2Revenue = Math.round((serviceRev - hurdle2Level)*100)/100
+                                hurdle2Revenue = Math.round((serviceRev - hurdle2Level) * 100) / 100
                             }
                         } else {
                             // no hurdle3level so all revenue above hurdle2 generates comm at the hurdle2 rate
-                            hurdle2Revenue = Math.round((serviceRev - hurdle2Level)*100)/100
+                            hurdle2Revenue = Math.round((serviceRev - hurdle2Level) * 100) / 100
                         }
                     } else {
                         // service revenue doesn't exceed hurdle2
-                        hurdle1Revenue = Math.round((serviceRev - hurdle1Level)*100)/100
+                        hurdle1Revenue = Math.round((serviceRev - hurdle1Level) * 100) / 100
                     }
                 } else {
                     // no hurdle2 so all revenue above hurdle1 generates comm at the hurdle1 rate
-                    hurdle1Revenue = Math.round((serviceRev - hurdle1Level)*100/100)
+                    hurdle1Revenue = Math.round(((serviceRev - hurdle1Level) * 100) / 100)
                 }
             } else {
                 hurdle1Revenue = 0
@@ -336,27 +347,27 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
         tempServComm.base.baseCommRevenue = baseRevenue
         tempServComm.base.baseCommRate = baseRate
         const baseCommPayout = baseRevenue * baseRate
-        tempServComm.base.baseCommAmt = Math.round(baseCommPayout*100)/100
+        tempServComm.base.baseCommAmt = Math.round(baseCommPayout * 100) / 100
 
         tempServComm.hurdle1.hurdle1Revenue = hurdle1Revenue
         tempServComm.hurdle1.hurdle1Level = hurdle1Level
         tempServComm.hurdle1.hurdle1Rate = hurdle1Rate
         const hurdle1Payout = hurdle1Revenue * hurdle1Rate
-        tempServComm.hurdle1.hurdle1PayOut = Math.round(hurdle1Payout*100)/100
+        tempServComm.hurdle1.hurdle1PayOut = Math.round(hurdle1Payout * 100) / 100
 
         tempServComm.hurdle2.hurdle2Revenue = hurdle2Revenue
         tempServComm.hurdle2.hurdle2Level = hurdle2Level
         tempServComm.hurdle2.hurdle2Rate = hurdle2Rate
         const hurdle2Payout = hurdle2Revenue * hurdle2Rate
-        tempServComm.hurdle2.hurdle2Payout = Math.round(hurdle2Payout*100)/100
+        tempServComm.hurdle2.hurdle2Payout = Math.round(hurdle2Payout * 100) / 100
 
         tempServComm.hurdle3.hurdle3Revenue = hurdle3Revenue
         tempServComm.hurdle3.hurdle3Level = hurdle3Level
         tempServComm.hurdle3.hurdle3Rate = hurdle3Rate
         const hurdle3Payout = hurdle3Revenue * hurdle3Rate
-        tempServComm.hurdle3.hurdle3Payout = Math.round(hurdle3Payout*100)/100
+        tempServComm.hurdle3.hurdle3Payout = Math.round(hurdle3Payout * 100) / 100
 
-        totalServiceComm = Math.round((baseCommPayout + hurdle1Payout + hurdle2Payout + hurdle3Payout)*100)/100
+        totalServiceComm = Math.round((baseCommPayout + hurdle1Payout + hurdle2Payout + hurdle3Payout) * 100) / 100
         tempServComm.serviceComm = totalServiceComm
 
         serviceCommMap.set(staffID, tempServComm)
@@ -370,6 +381,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
     return totalServiceComm
 }
 
+// eslint-disable-next-line no-shadow
 function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
     const emptyTalenoxPayment: ITalenoxPayment = {
         staffID: "",
@@ -407,7 +419,7 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
             throw new Error(`Empty serviceCommMap entry returned for staffID ${staffID}. (Should never happen)`)
         } else {
             for (let k = 0; k < commMapEntry.length; k++) {
-                /* create a new payment object based on paymentProto which
+                /* Create a new payment object based on paymentProto which
                 contains staffID, firstName, etc. */
                 payment = { ...paymentProto }
                 switch (k) {
@@ -535,16 +547,14 @@ function main() {
                                 payComponent = "Services Revenue:"
                                 value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
                                 commComponents[SERV_REV_INDEX] = value
-                                //console.log(`${payComponent} ${value}`)
                                 // set services comm to zero for now. Will fill-in later
                                 payComponent = "Services Commission"
                                 const serviceRevenue = value
                                 value = calcServiceCommission(
                                     staffID!,
-                                    serviceRevenue // value is the the total services revenue calculated above
+                                    serviceRevenue // The  value is the the total services revenue calculated above
                                 )
                                 commComponents[SERV_COMM_INDEX] = value
-                                // console.log(`${payComponent} ${value}`)
                             }
                             value = 0
                         }
@@ -552,13 +562,6 @@ function main() {
                         if (j === 0) {
                             if (!!staffID) {
                                 commMap.set(staffID, commComponents)
-                                /*                                 if (staffNames !== undefined) {
-                                    staffMap.set(staffID, staffNames);
-                                } else {
-                                    throw new Error(
-                                        `Fatal: Missing staffNames for staff: ${staffName}`,
-                                    );
-                                } */
                             } else {
                                 throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
                             }
@@ -572,12 +575,12 @@ function main() {
         }
     }
 
-    /* looking at staffHurdle.json work out how much commission is paid at each commission hurdle
+    /* Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
 and populate the commMap service commission map */
-    // calcServiceCommission(staffID!, commMap);
+    // Call calcServiceCommission(staffID!, commMap);
     // TODO: loop through commMap and update the service commission for everyone
 
-    /* create a spreadsheet containing one line for each payment to be made for each of the staff.
+    /* Create a spreadsheet containing one line for each payment to be made for each of the staff.
 This spreadsheet will be copied/pasted into Talenox and together with their salary payments will
 form the payroll for the month */
 
