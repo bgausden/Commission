@@ -7,6 +7,7 @@
 
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
+// import { isNullOrUndefined } from "util"
 import XLSX from "xlsx"
 import staffHurdle from "./staffHurdle.json"
 import { ITalenoxPayment } from "./ITalenoxPayment"
@@ -22,10 +23,134 @@ import {
     TStaffMap,
     TServiceRevenue,
     TCommMap,
+    TPoolID,
+    TProductCommission,
+    TTips,
+    TServiceCommission,
+    TRevenueShare,
 } from "./types.js"
+const iterableStaffHurdle = staffHurdle as { [key: string]: any } // get an iterable version of the staffHurdle import
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
+
+// tslint:disable-next-line: max-classes-per-file
+class CRevenuePoolCollection {
+    public static getInstance() {
+        if (!CRevenuePoolCollection.instance) {
+            CRevenuePoolCollection.instance = new CRevenuePoolCollection()
+        }
+        return CRevenuePoolCollection.instance
+    }
+
+    public static updateRevenuePool(revenuePool: CRevenuePool) {
+        this._revenuePools.set(revenuePool.poolID, revenuePool)
+    }
+    public static getPoolIDforStaffID(staffID: TStaffID): TPoolID | null {
+        for (const [poolID, revenuePool] of this._revenuePools) {
+            if (revenuePool.isMember(staffID)) {
+                return poolID
+            }
+        }
+        // didn't find a revenue pool for this staffID
+        return null
+    }
+    public static addStaffIDToPool(staffID: TStaffID, poolID: TPoolID) {
+        const revenuePool = CRevenuePoolCollection._revenuePools.get(poolID)
+        if (revenuePool instanceof CRevenuePool) {
+            revenuePool.addMember(staffID)
+        }
+    }
+    public static getPool(poolID: TPoolID) {
+        return this._revenuePools.get(poolID)
+    }
+    private static POOLS_WITH = "poolsWith"
+    private static instance: CRevenuePoolCollection
+    // tslint:disable-next-line: variable-name
+    private static _revenuePools = new Map<TPoolID, CRevenuePool>()
+    constructor() {
+        Object.keys(iterableStaffHurdle).forEach((staffID: TStaffID) => {
+            if (CRevenuePoolCollection.POOLS_WITH in iterableStaffHurdle[staffID]) {
+                // This staffmembers entry in staffHurdle.json has a poolsWith key - they are pooling with others
+                // who are they pooling with? Take the first entry from the array of pool members.
+                const poolsWithID: string = iterableStaffHurdle[staffID][CRevenuePoolCollection.POOLS_WITH][0]
+                // is there a pool already containing our pool buddy?
+                const poolID = CRevenuePoolCollection.getPoolIDforStaffID(poolsWithID)
+                if (poolID !== null) {
+                    // there is an existing pool containing our buddy
+                    // check that we're not already in the pool
+                    if (!CRevenuePoolCollection.getPoolIDforStaffID(staffID)) {
+                        // We're not yet in the pool so add ourselves there
+                        CRevenuePoolCollection.addStaffIDToPool(staffID, poolID)
+                    }
+                } else {
+                    /* No pool found for the staff member we are pooling with.
+                    Maybe we haven't processed their entry in staffHurdle.json yet? */
+                    Object.keys(iterableStaffHurdle).forEach(hurdleStaffID => {
+                        if (hurdleStaffID === poolsWithID) {
+                            /* Found the poolsWith ID in staffHurdle so safe to go ahead and
+                            add both hurdleStaffID and poolsWithID to a new revenue pool */
+                            const revenuePool = new CRevenuePool()
+                            revenuePool.addMember(staffID)
+                            revenuePool.addMember(poolsWithID)
+                        }
+                    })
+                }
+            } else {
+                // doesn't appear to pool with anyone but lets check anyway
+                if (CRevenuePoolCollection.getPoolIDforStaffID(staffID) !== null) {
+                    // looks like we already have this person in a pool. No further action required
+                } else {
+                    // Not in any existing pools so set staffID in a new pool of their own
+                    const revenuePool = new CRevenuePool(staffID)
+                }
+            }
+        })
+    }
+}
+
+// tslint:disable-next-line: max-classes-per-file
+class CRevenuePool {
+    // tslint:disable-next-line: variable-name
+    private _poolID: TPoolID
+    // tslint:disable-next-line: variable-name
+    private _poolMembers: TStaffID[]
+    // tslint:disable-next-line: variable-name
+    private _pooledRevenue: number
+    constructor(staffID?: TStaffID) {
+        this._poolID = Symbol()
+        this._poolMembers = staffID ? [staffID] : []
+        this._pooledRevenue = 0
+        CRevenuePoolCollection.updateRevenuePool(this)
+    }
+    public get revenueShare() {
+        return this._pooledRevenue / this._poolMembers.length
+    }
+    public get poolID(): TPoolID {
+        return this._poolID
+    }
+    public get pooledRevenue() {
+        return this._pooledRevenue
+    }
+    public addRevenue(revenue: number) {
+        this._pooledRevenue = this._pooledRevenue + revenue
+    }
+    public addMember(memberID: TStaffID) {
+        if (!(memberID in this._poolMembers)) {
+            this._poolMembers.push(memberID)
+        }
+    }
+    public get members(): string[] {
+        return this._poolMembers
+    }
+    public isMember(memberID: TStaffID) {
+        if (this._poolMembers.includes(memberID)) {
+            return true
+        } else {
+            return false
+        }
+    }
+}
 
 const TOTAL_FOR_REGEX = /Total for /
 const DOCTYPE_HTML = /DOCTYPE html/
@@ -34,6 +159,7 @@ const TIPS_INDEX = 0
 const PROD_COMM_INDEX = 1
 const SERV_COMM_INDEX = 2
 const SERV_REV_INDEX = 3
+const REVENUE_SHARE_INDEX = 4
 
 const FIRST_SHEET = 0
 
@@ -55,6 +181,7 @@ const HURDLE_3_RATE = "hurdle3Rate"
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
+const REVENUE_SHARE_REMARK = "Share of pooled revenue"
 
 /* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
@@ -65,6 +192,7 @@ const serviceCommMap: TServiceCommMap = new Map<TStaffName, IServiceComm>()
 const emptyServComm: IServiceComm = {
     staffName: "",
     base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
+    poolMembers: null,
     hurdle1: {
         hurdle1PayOut: 0,
         hurdle1Level: 0,
@@ -286,14 +414,14 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
         // TODO get rid of this nesting logic
         if (hurdle1Level <= 0) {
             // no hurdle. All servicesRev pays comm at baseRate
-            baseRevenue = serviceRev
+            baseRevenue = Math.round(Math.max(serviceRev, 0) * 100) / 100
             /* remove?
                 hurdle1Revenue = 0;
                 hurdle1Level = 0;
                 hurdle2Revenue = 0;
                 hurdle2Level = 0; */
         } else {
-            // there is a hurdle1
+            // there is  at least a hurdle1
             baseRevenue = Math.round(Math.max(serviceRev - hurdle1Level, 0) * 100) / 100
             if (serviceRev > hurdle1Level) {
                 if (hurdle2Level > 0) {
@@ -340,6 +468,15 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
         const staffName = staffMap.get(staffID)
         if (staffName !== undefined) {
             tempServComm.staffName = staffName.firstName
+        }
+
+        // get the members of our pool (maybe just us)
+        const poolID = CRevenuePoolCollection.getPoolIDforStaffID(staffID)
+        if (poolID !== null) {
+            const revenuePool = CRevenuePoolCollection.getPool(poolID)
+            if (revenuePool instanceof CRevenuePool) {
+                tempServComm.poolMembers = revenuePool.members
+            }
         }
 
         tempServComm.serviceRevenue = serviceRev
@@ -418,35 +555,50 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
         if (serviceCommMapEntry === undefined) {
             throw new Error(`Empty serviceCommMap entry returned for staffID ${staffID}. (Should never happen)`)
         } else {
-            for (let k = 0; k < commMapEntry.length; k++) {
-                /* Create a new payment object based on paymentProto which
+            // check if there's more than the one staffID in the revenue pool for this staffID
+            payment = { ...paymentProto }
+            const revenuePooID = CRevenuePoolCollection.getPoolIDforStaffID(staffID)
+            if (!!revenuePooID) {
+                const revenuePool = CRevenuePoolCollection.getPool(revenuePooID)
+                if (!!revenuePool) {
+                    if (revenuePool.members.length > 1) {
+                        payment.amount = commMapEntry[REVENUE_SHARE_INDEX]
+                        payment.type = "Commission (Irregular)"
+                        payment.remarks = REVENUE_SHARE_REMARK
+                        payments.push(payment)
+                    }
+                } else {
+                    for (let k = 0; k < commMapEntry.length; k++) {
+                        /* Create a new payment object based on paymentProto which
                 contains staffID, firstName, etc. */
-                payment = { ...paymentProto }
-                switch (k) {
-                    case TIPS_INDEX:
-                        payment.amount = commMapEntry[TIPS_INDEX]
-                        payment.type = "Tips"
-                        payment.remarks = TIPS_REMARK
-                        payments.push(payment)
-                        break
-                    case PROD_COMM_INDEX:
-                        payment.amount = commMapEntry[PROD_COMM_INDEX]
-                        payment.type = "Commission (Irregular)"
-                        payment.remarks = PRODUCT_COMM_REMARK
-                        payments.push(payment)
-                        break
-                    case SERV_COMM_INDEX:
-                        payment.type = "Commission (Irregular)"
-                        payment.amount = commMapEntry[SERV_COMM_INDEX]
-                        payment.remarks = SERVICES_COMM_REMARK
-                        payments.push(payment)
-                        break
-                    case SERV_REV_INDEX:
-                        // do nothing
-                        break
-                    default:
-                        throw new Error("Commission Map has more entries than expected.")
-                        break
+                        payment = { ...paymentProto }
+                        switch (k) {
+                            case TIPS_INDEX:
+                                payment.amount = commMapEntry[TIPS_INDEX]
+                                payment.type = "Tips"
+                                payment.remarks = TIPS_REMARK
+                                payments.push(payment)
+                                break
+                            case PROD_COMM_INDEX:
+                                payment.amount = commMapEntry[PROD_COMM_INDEX]
+                                payment.type = "Commission (Irregular)"
+                                payment.remarks = PRODUCT_COMM_REMARK
+                                payments.push(payment)
+                                break
+                            case SERV_COMM_INDEX:
+                                payment.type = "Commission (Irregular)"
+                                payment.amount = commMapEntry[SERV_COMM_INDEX]
+                                payment.remarks = SERVICES_COMM_REMARK
+                                payments.push(payment)
+                                break
+                            case SERV_REV_INDEX:
+                                // do nothing
+                                break
+                            default:
+                                throw new Error("Commission Map has more entries than expected.")
+                                break
+                        }
+                    }
                 }
             }
         }
@@ -510,58 +662,81 @@ function main() {
                 // currentIDRow = currentTotalForRow;
                 currentTotalForRow = i
                 // const staffID = getStaffID(wsaa, prevTotalForRow);
-                const commComponents: [number, number, number, number] = [0, 0, 0, 0]
+                const commComponents: [
+                    TTips,
+                    TProductCommission,
+                    TServiceCommission,
+                    TServiceRevenue,
+                    TRevenueShare
+                ] = [0, 0, 0, 0, 0]
+                const poolID = CRevenuePoolCollection.getPoolIDforStaffID(staffID!)
+                const revenuePool = CRevenuePoolCollection.getPool(poolID!)
                 /* find and process tips, product commission and services commission
                 go back 3 lines from the "Total for:" line - the tips and product commission
                 should be in that range .
                 Note tips and or product commission may not exist. */
                 console.log(`Payroll details for  ${staffID} ${staffName}`)
                 for (let j = 3; j >= 0; j--) {
-                    let payComponent: string = wsaa[i - j][0]
-                    if (payComponent !== undefined) {
-                        let value = 0
+                    let payComponentLabel: string = wsaa[i - j][0]
+                    if (payComponentLabel !== undefined) {
+                        let payComponentValue = 0
                         if (
-                            payComponent === TIPS_FOR ||
-                            payComponent === COMM_FOR ||
-                            payComponent.slice(0, TOTAL_FOR.length) === TOTAL_FOR
+                            payComponentLabel === TIPS_FOR ||
+                            payComponentLabel === COMM_FOR ||
+                            payComponentLabel.slice(0, TOTAL_FOR.length) === TOTAL_FOR
                         ) {
                             // work out what the value is for the Tip or Commission
                             // by looking at the last cell in the row
                             const maxRowIndex = wsaa[i - j].length - 1
                             if (wsaa[i - j][maxRowIndex] !== undefined) {
-                                value = wsaa[i - j][maxRowIndex]
-                                if (payComponent === TIPS_FOR) {
-                                    payComponent = "Tips:"
-                                    commComponents[TIPS_INDEX] = value
-                                    console.log(`${payComponent} ${value}`)
+                                payComponentValue = wsaa[i - j][maxRowIndex]
+                                if (payComponentLabel === TIPS_FOR) {
+                                    payComponentLabel = "Tips:"
+                                    commComponents[TIPS_INDEX] = payComponentValue
+                                    const poolID = CRevenuePoolCollection.getPoolIDforStaffID(staffID!)
+                                    const revenuePool = CRevenuePoolCollection.getPool(poolID!)
+                                    console.log(`${payComponentLabel} ${payComponentValue}`)
                                 }
-                                if (payComponent === COMM_FOR) {
-                                    payComponent = "Product Commission:"
-                                    commComponents[PROD_COMM_INDEX] = value
-                                    console.log(`${payComponent} ${value}`)
+                                if (payComponentLabel === COMM_FOR) {
+                                    payComponentLabel = "Product Commission:"
+                                    commComponents[PROD_COMM_INDEX] = payComponentValue
+                                    // add product commission to revenue pool
+                                    if (revenuePool instanceof CRevenuePool) {
+                                        revenuePool.addRevenue(payComponentValue)
+                                    }
+                                    console.log(`${payComponentLabel} ${payComponentValue}`)
                                 }
                             } else {
-                                value = 0
+                                payComponentValue = 0
                             }
-                            if (payComponent.slice(0, TOTAL_FOR.length) === TOTAL_FOR) {
-                                payComponent = "Services Revenue:"
-                                value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
-                                commComponents[SERV_REV_INDEX] = value
+                            if (payComponentLabel.slice(0, TOTAL_FOR.length) === TOTAL_FOR) {
+                                payComponentLabel = "Services Revenue:"
+                                payComponentValue = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
+                                commComponents[SERV_REV_INDEX] = payComponentValue
                                 // set services comm to zero for now. Will fill-in later
-                                payComponent = "Services Commission"
-                                const serviceRevenue = value
-                                value = calcServiceCommission(
+                                payComponentLabel = "Services Commission"
+                                const serviceRevenue = payComponentValue
+                                payComponentValue = calcServiceCommission(
                                     staffID!,
                                     serviceRevenue // The  value is the the total services revenue calculated above
                                 )
-                                commComponents[SERV_COMM_INDEX] = value
+                                commComponents[SERV_COMM_INDEX] = payComponentValue
+                                // add service commission to revenue pool
+                                if (revenuePool instanceof CRevenuePool) {
+                                    revenuePool.addRevenue(payComponentValue)
+                                }
                             }
-                            value = 0
+                            payComponentValue = 0
                         }
 
                         if (j === 0) {
                             if (!!staffID) {
                                 commMap.set(staffID, commComponents)
+                                if (revenuePool instanceof CRevenuePool) {
+                                    commComponents[REVENUE_SHARE_INDEX] = revenuePool.revenueShare
+                                    console.log(`Pooled Revenue: ${revenuePool.pooledRevenue}`)
+                                    console.log(`Share of Pooled Revenue: ${revenuePool.revenueShare}`)
+                                }
                             } else {
                                 throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
                             }
