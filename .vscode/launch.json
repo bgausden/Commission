@@ -7,10 +7,10 @@
         {
             "type": "node",
             "request": "launch",
-            "preLaunchTask": "build",
+            // "preLaunchTask": "build",
             "name": "Launch Program",
-            "program": "${workspaceFolder}/dist/index.js"
-            // "outFiles": ["${workspaceFolder}/**/*.js"]
+            "program": "${workspaceFolder}/dist/index.js",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
         },
         {
             "name": "Current TS File",

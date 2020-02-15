@@ -632,7 +632,7 @@ function main() {
     for (let i = 0; i < maxRows; i++) {
         const element = wsaa[i][0]
         if (element !== undefined) {
-            // Check if this line contans a staffID
+            // Check if this line contans a staffID only if we aren't currently proccessing for a known staffmember
             if (staffID === undefined) {
                 const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, i)
                 if (staffInfo.found) {
