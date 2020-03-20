@@ -361,8 +361,14 @@
         "hurdle3Level": 61000,
         "hurdle3Rate": 0.12
     },
-    "049": {
+    "048": {
         "staffName": "Leticia",
-        "mbCommRate": 0
+        "mbCommRate": 0,
+        "baseRate": 0
+    },
+    "049": {
+        "staffName": "Andrea",
+        "mbCommRate": 0,
+        "baseRate": 0
     }
 }
