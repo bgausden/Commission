@@ -1,4 +1,4 @@
-
+dist/
 node_modules/
 ~$Sample Payroll Report with ID.xlsx
 Sample Payroll Report with ID.xls
@@ -14,7 +14,7 @@ dist/staffHurdle.json
 *.xls
 *.xlsx
 
-config/Config.d.ts
+dist/staffHurdle copy.json
 dist/IServiceComm.js
 dist/IServiceComm.js.map
 dist/IStaffCommConfig.js
