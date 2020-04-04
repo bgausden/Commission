@@ -1,29 +1,7 @@
-dist/
+dist/*
 node_modules/
-~$Sample Payroll Report with ID.xlsx
-Sample Payroll Report with ID.xls
-~$Talenox Payments.xlsx
-Talenox Payments.xlsx
-Payroll Report.xlsx
-Talenox Payments.xlsx
-index.js
-index.js.map
 .DS_Store
 dist/staffHurdle.json
-~$Payroll Report.xlsx
 *.xls
 *.xlsx
-
-dist/staffHurdle copy.json
-dist/IServiceComm.js
-dist/IServiceComm.js.map
-dist/IStaffCommConfig.js
-dist/IStaffCommConfig.js.map
-dist/IStaffInfo.js
-dist/IStaffInfo.js.map
-dist/IStaffNames.js
-dist/IStaffNames.js.map
-dist/ITalenoxPayment.js
-dist/ITalenoxPayment.js.map
-dist/types.js
-dist/types.js.map
+data/*
