@@ -222,7 +222,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
     let totalServiceComm: number
     const sh = staffHurdle as { [key: string]: any } // get an iterable version of the staffHurdle import
     const shm = new Map<TStaffID, any>()
-    Object.keys(sh).forEach(k => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
+    Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
     if (shm.has(staffID)) {
@@ -406,10 +406,7 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
         } else {
             paymentProto = {
                 ...emptyTalenoxPayment,
-                /* put a single-quote in front of the staffID to ensure when
-                pasted into Google Sheets, it's not interpreted as a number
-                and the leading "0" is stripped. */
-                staffID: `'${staffID}`,
+                staffID: `${staffID}`,
                 firstName: staffMapEntry.firstName,
                 lastName: staffMapEntry.lastName,
             }

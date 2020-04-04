@@ -1,8 +1,6 @@
-dist/*
+dist/**
 node_modules/
 .DS_Store
-dist/staffHurdle.json
-~$Payroll Report.xlsx
 *.xls
 *.xlsx
-data/*
+data/**
