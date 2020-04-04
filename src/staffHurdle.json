@@ -370,5 +370,10 @@
         "staffName": "Andrea",
         "mbCommRate": 0,
         "baseRate": 0
+    },
+    "050": {
+        "staffName": "Nicky",
+        "mbCommRate": 0,
+        "baseRate": 0
     }
 }
