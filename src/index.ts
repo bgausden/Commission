@@ -478,6 +478,8 @@ function main() {
         const element = wsaa[i][0]
         if (element !== undefined) {
             // Check if this line contans a staffID
+            // We null out staffID when we've finished processing the previous staffmembers commission. 
+            // If staffID has a value then were still processing commission for one of the team
             if (staffID === undefined) {
                 const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, i)
                 if (staffInfo.found) {
