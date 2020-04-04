@@ -222,7 +222,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
     let totalServiceComm: number
     const sh = staffHurdle as { [key: string]: any } // get an iterable version of the staffHurdle import
     const shm = new Map<TStaffID, any>()
-    Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
+    Object.keys(sh).forEach(k => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
     if (shm.has(staffID)) {
@@ -478,7 +478,7 @@ function main() {
         const element = wsaa[i][0]
         if (element !== undefined) {
             // Check if this line contans a staffID
-            // We null out staffID when we've finished processing the previous staffmembers commission. 
+            // We null out staffID when we've finished processing the previous staffmembers commission.
             // If staffID has a value then were still processing commission for one of the team
             if (staffID === undefined) {
                 const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, i)

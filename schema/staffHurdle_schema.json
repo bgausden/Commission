@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "id": "http://lissome.hk/schema/staff_hurdle#",
+    "title": "Staff Hurdles",
+    "description": "Staff hurdles and associated rates",
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "three digit id as set in Mindbody and Talenox",
+        "type": ["string"],
+        "pattern": "^[0-9][0-9][0-9]$",
+        "minimum": 1,
+        "maximum": 1
+      },
+      /*Unclear how to  */
+}
