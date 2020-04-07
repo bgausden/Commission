@@ -1,4 +1,4 @@
-/* 
+/*
 pass excel file name as parameter
 read the excel file
 find employee lines by locating line beginning with "Stylists"
