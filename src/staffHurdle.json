@@ -183,7 +183,7 @@
     },
     "016": {
         "staffName": "Marriane",
-        "mbCommRate": 1.0,
+        "mbCommRate": 0,
         "baseRate": 0.05,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,

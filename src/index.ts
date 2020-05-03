@@ -222,6 +222,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
     let totalServiceComm: number
     const sh = staffHurdle as { [key: string]: any } // get an iterable version of the staffHurdle import
     const shm = new Map<TStaffID, any>()
+    // eslint-disable-next-line arrow-parens
     Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
