@@ -1,10 +1,9 @@
-import { TStaffID, TTalenoxPaymentType } from "./types";
+import { TStaffID, TTalenoxPaymentType } from "./types"
 
 export interface ITalenoxPayment {
-    staffID: TStaffID;
-    firstName: string;
-    lastName: string;
-    type: TTalenoxPaymentType | undefined;
-    amount: number;
-    remarks: string;
+    staffID: TStaffID
+    staffName: string
+    type: TTalenoxPaymentType | undefined
+    amount: number
+    remarks: string
 }
