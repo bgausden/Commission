@@ -44,7 +44,8 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "contractor": 0
     },
     "020": {
         "staffName": "Sam",
@@ -152,7 +153,8 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "contractor": true
     },
     "026": {
         "staffName": "Tony",
@@ -170,7 +172,8 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "contractor": true
     },
     "009": {
         "staffName": "Davy",
@@ -321,7 +324,8 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "contractor": true
     },
     "043": {
         "staffName": "Hema",
@@ -364,12 +368,14 @@
     "048": {
         "staffName": "Leticia",
         "mbCommRate": 0,
-        "baseRate": 0
+        "baseRate": 0,
+        "contractor": true
     },
     "049": {
         "staffName": "Andrea",
         "mbCommRate": 0,
-        "baseRate": 0
+        "baseRate": 0,
+        "contractor": true
     },
     "050": {
         "staffName": "Nicky",

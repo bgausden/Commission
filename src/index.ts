@@ -51,6 +51,7 @@ const HURDLE_2_LEVEL = "hurdle2Level"
 const HURDLE_2_RATE = "hurdle2Rate"
 const HURDLE_3_LEVEL = "hurdle3Level"
 const HURDLE_3_RATE = "hurdle3Rate"
+const CONTRACTOR = "contractor"
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
@@ -212,6 +213,11 @@ function sumRevenue(
     return serviceRevenue
 }
 
+function isContractor(staffID: string): boolean {
+    const sh = staffHurdle as { [key: string]: any }
+    return sh[staffID].hasOwnProperty(CONTRACTOR) ? true : false
+}
+
 function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): number {
     /* iterate through commissionComponents
     for each entry, locate corresponding hurdles
@@ -340,7 +346,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
 
         const staffName = staffMap.get(staffID)
         if (staffName !== undefined) {
-            tempServComm.staffName = staffName.firstName
+            tempServComm.staffName = `${staffName.firstName} ${staffName.lastName}`
         }
 
         tempServComm.serviceRevenue = serviceRev
@@ -386,8 +392,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
 function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
     const emptyTalenoxPayment: ITalenoxPayment = {
         staffID: "",
-        firstName: "",
-        lastName: "",
+        staffName: "",
         type: undefined,
         amount: 0,
         remarks: "",
@@ -396,55 +401,56 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
     const payments: ITalenoxPayment[] = []
     let paymentProto: ITalenoxPayment
     commMap.forEach((commMapEntry, staffID) => {
-        // const payment: ITalenoxPayment = { ...emptyTalenoxPayment };
-        // const staffID = staffID;
-        const staffMapEntry = staffMap.get(staffID)
-        let payment: ITalenoxPayment
-        /* const firstName = !!staffMapEntry ? staffMapEntry.firstName : "";
+        if (!isContractor(staffID)) {
+            // const payment: ITalenoxPayment = { ...emptyTalenoxPayment };
+            // const staffID = staffID;
+            const staffMapEntry = staffMap.get(staffID)
+            let payment: ITalenoxPayment
+            /* const firstName = !!staffMapEntry ? staffMapEntry.firstName : "";
         const lastName = !!staffMapEntry ? staffMapEntry.lastName : ""; */
-        if (staffMapEntry === undefined) {
-            throw new Error(`Empty staffMap returned for staffID ${staffID}`)
-        } else {
-            paymentProto = {
-                ...emptyTalenoxPayment,
-                staffID: `${staffID}`,
-                firstName: staffMapEntry.firstName,
-                lastName: staffMapEntry.lastName,
+            if (staffMapEntry === undefined) {
+                throw new Error(`Empty staffMap returned for staffID ${staffID}`)
+            } else {
+                paymentProto = {
+                    ...emptyTalenoxPayment,
+                    staffID: `${Number(staffID)}`,
+                    staffName: `${staffMapEntry.lastName} ${staffMapEntry.firstName}`,
+                }
             }
-        }
-        const serviceCommMapEntry = commMap.get(staffID)
-        if (serviceCommMapEntry === undefined) {
-            throw new Error(`Empty serviceCommMap entry returned for staffID ${staffID}. (Should never happen)`)
-        } else {
-            for (let k = 0; k < commMapEntry.length; k++) {
-                /* Create a new payment object based on paymentProto which
+            const serviceCommMapEntry = commMap.get(staffID)
+            if (serviceCommMapEntry === undefined) {
+                throw new Error(`Empty serviceCommMap entry returned for staffID ${staffID}. (Should never happen)`)
+            } else {
+                for (let k = 0; k < commMapEntry.length; k++) {
+                    /* Create a new payment object based on paymentProto which
                 contains staffID, firstName, etc. */
-                payment = { ...paymentProto }
-                switch (k) {
-                    case TIPS_INDEX:
-                        payment.amount = commMapEntry[TIPS_INDEX]
-                        payment.type = "Tips"
-                        payment.remarks = TIPS_REMARK
-                        payments.push(payment)
-                        break
-                    case PROD_COMM_INDEX:
-                        payment.amount = commMapEntry[PROD_COMM_INDEX]
-                        payment.type = "Commission (Irregular)"
-                        payment.remarks = PRODUCT_COMM_REMARK
-                        payments.push(payment)
-                        break
-                    case SERV_COMM_INDEX:
-                        payment.type = "Commission (Irregular)"
-                        payment.amount = commMapEntry[SERV_COMM_INDEX]
-                        payment.remarks = SERVICES_COMM_REMARK
-                        payments.push(payment)
-                        break
-                    case SERV_REV_INDEX:
-                        // do nothing
-                        break
-                    default:
-                        throw new Error("Commission Map has more entries than expected.")
-                        break
+                    payment = { ...paymentProto }
+                    switch (k) {
+                        case TIPS_INDEX:
+                            payment.amount = commMapEntry[TIPS_INDEX]
+                            payment.type = "Tips"
+                            payment.remarks = TIPS_REMARK
+                            payments.push(payment)
+                            break
+                        case PROD_COMM_INDEX:
+                            payment.amount = commMapEntry[PROD_COMM_INDEX]
+                            payment.type = "Commission (Irregular)"
+                            payment.remarks = PRODUCT_COMM_REMARK
+                            payments.push(payment)
+                            break
+                        case SERV_COMM_INDEX:
+                            payment.type = "Commission (Irregular)"
+                            payment.amount = commMapEntry[SERV_COMM_INDEX]
+                            payment.remarks = SERVICES_COMM_REMARK
+                            payments.push(payment)
+                            break
+                        case SERV_REV_INDEX:
+                            // do nothing
+                            break
+                        default:
+                            throw new Error("Commission Map has more entries than expected.")
+                            break
+                    }
                 }
             }
         }
@@ -487,7 +493,7 @@ function main() {
                     // found staffID so keep a note of which row it's on
                     currentStaffIDRow = i
                     staffID = staffInfo.staffID
-                    staffName = `${staffInfo.firstName} ${staffInfo.lastName}`
+                    staffName = `${staffInfo.lastName} ${staffInfo.firstName}`
                     staffNames = {
                         firstName: !!staffInfo.firstName ? staffInfo.firstName : "",
                         lastName: !!staffInfo.lastName ? staffInfo.lastName : "",
