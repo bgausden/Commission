@@ -1,3 +1,7 @@
+/* eslint-disable arrow-parens */
+/* eslint-disable @typescript-eslint/member-delimiter-style */
+/* eslint-disable @typescript-eslint/interface-name-prefix */
+/* eslint-disable camelcase */
 /* eslint-disable capitalized-comments */
 /* eslint-disable no-console */
 /* eslint-disable id-blacklist */
@@ -8,6 +12,9 @@
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
+import fetch from "node-fetch"
+import { Headers, RequestInfo, RequestInit } from "node-fetch"
+import { URLSearchParams } from "url"
 import staffHurdle from "./staffHurdle.json"
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { IStaffInfo } from "./IStaffInfo"
@@ -23,6 +30,10 @@ import {
     TServiceRevenue,
     TCommMap,
 } from "./types.js"
+import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
+
+const TALENOX_API_TOKEN = "0de2d0e87053fbffec39ba5377feee3010f73b8e"
+const TALENOX_BASE_URL = `www.talenox.com/api/v1/${TALENOX_API_TOKEN}`
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -455,12 +466,54 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
             }
         }
     })
-    const PAYMENTS_WB_NAME: string = config.PAYMENTS_WB_NAME
-    const PAYMENTS_WS_NAME: string = config.PAYMENTS_WS_NAME
+    writePaymentsWorkBook(payments)
+    uploadPayments(payments)
+}
+
+function writePaymentsWorkBook(payments: ITalenoxPayment[]) {
     const paymentsWB = XLSX.utils.book_new()
-    const paymentsWS = XLSX.utils.json_to_sheet(payments, { skipHeader: true })
-    XLSX.utils.book_append_sheet(paymentsWB, paymentsWS, PAYMENTS_WS_NAME)
-    XLSX.writeFile(paymentsWB, PAYMENTS_WB_NAME)
+    XLSX.utils.book_append_sheet(
+        paymentsWB,
+        XLSX.utils.json_to_sheet(payments, { skipHeader: true }),
+        config.PAYMENTS_WS_NAME
+    )
+    XLSX.writeFile(paymentsWB, config.PAYMENTS_WB_NAME)
+}
+
+function uploadPayments(payments: ITalenoxPayment[]) {
+    payments.forEach(async (mbPayment) => {
+        const url = new URL(`https://${TALENOX_BASE_URL}/payroll/adhoc_payment`)
+
+        const myHeaders = new Headers()
+        myHeaders.append("Content-Type", "application/x-www-form-urlencoded")
+
+        const today = new Date()
+        const payment: ITalenoxAdHocPayment = {
+            year: today.getFullYear(),
+            month: today.getMonth().toLocaleString(),
+            period: "Whole Month",
+            pay_items: [
+                // eslint-disable-next-line camelcase
+                {
+                    employee_id: mbPayment.staffID,
+                    item_type: mbPayment.type!,
+                    remarks: mbPayment.remarks,
+                    amount: mbPayment.amount,
+                },
+            ],
+        }
+        const urlencoded = new URLSearchParams(JSON.stringify(payment))
+
+        const init: RequestInit = {
+            headers: myHeaders,
+            body: urlencoded,
+            redirect: "follow",
+            method: "POST",
+        }
+        /* fetch(url: RequestInfo, init?: RequestInit | undefined): Promise<Response> */
+
+        const response = await fetch(url, init)
+    })
 }
 
 function main() {
