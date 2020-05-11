@@ -1,20 +1,10 @@
-/* eslint-disable arrow-parens */
-/* eslint-disable @typescript-eslint/member-delimiter-style */
-/* eslint-disable @typescript-eslint/interface-name-prefix */
-/* eslint-disable camelcase */
-/* eslint-disable capitalized-comments */
-/* eslint-disable no-console */
-/* eslint-disable id-blacklist */
-/* eslint-disable @typescript-eslint/semi */
-
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import fetch from "node-fetch"
-import { Headers, RequestInfo, RequestInit } from "node-fetch"
-import { URLSearchParams } from "url"
+import { Headers, RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { IStaffInfo } from "./IStaffInfo"
@@ -30,10 +20,12 @@ import {
     TServiceRevenue,
     TCommMap,
 } from "./types.js"
+import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
-
-const TALENOX_API_TOKEN = "0de2d0e87053fbffec39ba5377feee3010f73b8e"
-const TALENOX_BASE_URL = `www.talenox.com/api/v1/${TALENOX_API_TOKEN}`
+import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
+import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
+import { ITalenoxPayroll, ITalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
+import { ITalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -72,7 +64,7 @@ const PRODUCT_COMM_REMARK = "Product commission"
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
 const commMap = new Map<TStaffName, TCommComponents>()
-const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
+// const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
 const serviceCommMap: TServiceCommMap = new Map<TStaffName, IServiceComm>()
 const emptyServComm: IServiceComm = {
     staffName: "",
@@ -101,9 +93,9 @@ const emptyServComm: IServiceComm = {
 
 // let maxRows = 0
 
-function readExcelFile(fileName: string): XLSX.WorkSheet {
+function readExcelFile(fileName?: string): XLSX.WorkSheet {
     const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
-    const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
+    const WB = XLSX.readFile(fileName ? fileName : FILE_PATH, READ_OPTIONS)
     const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]]
     return WS
 }
@@ -184,6 +176,8 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
                 lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
                 staffID: staffInfo[staffIDIndex].trim(),
             }
+        
+        
         } else {
             return { found: false }
         }
@@ -229,7 +223,7 @@ function isContractor(staffID: string): boolean {
     return sh[staffID].hasOwnProperty(CONTRACTOR) ? true : false
 }
 
-function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): number {
+function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
     /* iterate through commissionComponents
     for each entry, locate corresponding hurdles
     calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next
@@ -356,10 +350,8 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
         // commComponents[serviceCommissionIndex] = servicesComm;
 
         const staffName = staffMap.get(staffID)
-        if (staffName !== undefined) {
-            tempServComm.staffName = `${staffName.firstName} ${staffName.lastName}`
-        }
 
+        tempServComm.staffName = `${staffName?.lastName} ${staffName?.firstName}`
         tempServComm.serviceRevenue = serviceRev
 
         tempServComm.base.baseCommRevenue = baseRevenue
@@ -399,8 +391,7 @@ function calcServiceCommission(staffID: TStaffID, serviceRev: TServiceRevenue): 
     return totalServiceComm
 }
 
-// eslint-disable-next-line no-shadow
-function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
+function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxPayment[] {
     const emptyTalenoxPayment: ITalenoxPayment = {
         staffID: "",
         staffName: "",
@@ -411,7 +402,7 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
 
     const payments: ITalenoxPayment[] = []
     let paymentProto: ITalenoxPayment
-    commMap.forEach((commMapEntry, staffID) => {
+    _commMap.forEach((commMapEntry, staffID) => {
         if (!isContractor(staffID)) {
             // const payment: ITalenoxPayment = { ...emptyTalenoxPayment };
             // const staffID = staffID;
@@ -424,11 +415,11 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
             } else {
                 paymentProto = {
                     ...emptyTalenoxPayment,
-                    staffID: `${Number(staffID)}`,
+                    staffID,
                     staffName: `${staffMapEntry.lastName} ${staffMapEntry.firstName}`,
                 }
             }
-            const serviceCommMapEntry = commMap.get(staffID)
+            const serviceCommMapEntry = _commMap.get(staffID)
             if (serviceCommMapEntry === undefined) {
                 throw new Error(`Empty serviceCommMap entry returned for staffID ${staffID}. (Should never happen)`)
             } else {
@@ -466,8 +457,7 @@ function createPaymentSpreadsheet(commMap: TCommMap, staffMap: TStaffMap) {
             }
         }
     })
-    writePaymentsWorkBook(payments)
-    uploadPayments(payments)
+    return payments
 }
 
 function writePaymentsWorkBook(payments: ITalenoxPayment[]) {
@@ -480,44 +470,144 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]) {
     XLSX.writeFile(paymentsWB, config.PAYMENTS_WB_NAME)
 }
 
-function uploadPayments(payments: ITalenoxPayment[]) {
-    payments.forEach(async (mbPayment) => {
-        const url = new URL(`https://${TALENOX_BASE_URL}/payroll/adhoc_payment`)
+async function getTalenoxEmployees(): Promise<TStaffMap> {
+    const url = new URL(`https://${TALENOX_BASE_URL}/employees`)
+    const myHeaders = new Headers()
+    myHeaders.append("Content-Type", "application/json; charset=utf-8")
+    const init: RequestInit = {
+        headers: myHeaders,
+        redirect: "follow",
+        method: "GET",
+    }
 
-        const myHeaders = new Headers()
-        myHeaders.append("Content-Type", "application/x-www-form-urlencoded")
+    const response = await fetch(url, init)
+    if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`)
+    }
 
-        const today = new Date()
-        const payment: ITalenoxAdHocPayment = {
-            year: today.getFullYear(),
-            month: today.getMonth().toLocaleString(),
-            period: "Whole Month",
-            pay_items: [
-                // eslint-disable-next-line camelcase
-                {
-                    employee_id: mbPayment.staffID,
-                    item_type: mbPayment.type!,
-                    remarks: mbPayment.remarks,
-                    amount: mbPayment.amount,
-                },
-            ],
-        }
-        const urlencoded = new URLSearchParams(JSON.stringify(payment))
-
-        const init: RequestInit = {
-            headers: myHeaders,
-            body: urlencoded,
-            redirect: "follow",
-            method: "POST",
-        }
-        /* fetch(url: RequestInfo, init?: RequestInit | undefined): Promise<Response> */
-
-        const response = await fetch(url, init)
+    const result = JSON.parse(await response.text()) as ITalenoxStaffInfo[]
+    /* Result has form
+        {
+            "payment_id":790462,
+            "month":"May",
+            "year":"2020",
+            "period":"Whole Month",
+            "pay_group":null,
+            "message":"Successfully updated payment."
+        } */
+    const staffMap = new Map<TStaffID, IStaffNames>()
+    result.forEach((staffInfo) => {
+        staffMap.set(staffInfo.employee_id, { firstName: staffInfo.first_name, lastName: staffInfo.last_name })
     })
+    return staffMap
 }
 
-function main() {
-    const WS = readExcelFile(config.PAYMENTS_WB_NAME)
+async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
+    const url = new URL(`https://${TALENOX_BASE_URL}/payroll/payroll_payment`)
+
+    const myHeaders = new Headers()
+    myHeaders.append("Content-Type", "application/json; charset=utf-8")
+
+    const employee_ids: TStaffID[] = []
+    staffMap.forEach((staffInfo, staffID) => {
+        employee_ids.push(staffID)
+    })
+
+    const payment: ITalenoxPayrollPayment = {
+        year: config.PAYROLL_YEAR,
+        month: config.PAYROLL_MONTH,
+        period: TALENOX_WHOLE_MONTH,
+        with_pay_items: true,
+    }
+
+    const body = JSON.stringify({ employee_ids, payment })
+
+    const init: RequestInit = {
+        headers: myHeaders,
+        body,
+        redirect: "follow",
+        method: "POST",
+    }
+    try {
+        const response = await fetch(url, init)
+        if (!response.ok) {
+            throw new Error(`${response.status}: ${response.statusText}`)
+        }
+
+        const result = JSON.parse(await response.text())
+        /* Result has form
+       {
+        "payment_id": 5,
+        "month": "September",
+        "year": "2018",
+        "period": "Whole Month",
+        "pay_group": null,
+        "message": "Successfully updated payment."
+        } 
+        */
+        return [response.ok, result as ITalenoxPayrollPaymentResult]
+    } catch (error) {
+        return [false, error]
+    }
+}
+
+async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolean, any]> {
+    const url = new URL(`https://${TALENOX_BASE_URL}/payroll/adhoc_payment`)
+
+    const myHeaders = new Headers()
+    myHeaders.append("Content-Type", "application/json; charset=utf-8")
+
+    const payment: ITalenoxAdHocPayment = {
+        // id: 790479,
+        year: config.PAYROLL_YEAR,
+        month: config.PAYROLL_MONTH,
+        period: TALENOX_WHOLE_MONTH,
+        //  pay_group: null,
+    }
+
+    const pay_items: ITalenoxAdhocPayItems[] = []
+    payments.forEach((mbPayment) => {
+        pay_items.push({
+            employee_id: mbPayment.staffID,
+            item_type: mbPayment.type!,
+            remarks: mbPayment.remarks,
+            amount: mbPayment.amount,
+        })
+    })
+
+    const body = JSON.stringify({ payment, pay_items })
+
+    const init: RequestInit = {
+        headers: myHeaders,
+        body,
+        redirect: "follow",
+        method: "POST",
+    }
+    try {
+        const response = await fetch(url, init)
+        if (!response.ok) {
+            throw new Error(`${response.status}: ${response.statusText}`)
+        }
+
+        const result = JSON.parse(await response.text())
+        /* Result has form
+        {
+            "payment_id":790462,
+            "month":"May",
+            "year":"2020",
+            "period":"Whole Month",
+            "pay_group":null,
+            "message":"Successfully updated payment."
+        } */
+        return [response.ok, result]
+    } catch (error) {
+        return [false, error]
+    }
+}
+
+async function main() {
+    const staffMap = await getTalenoxEmployees()
+    const WS = readExcelFile(config.PAYROLL_WB_NAME)
     // Using option {header:1} returns an array of arrays
     // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off
     // wsaa is our worksheet presented as an array of arrays (row major)
@@ -528,7 +618,6 @@ function main() {
     const maxRows = wsaa.length
     let staffID: TStaffID | undefined
     let staffName: TStaffName | undefined
-    let staffNames
     const revCol = revenueCol(wsaa)
     let currentStaffIDRow = -1
     let currentTotalForRow = 0
@@ -545,13 +634,17 @@ function main() {
                 if (staffInfo.found) {
                     // found staffID so keep a note of which row it's on
                     currentStaffIDRow = i
-                    staffID = staffInfo.staffID
-                    staffName = `${staffInfo.lastName} ${staffInfo.firstName}`
+                    // TODO from this point on use the names in the staffMap populated by getTalenoxEmployees()
+                    staffID = staffInfo.staffID!
+                    staffName = `${staffMap.get(staffID)!.lastName} ${staffMap.get(staffID)!.firstName}`
+                    /*
+                    No longer needed as we can use getTalenoxEmployees()
                     staffNames = {
                         firstName: !!staffInfo.firstName ? staffInfo.firstName : "",
                         lastName: !!staffInfo.lastName ? staffInfo.lastName : "",
                     }
                     staffMap.set(staffID!, staffNames)
+                    */
                 } else {
                     /* throw new Error(
                         `Fatal: Staff Member in MB Payroll Report has no StaffID. Fix and re-run Payroll Report`,
@@ -582,7 +675,7 @@ function main() {
                         if (
                             payComponent === TIPS_FOR ||
                             payComponent === COMM_FOR ||
-                            payComponent.slice(0, TOTAL_FOR.length) === TOTAL_FOR
+                            payComponent.startsWith(TOTAL_FOR)
                         ) {
                             // work out what the value is for the Tip or Commission
                             // by looking at the last cell in the row
@@ -602,7 +695,7 @@ function main() {
                             } else {
                                 value = 0
                             }
-                            if (payComponent.slice(0, TOTAL_FOR.length) === TOTAL_FOR) {
+                            if (payComponent.startsWith(TOTAL_FOR)) {
                                 payComponent = "Services Revenue:"
                                 value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
                                 commComponents[SERV_REV_INDEX] = value
@@ -611,6 +704,7 @@ function main() {
                                 const serviceRevenue = value
                                 value = calcServiceCommission(
                                     staffID!,
+                                    staffMap,
                                     serviceRevenue // The  value is the the total services revenue calculated above
                                 )
                                 commComponents[SERV_COMM_INDEX] = value
@@ -619,7 +713,7 @@ function main() {
                         }
 
                         if (j === 0) {
-                            if (!!staffID) {
+                            if (staffID) {
                                 commMap.set(staffID, commComponents)
                             } else {
                                 throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
@@ -629,7 +723,6 @@ function main() {
                     }
                 }
                 staffID = undefined
-                staffNames = undefined
             }
         }
     }
@@ -643,7 +736,14 @@ and populate the commMap service commission map */
 This spreadsheet will be copied/pasted into Talenox and together with their salary payments will
 form the payroll for the month */
 
-    createPaymentSpreadsheet(commMap, staffMap)
+    const payments = createAdHocPayments(commMap, staffMap)
+    writePaymentsWorkBook(payments)
+    const createPayrollResult = await createPayroll(staffMap)
+    console.log(`${createPayrollResult[0] ? "OK" : "Failed"}: ${createPayrollResult[1].message}`)
+    const uploadAdHocResult = await uploadAdHocPayments(payments)
+    console.log(`${uploadAdHocResult[0] ? "OK" : "Failed:"}: ${uploadAdHocResult[1].message}`)
 }
 
-main()
+main().then(() => {
+    "Waiting on Talenox updates."
+})

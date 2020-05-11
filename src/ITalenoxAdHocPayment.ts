@@ -34,17 +34,9 @@ Remark of the payment Example: September+allowance.
 String
 */
 export interface ITalenoxAdHocPayment {
-    id?: number
-    year: number
+    id?: number | null
+    year: string
     month: string
     period: string // One of Whole Month, 1st Half of Month, 2nd Half of Month
-    pay_group?: string // "Role: contractor" or "Cost Centre: FTE"
-    pay_items: [
-        {
-            employee_id: string
-            item_type: TTalenoxPaymentType
-            amount: number
-            remarks?: string
-        }
-    ] // Used at Glow to differentiate service commission from product commission
+    pay_group?: string | null // "Role: contractor" or "Cost Centre: FTE"
 }

@@ -1,5 +1,7 @@
 {
     "PAYROLL_WB_NAME": "data/Payroll Report 4-1-2020 - 4-30-2020.xlsx",
+    "PAYROLL_MONTH": "May",
+    "PAYROLL_YEAR": "2020",
     "PAYMENTS_WB_NAME": "Talenox Payments.xlsx",
     "PAYMENTS_WS_NAME": "Payments"
 }
