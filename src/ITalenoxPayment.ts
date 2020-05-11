@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { TStaffID, TTalenoxPaymentType } from "./types"
 
 export interface ITalenoxPayment {

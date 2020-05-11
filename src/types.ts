@@ -1,5 +1,7 @@
+/* eslint-disable */
 import { IServiceComm } from "./IServiceComm"
 import { IStaffNames } from "./IStaffNames"
+import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
 
 export type TStaffName = string
 export type TTips = number
