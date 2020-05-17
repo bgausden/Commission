@@ -10,7 +10,8 @@
             // "preLaunchTask": "build",
             "name": "Launch Program",
             "program": "${workspaceFolder}/dist/index.js",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
         },
         {
             "name": "Current TS File",
