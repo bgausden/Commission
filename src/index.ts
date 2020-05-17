@@ -1,13 +1,15 @@
+/* eslint-disable @typescript-eslint/camelcase */
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
-
+// TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import fetch from "node-fetch"
+import { IStaffInfo } from "./IStaffInfo"
 import { Headers, RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
+import { IStaffHurdle, TStaffHurdle } from "./IStaffHurdle"
 import { ITalenoxPayment } from "./ITalenoxPayment"
-import { IStaffInfo } from "./IStaffInfo"
 import { IServiceComm } from "./IServiceComm"
 import { IStaffCommConfig } from "./IStaffCommConfig"
 import { IStaffNames } from "./IStaffNames"
@@ -100,7 +102,7 @@ function readExcelFile(fileName?: string): XLSX.WorkSheet {
     return WS
 }
 
-function checkRate(rate: any): boolean {
+function checkRate(rate: unknown): boolean {
     if (typeof rate === "number") {
         if (0 <= rate && rate <= 1) {
             return true
@@ -112,7 +114,7 @@ function checkRate(rate: any): boolean {
     }
 }
 
-function revenueCol(wsArray: any[][]): number {
+function revenueCol(wsArray: unknown[][]): number {
     const MAX_SEARCH_ROWS = Math.max(20, wsArray.length)
     for (let i = 0; i < MAX_SEARCH_ROWS; i++) {
         const rowLength = wsArray[i].length
@@ -141,7 +143,7 @@ function stripToNumeric(n: string | number): number {
     return x
 }
 
-function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
+function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo {
     /*     assume the staffID can be found in the STAFF_ID_COL column.
     staffID will begin with "ID#: " the will need to be stored  in the serviceCommMap and
     commComponents maps along with First and Last name.
@@ -156,7 +158,7 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
 
     const testString = wsArray[idRow][staffNameIndex]
     const regex = new RegExp("^.*,.*" + STAFF_ID_HASH)
-    if (regex.test(testString)) {
+    if (regex.test(testString as string)) {
         /* Split the name and ID string into an array ["Surname, Firstname", ID] */
         const staffInfo: string[] | undefined =
             testString !== undefined ? (testString as string).split(STAFF_ID_HASH) : undefined
@@ -176,8 +178,6 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
                 lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
                 staffID: staffInfo[staffIDIndex].trim(),
             }
-        
-        
         } else {
             return { found: false }
         }
@@ -187,7 +187,7 @@ function getStaffIDAndName(wsArray: any[][], idRow: number): IStaffInfo {
 }
 
 function sumRevenue(
-    wsArray: any[][],
+    wsArray: unknown[][],
     currentTotalRow: number,
     // tslint:disable-next-line: no-shadowed-variable
     currentStaffIDRow: number,
@@ -219,8 +219,8 @@ function sumRevenue(
 }
 
 function isContractor(staffID: string): boolean {
-    const sh = staffHurdle as { [key: string]: any }
-    return sh[staffID].hasOwnProperty(CONTRACTOR) ? true : false
+    const sh = staffHurdle as TStaffHurdle
+    return Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR) ? true : false
 }
 
 function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
@@ -231,7 +231,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
     [baseCommission, hurdle1Commission, hurdle2Commission]
     Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool*/
     let totalServiceComm: number
-    const sh = staffHurdle as { [key: string]: any } // get an iterable version of the staffHurdle import
+    const sh = staffHurdle as TStaffHurdle // get an iterable version of the staffHurdle import
     const shm = new Map<TStaffID, any>()
     // eslint-disable-next-line arrow-parens
     Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
@@ -251,7 +251,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
         const staffCommConfig: IStaffCommConfig = shm.get(staffID)
 
         let baseRevenue = 0
-        let baseRate: number = 0
+        let baseRate = 0
         let hurdle1Revenue = 0
         let hurdle1Level = 0
         let hurdle1Rate = 0
@@ -262,14 +262,15 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
         let hurdle3Level = 0
         let hurdle3Rate = 0
 
-        if (staffCommConfig.hasOwnProperty(BASE_RATE)) {
+        if (Object.prototype.hasOwnProperty.call(staffCommConfig, BASE_RATE)) {
+            // if (staffCommConfig.hasOwnProperty(BASE_RATE)) {
             baseRate = stripToNumeric(staffCommConfig.baseRate)
             if (!checkRate(baseRate)) {
                 throw new Error("Invalid baseRate")
             }
         }
 
-        if (staffCommConfig.hasOwnProperty(HURDLE_1_LEVEL)) {
+        if (Object.prototype.hasOwnProperty.call(staffCommConfig, HURDLE_1_LEVEL)) {
             hurdle1Level = stripToNumeric(staffCommConfig.hurdle1Level)
             hurdle1Rate = stripToNumeric(staffCommConfig.hurdle1Rate)
             if (!checkRate(hurdle1Rate)) {
@@ -278,7 +279,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
             }
         }
 
-        if (staffCommConfig.hasOwnProperty(HURDLE_2_LEVEL)) {
+        if (Object.prototype.hasOwnProperty.call(staffCommConfig, HURDLE_2_LEVEL)) {
             hurdle2Level = stripToNumeric(staffCommConfig.hurdle2Level)
             hurdle2Rate = stripToNumeric(staffCommConfig.hurdle2Rate)
             if (!checkRate(hurdle2Rate)) {
@@ -287,7 +288,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
             }
         }
 
-        if (staffCommConfig.hasOwnProperty(HURDLE_3_LEVEL)) {
+        if (Object.prototype.hasOwnProperty.call(staffCommConfig, HURDLE_3_LEVEL)) {
             hurdle3Level = stripToNumeric(staffCommConfig.hurdle3Level)
             hurdle3Rate = stripToNumeric(staffCommConfig.hurdle3Rate)
             if (!checkRate(hurdle3Rate)) {
@@ -395,7 +396,7 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
     const emptyTalenoxPayment: ITalenoxPayment = {
         staffID: "",
         staffName: "",
-        type: undefined,
+        type: "Others",
         amount: 0,
         remarks: "",
     }
@@ -460,7 +461,7 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
     return payments
 }
 
-function writePaymentsWorkBook(payments: ITalenoxPayment[]) {
+function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
     const paymentsWB = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(
         paymentsWB,
@@ -520,7 +521,7 @@ async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
         with_pay_items: true,
     }
 
-    const body = JSON.stringify({ employee_ids, payment })
+    const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll)
 
     const init: RequestInit = {
         headers: myHeaders,
@@ -565,11 +566,15 @@ async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolea
         //  pay_group: null,
     }
 
+    // eslint-disable-next-line @typescript-eslint/camelcase
     const pay_items: ITalenoxAdhocPayItems[] = []
     payments.forEach((mbPayment) => {
+        // eslint-disable-next-line @typescript-eslint/camelcase
         pay_items.push({
+            // eslint-disable-next-line @typescript-eslint/camelcase
             employee_id: mbPayment.staffID,
-            item_type: mbPayment.type!,
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            item_type: mbPayment.type,
             remarks: mbPayment.remarks,
             amount: mbPayment.amount,
         })
@@ -605,7 +610,7 @@ async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolea
     }
 }
 
-async function main() {
+async function main(): Promise<void> {
     const staffMap = await getTalenoxEmployees()
     const WS = readExcelFile(config.PAYROLL_WB_NAME)
     // Using option {header:1} returns an array of arrays
@@ -623,20 +628,32 @@ async function main() {
     let currentTotalForRow = 0
     // start building commission components working through the rows of the spreadsheet (array of arrays)
     // ignore the first row which contains the date range for the report
-    for (let i = 0; i < maxRows; i++) {
-        const element = wsaa[i][0]
+    for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
+        const element = wsaa[rowIndex][0]
         if (element !== undefined) {
             // Check if this line contans a staffID
             // We null out staffID when we've finished processing the previous staffmembers commission.
             // If staffID has a value then were still processing commission for one of the team
             if (staffID === undefined) {
-                const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, i)
+                const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, rowIndex)
                 if (staffInfo.found) {
                     // found staffID so keep a note of which row it's on
-                    currentStaffIDRow = i
-                    // TODO from this point on use the names in the staffMap populated by getTalenoxEmployees()
-                    staffID = staffInfo.staffID!
-                    staffName = `${staffMap.get(staffID)!.lastName} ${staffMap.get(staffID)!.firstName}`
+                    currentStaffIDRow = rowIndex
+                    // TODO from this point on use the names in  staffMap populated by getTalenoxEmployees()
+                    staffID = staffInfo.staffID
+                    if (staffID) {
+                        let staffMapInfo = staffMap.get(staffID)
+                        if (staffID && staffMapInfo) {
+                            staffName = `${staffMapInfo.lastName} ${staffMapInfo.firstName}`
+                        } else {
+                            throw new Error(
+                                `${staffID ? staffID : "null"}${staffInfo.firstName ? " " + staffInfo.firstName : ""}${
+                                    staffInfo.lastName ? " " + staffInfo.lastName : ""
+                                } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                            )
+                        }
+                    }
+
                     /*
                     No longer needed as we can use getTalenoxEmployees()
                     staffNames = {
@@ -645,22 +662,25 @@ async function main() {
                     }
                     staffMap.set(staffID!, staffNames)
                     */
-                } else {
-                    /* throw new Error(
-                        `Fatal: Staff Member in MB Payroll Report has no StaffID. Fix and re-run Payroll Report`,
-                    ); */
-                }
+                } /* else {
+                    throw new Error(
+                        `Fatal: Staff Member in MB Payroll Report line ${i} has no StaffID. Fix and re-run Payroll Report.`
+                    )
+                } */
             }
 
-            const testString: string = (element as string).slice(0, TOTAL_FOR.length)
-            if (testString === TOTAL_FOR) {
+            // const testString: string = (element as string).startsWith(TOTAL_FOR)
+
+            //  const testString: string = (element as string).slice(0, TOTAL_FOR.length)
+            // if (testString === TOTAL_FOR) {
+            if ((element as string).startsWith(TOTAL_FOR)) {
                 /*         if we've found a line beginning with "Total for " then we've got to the subtotals
         and total for a staff member */
 
                 // keep track of the last totals row (for the previous employee) because we'll need to search
                 // back to this row to locate all of the revenue numbers for the current staff member.
                 // currentIDRow = currentTotalForRow;
-                currentTotalForRow = i
+                currentTotalForRow = rowIndex
                 // const staffID = getStaffID(wsaa, prevTotalForRow);
                 const commComponents: [number, number, number, number] = [0, 0, 0, 0]
                 /* find and process tips, product commission and services commission
@@ -669,7 +689,7 @@ async function main() {
                 Note tips and or product commission may not exist. */
                 console.log(`Payroll details for  ${staffID} ${staffName}`)
                 for (let j = 3; j >= 0; j--) {
-                    let payComponent: string = wsaa[i - j][0]
+                    let payComponent: string = wsaa[rowIndex - j][0]
                     if (payComponent !== undefined) {
                         let value = 0
                         if (
@@ -679,9 +699,9 @@ async function main() {
                         ) {
                             // work out what the value is for the Tip or Commission
                             // by looking at the last cell in the row
-                            const maxRowIndex = wsaa[i - j].length - 1
-                            if (wsaa[i - j][maxRowIndex] !== undefined) {
-                                value = wsaa[i - j][maxRowIndex]
+                            const maxRowIndex = wsaa[rowIndex - j].length - 1
+                            if (wsaa[rowIndex - j][maxRowIndex] !== undefined) {
+                                value = wsaa[rowIndex - j][maxRowIndex]
                                 if (payComponent === TIPS_FOR) {
                                     payComponent = "Tips:"
                                     commComponents[TIPS_INDEX] = value
@@ -744,6 +764,8 @@ form the payroll for the month */
     console.log(`${uploadAdHocResult[0] ? "OK" : "Failed:"}: ${uploadAdHocResult[1].message}`)
 }
 
-main().then(() => {
-    "Waiting on Talenox updates."
-})
+main()
+    .then(() => {
+        "Waiting on Talenox updates."
+    })
+    .catch((error) => console.error(`${error}`))
