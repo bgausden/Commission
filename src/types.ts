@@ -13,7 +13,7 @@ export type THurdle1Comm = number
 export type THurdle2Comm = number
 export type THurdle3Comm = number
 
-export type TTalenoxPaymentType = "Commission (Irregular)" | "Tips"
+export type TTalenoxPaymentType = "Commission (Irregular)" | "Tips"| "Others"
 
 export type TServiceCommMap = Map<TStaffName, IServiceComm>
 export type TCommComponents = [TTips, TProductCommission, TServiceCommission, TServiceRevenue]
