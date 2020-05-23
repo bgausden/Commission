@@ -143,7 +143,7 @@ function stripToNumeric(n: string | number): number {
     return x
 }
 
-function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo {
+function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo | null {
     /*     assume the staffID can be found in the STAFF_ID_COL column.
     staffID will begin with "ID#: " the will need to be stored  in the serviceCommMap and
     commComponents maps along with First and Last name.
@@ -173,16 +173,15 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo {
             }
             return {
                 /* Everything OK, split the name in staffInfo[0] into Surname and First Name */
-                found: true,
                 firstName: staffInfo[staffNameIndex].split(",")[firstNameIndex].trim(),
                 lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
                 staffID: staffInfo[staffIDIndex].trim(),
             }
         } else {
-            return { found: false }
+            return null
         }
     } else {
-        return { found: false }
+        return null
     }
 }
 
@@ -383,7 +382,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
 
         serviceCommMap.set(staffID, tempServComm)
 
-        console.log(prettyjson.render(serviceCommMap.get(staffID)))
+        // console.log(prettyjson.render(serviceCommMap.get(staffID)))
     } else {
         throw new Error(`${staffID} doesn't appear in staffHurdle.json (commission setup file)`)
     }
@@ -487,15 +486,6 @@ async function getTalenoxEmployees(): Promise<TStaffMap> {
     }
 
     const result = JSON.parse(await response.text()) as ITalenoxStaffInfo[]
-    /* Result has form
-        {
-            "payment_id":790462,
-            "month":"May",
-            "year":"2020",
-            "period":"Whole Month",
-            "pay_group":null,
-            "message":"Successfully updated payment."
-        } */
     const staffMap = new Map<TStaffID, IStaffNames>()
     result.forEach((staffInfo) => {
         staffMap.set(staffInfo.employee_id, { firstName: staffInfo.first_name, lastName: staffInfo.last_name })
@@ -535,17 +525,17 @@ async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
             throw new Error(`${response.status}: ${response.statusText}`)
         }
 
+        /**
+         *  result: { message:"Successfully updated payment.",
+            month:"May"
+            pay_group:null
+            payment_id:793605
+            period:"Whole Month"
+            year:"2020" }
+         */
+
         const result = JSON.parse(await response.text())
-        /* Result has form
-       {
-        "payment_id": 5,
-        "month": "September",
-        "year": "2018",
-        "period": "Whole Month",
-        "pay_group": null,
-        "message": "Successfully updated payment."
-        } 
-        */
+
         return [response.ok, result as ITalenoxPayrollPaymentResult]
     } catch (error) {
         return [false, error]
@@ -611,12 +601,15 @@ async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolea
 }
 
 async function main(): Promise<void> {
+    console.log(`Payroll Month is ${config.PAYROLL_MONTH}`)
+    console.log(`Requesting employees from Talenox`)
     const staffMap = await getTalenoxEmployees()
+    console.log(`Requesting employees complete`)
     const WS = readExcelFile(config.PAYROLL_WB_NAME)
     // Using option {header:1} returns an array of arrays
     // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off
     // wsaa is our worksheet presented as an array of arrays (row major)
-    const wsaa: any[][] = XLSX.utils.sheet_to_json(WS, {
+    const wsaa: unknown[][] = XLSX.utils.sheet_to_json(WS, {
         blankrows: false,
         header: 1,
     })
@@ -635,49 +628,35 @@ async function main(): Promise<void> {
             // We null out staffID when we've finished processing the previous staffmembers commission.
             // If staffID has a value then were still processing commission for one of the team
             if (staffID === undefined) {
-                const staffInfo: IStaffInfo = getStaffIDAndName(wsaa, rowIndex)
-                if (staffInfo.found) {
+                const staffInfo = getStaffIDAndName(wsaa, rowIndex)
+                if (staffInfo) {
                     // found staffID so keep a note of which row it's on
                     currentStaffIDRow = rowIndex
-                    // TODO from this point on use the names in  staffMap populated by getTalenoxEmployees()
                     staffID = staffInfo.staffID
                     if (staffID) {
                         let staffMapInfo = staffMap.get(staffID)
                         if (staffID && staffMapInfo) {
                             staffName = `${staffMapInfo.lastName} ${staffMapInfo.firstName}`
                         } else {
-                            throw new Error(
-                                `${staffID ? staffID : "null"}${staffInfo.firstName ? " " + staffInfo.firstName : ""}${
-                                    staffInfo.lastName ? " " + staffInfo.lastName : ""
-                                } in MB Payroll Report line ${rowIndex} not in Talenox.`
-                            )
+                            const text = `${staffID ? staffID : "null"}${
+                                staffInfo.firstName ? " " + staffInfo.firstName : ""
+                            }${
+                                staffInfo.lastName ? " " + staffInfo.lastName : ""
+                            } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                            if (config.missingStaffAreFatal) {
+                                throw new Error(text)
+                            } else {
+                                console.warn(text)
+                            }
                         }
                     }
-
-                    /*
-                    No longer needed as we can use getTalenoxEmployees()
-                    staffNames = {
-                        firstName: !!staffInfo.firstName ? staffInfo.firstName : "",
-                        lastName: !!staffInfo.lastName ? staffInfo.lastName : "",
-                    }
-                    staffMap.set(staffID!, staffNames)
-                    */
                 } /* else {
-                    throw new Error(
-                        `Fatal: Staff Member in MB Payroll Report line ${i} has no StaffID. Fix and re-run Payroll Report.`
-                    )
+                    We expect to fall through to here. Not every row contains a staff ID and name
                 } */
             }
-
-            // const testString: string = (element as string).startsWith(TOTAL_FOR)
-
-            //  const testString: string = (element as string).slice(0, TOTAL_FOR.length)
-            // if (testString === TOTAL_FOR) {
             if ((element as string).startsWith(TOTAL_FOR)) {
-                /*         if we've found a line beginning with "Total for " then we've got to the subtotals
-        and total for a staff member */
-
-                // keep track of the last totals row (for the previous employee) because we'll need to search
+                // If we've found a line beginning with "Total for " then we've got to the subtotals  and total for a staff member
+                // Keep track of the last totals row (for the previous employee) because we'll need to search
                 // back to this row to locate all of the revenue numbers for the current staff member.
                 // currentIDRow = currentTotalForRow;
                 currentTotalForRow = rowIndex
@@ -689,7 +668,7 @@ async function main(): Promise<void> {
                 Note tips and or product commission may not exist. */
                 console.log(`Payroll details for  ${staffID} ${staffName}`)
                 for (let j = 3; j >= 0; j--) {
-                    let payComponent: string = wsaa[rowIndex - j][0]
+                    let payComponent: string = wsaa[rowIndex - j][0] as string
                     if (payComponent !== undefined) {
                         let value = 0
                         if (
@@ -701,7 +680,7 @@ async function main(): Promise<void> {
                             // by looking at the last cell in the row
                             const maxRowIndex = wsaa[rowIndex - j].length - 1
                             if (wsaa[rowIndex - j][maxRowIndex] !== undefined) {
-                                value = wsaa[rowIndex - j][maxRowIndex]
+                                value = Number(wsaa[rowIndex - j][maxRowIndex])
                                 if (payComponent === TIPS_FOR) {
                                     payComponent = "Tips:"
                                     commComponents[TIPS_INDEX] = value
@@ -716,6 +695,8 @@ async function main(): Promise<void> {
                                 value = 0
                             }
                             if (payComponent.startsWith(TOTAL_FOR)) {
+                                // Reached the end of this staff members block in the report
+
                                 payComponent = "Services Revenue:"
                                 value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
                                 commComponents[SERV_REV_INDEX] = value
@@ -728,6 +709,7 @@ async function main(): Promise<void> {
                                     serviceRevenue // The  value is the the total services revenue calculated above
                                 )
                                 commComponents[SERV_COMM_INDEX] = value
+                                console.log(`${payComponent} ${value}`)
                             }
                             value = 0
                         }
@@ -742,6 +724,7 @@ async function main(): Promise<void> {
                         }
                     }
                 }
+                // Reset staffID and start looking for the next staff payments block in the report
                 staffID = undefined
             }
         }
@@ -758,10 +741,14 @@ form the payroll for the month */
 
     const payments = createAdHocPayments(commMap, staffMap)
     writePaymentsWorkBook(payments)
+    console.log(`Requesting new payroll payment creation from Talenox`)
     const createPayrollResult = await createPayroll(staffMap)
+    console.log(`New payroll payment is complete`)
     console.log(`${createPayrollResult[0] ? "OK" : "Failed"}: ${createPayrollResult[1].message}`)
+    console.log(`Pushing ad-hoc payments into new payroll`)
     const uploadAdHocResult = await uploadAdHocPayments(payments)
-    console.log(`${uploadAdHocResult[0] ? "OK" : "Failed:"}: ${uploadAdHocResult[1].message}`)
+    console.log(`Pushing ad-hoc payments is complete`)
+    console.log(`${uploadAdHocResult[0] ? "OK" : "Failed"}: ${uploadAdHocResult[1].message}`)
 }
 
 main()
