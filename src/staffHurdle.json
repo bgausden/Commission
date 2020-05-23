@@ -45,7 +45,7 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "contractor": 0
+        "contractor": false
     },
     "020": {
         "staffName": "Sam",
