@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
+// TODO Implement per-service payment rates (Pay rate: Mens Cut and Blow Dry - immediately follows staff id # line)
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
@@ -8,7 +9,6 @@ import fetch from "node-fetch"
 import { IStaffInfo } from "./IStaffInfo"
 import { Headers, RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
-import { IStaffHurdle, TStaffHurdle } from "./IStaffHurdle"
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { IServiceComm } from "./IServiceComm"
 import { IStaffCommConfig } from "./IStaffCommConfig"
@@ -21,6 +21,7 @@ import {
     TStaffMap,
     TServiceRevenue,
     TCommMap,
+    TStaffHurdle,
 } from "./types.js"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
