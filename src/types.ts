@@ -2,7 +2,7 @@
 import { IServiceComm } from "./IServiceComm"
 import { IStaffNames } from "./IStaffNames"
 import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
-import { IStaffHurdle } from "./IStaffHurdle"
+import { StaffHurdle } from "./IStaffHurdle"
 
 export type TStaffName = string
 export type TTips = number
@@ -24,4 +24,4 @@ export type TStaffID = string
 // TODO: make this a singleton
 export type TStaffMap = Map<TStaffID, IStaffNames>
 
-export type TStaffHurdle = Record<TStaffID, IStaffHurdle>
+export type TStaffHurdle = Record<TStaffID, StaffHurdle>
