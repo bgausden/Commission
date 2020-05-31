@@ -1,3 +1,5 @@
+export type customPayRate = { [name:string]:number|undefined}
+
 export interface IStaffHurdle {
     staffName: string
     mbCommRate?: number // unused
@@ -10,8 +12,6 @@ export interface IStaffHurdle {
     hurdle3Rate?: number
     poolsWith?: string[]
     contractor?: boolean
+    customPayRates?: customPayRate[]
 }
 
-export type staffID = string
-
-export type TStaffHurdle = Record<staffID, IStaffHurdle>
