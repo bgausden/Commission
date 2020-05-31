@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Implement per-service payment rates (Pay rate: Mens Cut and Blow Dry - immediately follows staff id # line)
@@ -35,11 +36,16 @@ const FILE_PATH = config.PAYROLL_WB_NAME
 
 const TOTAL_FOR_REGEX = /Total for /
 const DOCTYPE_HTML = /DOCTYPE html/
+const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
 const TIPS_INDEX = 0
 const PROD_COMM_INDEX = 1
 const SERV_COMM_INDEX = 2
 const SERV_REV_INDEX = 3
+
+const REVENUE_CATEGORY_INDEX = 1
+const SERVICE_TYPE_INDEX = 2
+const SERVICE_COMM_RATE_INDEX = 3
 
 const FIRST_SHEET = 0
 
@@ -186,21 +192,68 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo | nu
     }
 }
 
-function sumRevenue(
+/**
+ *
+ * @param {any[][]} wsArray - array representing the worksheet
+ * @param {number} currentTotalRow - row number for last found "Total for" row in the worksheet
+ * @param {number} currentStaffIDRow - row number for the last found "Staff ID" row in the worksheet
+ * @param {number} revCol - column containing the services revenue
+ * @param {TStaffID} staffID - ID for the member of staff for whom we are calculating revenues/comms
+ */
+
+function getServicesRevenue(
     wsArray: unknown[][],
     currentTotalRow: number,
     // tslint:disable-next-line: no-shadowed-variable
     currentStaffIDRow: number,
     // tslint:disable-next-line: no-shadowed-variable
-    revCol: number
-): number {
+    revCol: number,
+    staffID: TStaffID
+): Map<string, [number, number]> {
     /* starting on the staff member's totals row, sum all the numeric values in the revenue column
     back as far as the prior staff member's totals row + 1. Use this as the service revenue so we can ignore
-    how staff commissions are configured in MB. */
-    const numSearchRows = currentTotalRow - currentStaffIDRow - 1
+    how staff commissions are configured in MB. */ const numSearchRows =
+        currentTotalRow - currentStaffIDRow - 1
     const revColumn = revCol
+    const serviceCommMap = new Map<string, [number, number]>() // <servType, [revenue,customRate]>
     let serviceRevenue = 0
-    for (let i = 1; i <= numSearchRows; i++) {
+    let customRate = 0
+    const sh = (staffHurdle as TStaffHurdle)[staffID]
+    const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
+    let servType = "General Service Revenues"
+    for (let i = numSearchRows; i >= 1; i--) {
+        /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
+          i.e. <revenue category> Pay Rate: <service name> (<commission rate>)
+    */
+        const v = wsArray[currentTotalRow - i][0] || ""
+        const m = (v as string).match(SERVICE_ROW_REGEX) || null
+        if (m) {
+            // Have a section header for a block of services
+            customRate = 0
+            const revCat = m[REVENUE_CATEGORY_INDEX]
+            servType = m[SERVICE_TYPE_INDEX]
+            const mbServCommRate = m[SERVICE_COMM_RATE_INDEX]
+            // check if we have special rates for this servType
+
+            if (customPayRates) {
+                customPayRates.forEach((customPayRate) => {
+                    for (const serviceWithCustomPayRate in customPayRate) {
+                        if (Object.prototype.hasOwnProperty.call(customPayRate, serviceWithCustomPayRate)) {
+                            if (servType === serviceWithCustomPayRate) {
+                                customRate = customPayRate[serviceWithCustomPayRate] || 0
+                                break
+                            }
+                        }
+                    }
+                })
+                if (!customRate) {
+                    servType = "General Service Revenues" // catch-all servType for everything without a custom pay-rate
+                }
+                if (!serviceCommMap.get(servType)) {
+                    serviceCommMap.set(servType, [0, customRate])
+                }
+            }
+        }
         let revenueCellContents = wsArray[currentTotalRow - i][revColumn]
         if (revenueCellContents !== undefined) {
             if (typeof revenueCellContents === "string") {
@@ -210,12 +263,32 @@ function sumRevenue(
                     // all good
                 }
             }
-            if (typeof revenueCellContents === "number" && revenueCellContents >= 0) {
+            if (typeof revenueCellContents === "number" && revenueCellContents > 0) {
                 serviceRevenue += revenueCellContents
+                // accumulate the serv revenues for this servType in the map
+                let custom = serviceCommMap.get(servType)
+                if (custom) {
+                    custom = [custom[0] + revenueCellContents, custom[1]]
+                    serviceCommMap.set(servType, custom)
+                }
             }
         }
     }
-    return serviceRevenue
+    return serviceCommMap
+}
+
+/**
+ *
+ * @param {Map<string,[number,number]>} servCommMap  map of serviceNames to an array containing the  aggregate service type revenue and the special commission rate (if any) for that service type.
+ *
+ */
+
+function sumServiceRevenues(servCommMap: Map<string, [number, number]>): number {
+    let totalServRevenue = 0
+    servCommMap.forEach((element) => {
+        totalServRevenue += element[0]
+    })
+    return totalServRevenue
 }
 
 function isContractor(staffID: string): boolean {
@@ -232,8 +305,8 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
     Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool*/
     let totalServiceComm: number
     const sh = staffHurdle as TStaffHurdle // get an iterable version of the staffHurdle import
+    // TODO review if we really need shm or could simply use the import staffHurdle directly
     const shm = new Map<TStaffID, any>()
-    // eslint-disable-next-line arrow-parens
     Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
@@ -626,7 +699,7 @@ async function main(): Promise<void> {
         const element = wsaa[rowIndex][0]
         if (element !== undefined) {
             // Check if this line contans a staffID
-            // We null out staffID when we've finished processing the previous staffmembers commission.
+            // We null out staffID when we've finished processing the previous staffmember's commission.
             // If staffID has a value then were still processing commission for one of the team
             if (staffID === undefined) {
                 const staffInfo = getStaffIDAndName(wsaa, rowIndex)
@@ -635,7 +708,7 @@ async function main(): Promise<void> {
                     currentStaffIDRow = rowIndex
                     staffID = staffInfo.staffID
                     if (staffID) {
-                        let staffMapInfo = staffMap.get(staffID)
+                        const staffMapInfo = staffMap.get(staffID)
                         if (staffID && staffMapInfo) {
                             staffName = `${staffMapInfo.lastName} ${staffMapInfo.firstName}`
                         } else {
@@ -696,19 +769,25 @@ async function main(): Promise<void> {
                                 value = 0
                             }
                             if (payComponent.startsWith(TOTAL_FOR)) {
-                                // Reached the end of this staff members block in the report
+                                // Reached the end of this staff members block in the report. Go back and add all the revenue amounts
 
                                 payComponent = "Services Revenue:"
-                                value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
-                                commComponents[SERV_REV_INDEX] = value
-                                // set services comm to zero for now. Will fill-in later
-                                payComponent = "Services Commission"
-                                const serviceRevenue = value
-                                value = calcServiceCommission(
-                                    staffID!,
-                                    staffMap,
-                                    serviceRevenue // The  value is the the total services revenue calculated above
-                                )
+                                if (staffID) {
+                                    value = sumServiceRevenues(
+                                        getServicesRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
+                                    )
+
+                                    commComponents[SERV_REV_INDEX] = value
+                                    // set services comm to zero for now. Will fill-in later
+                                    payComponent = "Services Commission"
+                                    const serviceRevenue = value
+
+                                    value = calcServiceCommission(
+                                        staffID,
+                                        staffMap,
+                                        serviceRevenue // The  value is the the total services revenue calculated above
+                                    )
+                                }
                                 commComponents[SERV_COMM_INDEX] = value
                                 console.log(`${payComponent} ${value}`)
                             }
@@ -742,14 +821,14 @@ form the payroll for the month */
 
     const payments = createAdHocPayments(commMap, staffMap)
     writePaymentsWorkBook(payments)
-    console.log(`Requesting new payroll payment creation from Talenox`)
+    /*     console.log(`Requesting new payroll payment creation from Talenox`)
     const createPayrollResult = await createPayroll(staffMap)
     console.log(`New payroll payment is complete`)
     console.log(`${createPayrollResult[0] ? "OK" : "Failed"}: ${createPayrollResult[1].message}`)
     console.log(`Pushing ad-hoc payments into new payroll`)
     const uploadAdHocResult = await uploadAdHocPayments(payments)
     console.log(`Pushing ad-hoc payments is complete`)
-    console.log(`${uploadAdHocResult[0] ? "OK" : "Failed"}: ${uploadAdHocResult[1].message}`)
+    console.log(`${uploadAdHocResult[0] ? "OK" : "Failed"}: ${uploadAdHocResult[1].message}`) */
 }
 
 main()
