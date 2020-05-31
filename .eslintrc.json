@@ -27,7 +27,7 @@
     "plugins": ["@typescript-eslint"],
     "rules": {
         "@typescript-eslint/member-delimiter-style": [
-            "warning",
+            "warn",
             {
                 "multiline": { "delimiter": "none" }
             }
