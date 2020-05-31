@@ -1,6 +1,6 @@
-export type customPayRate = { [name:string]:number|undefined}
+export type CustomPayRate = { [name: string]: number|undefined}
 
-export interface IStaffHurdle {
+export interface StaffHurdle {
     staffName: string
     mbCommRate?: number // unused
     baseRate: number
@@ -12,6 +12,6 @@ export interface IStaffHurdle {
     hurdle3Rate?: number
     poolsWith?: string[]
     contractor?: boolean
-    customPayRates?: customPayRate[]
+    customPayRates?: CustomPayRate[]
 }
 

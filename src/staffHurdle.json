@@ -36,10 +36,7 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "customPayRates": [
-            {"Professional Eye Makeup": 0.30},
-            {"Professional Make Up": 0.30}
-        ]
+        "customPayRates": [{ "Professional Eye Makeup": 0.3 }, { "Professional Make Up": 0.3 }]
     },
     "018": {
         "staffName": "Rennie",
@@ -290,7 +287,8 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "customPayRates": [{ "Toner": 0.33 }]
     },
     "039": {
         "staffName": "Monita",
