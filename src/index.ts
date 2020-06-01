@@ -69,6 +69,8 @@ const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
 
+const GENERAL_SERV_REVENUE = "General Service Revenues"
+
 /* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
@@ -100,6 +102,9 @@ const emptyServComm: IServiceComm = {
     serviceRevenue: 0,
 }
 
+type TServiceName = string
+type TServiceCustomRate = number
+type TServRevenueMap = Map<TServiceName, [TServiceRevenue, TServiceCustomRate]>
 // let maxRows = 0
 
 function readExcelFile(fileName?: string): XLSX.WorkSheet {
@@ -193,7 +198,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo | nu
 }
 
 /**
- *
+ * @function getServicesRevenue - buckets revenue by custom pay-rate. One bucket is a catch-all
  * @param {any[][]} wsArray - array representing the worksheet
  * @param {number} currentTotalRow - row number for last found "Total for" row in the worksheet
  * @param {number} currentStaffIDRow - row number for the last found "Staff ID" row in the worksheet
@@ -209,18 +214,18 @@ function getServicesRevenue(
     // tslint:disable-next-line: no-shadowed-variable
     revCol: number,
     staffID: TStaffID
-): Map<string, [number, number]> {
+): TServRevenueMap {
     /* starting on the staff member's totals row, sum all the numeric values in the revenue column
     back as far as the prior staff member's totals row + 1. Use this as the service revenue so we can ignore
     how staff commissions are configured in MB. */ const numSearchRows =
         currentTotalRow - currentStaffIDRow - 1
     const revColumn = revCol
-    const serviceCommMap = new Map<string, [number, number]>() // <servType, [revenue,customRate]>
+    const servRevenueMap = new Map<string, [number, number]>() // <servType, [revenue,customRate]>
     let serviceRevenue = 0
     let customRate = 0
     const sh = (staffHurdle as TStaffHurdle)[staffID]
     const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
-    let servType = "General Service Revenues"
+    let servType = GENERAL_SERV_REVENUE
     for (let i = numSearchRows; i >= 1; i--) {
         /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
           i.e. <revenue category> Pay Rate: <service name> (<commission rate>)
@@ -247,10 +252,10 @@ function getServicesRevenue(
                     }
                 })
                 if (!customRate) {
-                    servType = "General Service Revenues" // catch-all servType for everything without a custom pay-rate
+                    servType = GENERAL_SERV_REVENUE // catch-all servType for everything without a custom pay-rate
                 }
-                if (!serviceCommMap.get(servType)) {
-                    serviceCommMap.set(servType, [0, customRate])
+                if (!servRevenueMap.get(servType)) {
+                    servRevenueMap.set(servType, [0, customRate])
                 }
             }
         }
@@ -266,15 +271,15 @@ function getServicesRevenue(
             if (typeof revenueCellContents === "number" && revenueCellContents > 0) {
                 serviceRevenue += revenueCellContents
                 // accumulate the serv revenues for this servType in the map
-                let custom = serviceCommMap.get(servType)
+                let custom = servRevenueMap.get(servType)
                 if (custom) {
                     custom = [custom[0] + revenueCellContents, custom[1]]
-                    serviceCommMap.set(servType, custom)
+                    servRevenueMap.set(servType, custom)
                 }
             }
         }
     }
-    return serviceCommMap
+    return servRevenueMap
 }
 
 /**
@@ -296,13 +301,11 @@ function isContractor(staffID: string): boolean {
     return Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR) ? true : false
 }
 
-function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
+function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
     /* iterate through commissionComponents
-    for each entry, locate corresponding hurdles
-    calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next
-    store the amounts payable in a new Map where the key is the staff name and the value is an array containing
+    for each entry, locate corresponding hurdles and then calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next store the amounts payable in a new Map where the key is the staff name and the value is an array containing
     [baseCommission, hurdle1Commission, hurdle2Commission]
-    Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool*/
+    Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool (TODO) */
     let totalServiceComm: number
     const sh = staffHurdle as TStaffHurdle // get an iterable version of the staffHurdle import
     // TODO review if we really need shm or could simply use the import staffHurdle directly
@@ -312,6 +315,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
     // const commComponents = cm.get(staffID)!;
     if (shm.has(staffID)) {
         // we have a matching prop in staffHurdle for the current payroll key
+
         // clone emptyServiceComm as a temp we can fill and then add to the serviceCommMap
         const tempServComm: IServiceComm = {
             ...emptyServComm,
@@ -735,6 +739,9 @@ async function main(): Promise<void> {
                 // currentIDRow = currentTotalForRow;
                 currentTotalForRow = rowIndex
                 // const staffID = getStaffID(wsaa, prevTotalForRow);
+                /**
+                 * @var commComponents - array containing [tips, product commission, services commission, services revenue]
+                 */
                 const commComponents: [number, number, number, number] = [0, 0, 0, 0]
                 /* find and process tips, product commission and services commission
                 go back 3 lines from the "Total for:" line - the tips and product commission
@@ -772,17 +779,29 @@ async function main(): Promise<void> {
                                 // Reached the end of this staff members block in the report. Go back and add all the revenue amounts
 
                                 payComponent = "Services Revenue:"
+
+                                // Old way - services revenue is a single number
                                 if (staffID) {
                                     value = sumServiceRevenues(
                                         getServicesRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                     )
+
+                                    // New way - some revenues from "general services", some revenues from custom pay rates
+                                    const generalServRevenue = getServicesRevenue(
+                                        wsaa,
+                                        currentTotalForRow,
+                                        currentStaffIDRow,
+                                        revCol,
+                                        staffID
+                                    ).get(GENERAL_SERV_REVENUE)
+                                    value = generalServRevenue ? generalServRevenue[0] : 0
 
                                     commComponents[SERV_REV_INDEX] = value
                                     // set services comm to zero for now. Will fill-in later
                                     payComponent = "Services Commission"
                                     const serviceRevenue = value
 
-                                    value = calcServiceCommission(
+                                    value = calcGeneralServiceCommission(
                                         staffID,
                                         staffMap,
                                         serviceRevenue // The  value is the the total services revenue calculated above
@@ -800,6 +819,9 @@ async function main(): Promise<void> {
                             } else {
                                 throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
                             }
+                            console.log(
+                                "Note only general services revenues now shown - does not yet include custom pay rates"
+                            )
                             console.log("==========")
                         }
                     }
