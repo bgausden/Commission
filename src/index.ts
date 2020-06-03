@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/camelcase */
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
+// TODO add new commission calculation where at a certain service revenue, *all* revenue pays at the same rate (no more hurdles, no more income)
+
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
@@ -382,7 +384,7 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
 
         serviceCommMap.set(staffID, tempServComm)
 
-        // console.log(prettyjson.render(serviceCommMap.get(staffID)))
+        console.log(prettyjson.render(serviceCommMap.get(staffID)))
     } else {
         throw new Error(`${staffID} doesn't appear in staffHurdle.json (commission setup file)`)
     }
