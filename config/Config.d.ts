@@ -7,4 +7,5 @@ interface Config {
   PAYMENTS_WB_NAME: string;
   PAYMENTS_WS_NAME: string;
   missingStaffAreFatal: boolean;
+  updateTalenox: boolean;
 }

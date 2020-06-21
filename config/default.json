@@ -4,5 +4,6 @@
     "PAYROLL_YEAR": "2020",
     "PAYMENTS_WB_NAME": "Talenox Payments.xlsx",
     "PAYMENTS_WS_NAME": "Payments",
-    "missingStaffAreFatal": false
+    "missingStaffAreFatal": false,
+    "updateTalenox": false
 }
