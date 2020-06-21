@@ -6,7 +6,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "012": {
         "staffName": "Kate",
@@ -17,7 +22,10 @@
         "hurdle2Level": 52000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 61000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "021": {
         "staffName": "Wing",
@@ -26,7 +34,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "015": {
         "staffName": "Mandy",
@@ -36,6 +49,10 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
         "customPayRates": [{ "Professional Eye Makeup": 0.3 }, { "Professional Make Up": 0.3 }]
     },
     "018": {
@@ -46,7 +63,11 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "contractor": false
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "020": {
         "staffName": "Sam",
@@ -55,7 +76,12 @@
         "hurdle1Level": 37142.8571,
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "001": {
         "staffName": "Sioban",
@@ -64,7 +90,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "033": {
         "staffName": "Tamara",
@@ -75,7 +106,10 @@
         "hurdle2Level": 92000,
         "hurdle2Rate": 0.15,
         "hurdle3Level": 110000,
-        "hurdle3Rate": 0.16
+        "hurdle3Rate": 0.16,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "006": {
         "staffName": "Anson",
@@ -85,7 +119,11 @@
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["007"]
+        "hurdle3Level": 110000,
+        "hurdle3Rate": 0.16,
+        "contractor": false,
+        "poolsWith": ["007"],
+        "customPayRates": []
     },
     "024": {
         "staffName": "Ava",
@@ -94,7 +132,12 @@
         "hurdle1Level": 25000,
         "hurdle1Rate": 0.4,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "036": {
         "staffName": "Kay",
@@ -105,7 +148,10 @@
         "hurdle2Level": 82000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 96000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "003": {
         "staffName": "Candy",
@@ -116,7 +162,10 @@
         "hurdle2Level": 82000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 96000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "032": {
         "staffName": "Coey",
@@ -125,7 +174,12 @@
         "hurdle1Level": 23000,
         "hurdle1Rate": 0.1,
         "hurdle2Level": 30000,
-        "hurdle2Rate": 0.15
+        "hurdle2Rate": 0.15,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "008": {
         "staffName": "Chris",
@@ -134,7 +188,12 @@
         "hurdle1Level": 39393.939393939393939,
         "hurdle1Rate": 0.33,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "027": {
         "staffName": "Chrissie",
@@ -145,7 +204,10 @@
         "hurdle2Level": 100000,
         "hurdle2Rate": 0.37,
         "hurdle3Level": 150000,
-        "hurdle3Rate": 0.38
+        "hurdle3Rate": 0.38,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "035": {
         "staffName": "ElizabethL",
@@ -155,7 +217,11 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "contractor": true
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "026": {
         "staffName": "Tony",
@@ -164,7 +230,12 @@
         "hurdle1Level": 28571.4285714,
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "037": {
         "staffName": "Kat",
@@ -174,7 +245,11 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "contractor": true
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "009": {
         "staffName": "Davy",
@@ -183,7 +258,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "016": {
         "staffName": "Marriane",
@@ -192,7 +272,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "028": {
         "staffName": "Cynthia",
@@ -201,7 +286,12 @@
         "hurdle1Level": 45945.945945945,
         "hurdle1Rate": 0.37,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "022": {
         "staffName": "Yentl",
@@ -210,7 +300,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "017": {
         "staffName": "Melody",
@@ -221,7 +316,10 @@
         "hurdle2Level": 65000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 76000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "004": {
         "staffName": "Jay",
@@ -232,7 +330,10 @@
         "hurdle2Level": 71000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 84000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "023": {
         "staffName": "Keith",
@@ -241,7 +342,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0.0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "007": {
         "staffName": "Ari",
@@ -251,7 +357,11 @@
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["006"]
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": ["006"],
+        "customPayRates": []
     },
     "019": {
         "staffName": "Rex",
@@ -260,7 +370,12 @@
         "hurdle1Level": 60606.06060606060606,
         "hurdle1Rate": 0.33,
         "hurdle2Level": 100000,
-        "hurdle2Rate": 0.365
+        "hurdle2Rate": 0.365,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "029": {
         "staffName": "Catherine",
@@ -269,7 +384,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "030": {
         "staffName": "Magan",
@@ -278,7 +398,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "038": {
         "staffName": "Danielle",
@@ -288,6 +413,10 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
         "customPayRates": [{ "Toner": 0.33 }]
     },
     "039": {
@@ -300,6 +429,9 @@
         "hurdle2Rate": 0.11,
         "hurdle3Level": 84000,
         "hurdle3Rate": 0.12
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "040": {
         "staffName": "Anu",
@@ -308,7 +440,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "041": {
         "staffName": "Sonal",
@@ -317,7 +454,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "042": {
         "staffName": "Sammy",
@@ -327,7 +469,11 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "contractor": true
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "043": {
         "staffName": "Hema",
@@ -336,7 +482,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "044": {
         "staffName": "Fei",
@@ -345,7 +496,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "045": {
         "staffName": "Erica",
@@ -354,7 +510,12 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "047": {
         "staffName": "Crystal",
@@ -365,23 +526,51 @@
         "hurdle2Level": 52000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 61000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "048": {
         "staffName": "Leticia",
         "mbCommRate": 0,
-        "baseRate": 0,
-        "contractor": true
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "049": {
         "staffName": "Andrea",
         "mbCommRate": 0,
-        "baseRate": 0,
-        "contractor": true
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "poolsWith": [],
+        "customPayRates": []
     },
     "050": {
         "staffName": "Nicky",
         "mbCommRate": 0,
-        "baseRate": 0
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     }
 }
