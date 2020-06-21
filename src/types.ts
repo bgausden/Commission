@@ -24,4 +24,6 @@ export type TStaffID = string
 // TODO: make this a singleton
 export type TStaffMap = Map<TStaffID, IStaffNames>
 
-export type TStaffHurdle = Record<TStaffID, StaffHurdle>
+export type TStaffHurdles = {
+   [key: string]: StaffHurdle
+}

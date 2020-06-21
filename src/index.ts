@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
-// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Implement per-service payment rates (Pay rate: Mens Cut and Blow Dry - immediately follows staff id # line)
+// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 // TODO add new commission calculation where at a certain service revenue, *all* revenue pays at the same rate (no more hurdles, no more income)
 // TODO add support for hourly wage staff:
@@ -16,12 +17,12 @@ import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import fetch from "node-fetch"
-import { IStaffInfo } from "./IStaffInfo"
+import { StaffInfo } from "./IStaffInfo"
 import { Headers, RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { IServiceComm } from "./IServiceComm"
-import { IStaffCommConfig } from "./IStaffCommConfig"
+import { StaffCommConfig } from "./IStaffCommConfig"
 import { IStaffNames } from "./IStaffNames"
 import {
     TStaffID,
@@ -31,14 +32,15 @@ import {
     TStaffMap,
     TServiceRevenue,
     TCommMap,
-    TStaffHurdle,
+    TStaffHurdles,
 } from "./types.js"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
 import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
-import { ITalenoxPayroll, ITalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
-import { ITalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
+import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
+import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
+import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -113,7 +115,7 @@ const emptyServComm: IServiceComm = {
 
 type TServiceName = string
 type TServiceCustomRate = number
-type TServRevenueMap = Map<TServiceName, [TServiceRevenue, TServiceCustomRate]>
+type TServRevenueMap = Map<TServiceName, { revenue: TServiceRevenue; customRate: TServiceCustomRate }>
 // let maxRows = 0
 
 function readExcelFile(fileName?: string): XLSX.WorkSheet {
@@ -149,7 +151,7 @@ function revenueCol(wsArray: unknown[][]): number {
     throw new Error("Cannot find Revenue per session column")
 }
 
-function stripToNumeric(n: string | number): number {
+function stripToNumeric(n: unknown): number {
     const numericOnly = /[^0-9.-]+/g
     let x: number
     if (typeof n === "string") {
@@ -158,13 +160,17 @@ function stripToNumeric(n: string | number): number {
         if (isNaN(x)) {
             x = 0
         }
-    } else {
-        x = n
     }
+    if (typeof n === "number") {
+        x = n
+    } else {
+        x = 0
+    }
+
     return x
 }
 
-function getStaffIDAndName(wsArray: unknown[][], idRow: number): IStaffInfo | null {
+function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | null {
     /*     assume the staffID can be found in the STAFF_ID_COL column.
     staffID will begin with "ID#: " the will need to be stored  in the serviceCommMap and
     commComponents maps along with First and Last name.
@@ -229,10 +235,11 @@ function getServicesRevenue(
     how staff commissions are configured in MB. */ const numSearchRows =
         currentTotalRow - currentStaffIDRow - 1
     const revColumn = revCol
-    const servRevenueMap = new Map<string, [number, number]>() // <servType, [revenue,customRate]>
-    let serviceRevenue = 0
+    // const servRevenueMap = new Map<string, [number, number]>() // <servType, [revenue,customRate]>
+    const servRevenueMap = new Map<string, { revenue: number; customRate: number }>() // <servType, [revenue,customRate]>
+    let revenue = 0
     let customRate = 0
-    const sh = (staffHurdle as TStaffHurdle)[staffID]
+    const sh = (staffHurdle as TStaffHurdles)[staffID]
     const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
     let servType = GENERAL_SERV_REVENUE
     for (let i = numSearchRows; i >= 1; i--) {
@@ -240,13 +247,18 @@ function getServicesRevenue(
           i.e. <revenue category> Pay Rate: <service name> (<commission rate>)
     */
         const v = wsArray[currentTotalRow - i][0] || ""
-        const m = (v as string).match(SERVICE_ROW_REGEX) || null
-        if (m) {
+        const match = (v as string).match(SERVICE_ROW_REGEX) || null // regex is something like /(.*) Pay Rate: (.*) \((.*)%\)/i
+        /*
+        Found a row that looks similar to:
+        Hair Pay rate: Ladies Cut and Blow Dry (55%) 
+        where match[0] = Hair, match[1]=Ladies Cut and Blow Dry and match[2]=55
+        */
+        if (match) {
             // Have a section header for a block of services
             customRate = 0
-            const revCat = m[REVENUE_CATEGORY_INDEX]
-            servType = m[SERVICE_TYPE_INDEX]
-            const mbServCommRate = m[SERVICE_COMM_RATE_INDEX]
+            const revCat = match[REVENUE_CATEGORY_INDEX]
+            servType = match[SERVICE_TYPE_INDEX]
+            const mbServCommRate = match[SERVICE_COMM_RATE_INDEX]
             // check if we have special rates for this servType
 
             if (customPayRates) {
@@ -262,28 +274,33 @@ function getServicesRevenue(
                 })
                 if (!customRate) {
                     servType = GENERAL_SERV_REVENUE // catch-all servType for everything without a custom pay-rate
+                    customRate = 0
                 }
                 if (!servRevenueMap.get(servType)) {
-                    servRevenueMap.set(servType, [0, customRate])
+                    servRevenueMap.set(servType, { revenue, customRate })
                 }
             }
         }
         let revenueCellContents = wsArray[currentTotalRow - i][revColumn]
         if (revenueCellContents !== undefined) {
-            if (typeof revenueCellContents === "string") {
+            revenueCellContents = stripToNumeric(revenueCellContents)
+            /*             if (typeof revenueCellContents === "string") {
                 revenueCellContents = stripToNumeric(revenueCellContents)
-            } else {
+             } else {
                 if (typeof revenueCellContents === "number") {
                     // all good
                 }
-            }
+             } */
             if (typeof revenueCellContents === "number" && revenueCellContents > 0) {
-                serviceRevenue += revenueCellContents
+                revenue = revenueCellContents
                 // accumulate the serv revenues for this servType in the map
-                let custom = servRevenueMap.get(servType)
+                const custom = servRevenueMap.get(servType)
                 if (custom) {
-                    custom = [custom[0] + revenueCellContents, custom[1]]
-                    servRevenueMap.set(servType, custom)
+                    // customRate = custom.customRate
+                    // custom = [custom[0] + revenueCellContents, custom[1]]
+                    //servRevenueMap.set(servType, custom)
+                    revenue += custom.revenue
+                    servRevenueMap.set(servType, { revenue, customRate })
                 }
             }
         }
@@ -297,16 +314,16 @@ function getServicesRevenue(
  *
  */
 
-function sumServiceRevenues(servCommMap: Map<string, [number, number]>): number {
+function sumServiceRevenues(servCommMap: Map<string, { revenue: number; customRate: number }>): number {
     let totalServRevenue = 0
     servCommMap.forEach((element) => {
-        totalServRevenue += element[0]
+        totalServRevenue += element.revenue
     })
     return totalServRevenue
 }
 
 function isContractor(staffID: string): boolean {
-    const sh = staffHurdle as TStaffHurdle
+    const sh = staffHurdle as TStaffHurdles
     return Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR) ? true : false
 }
 
@@ -316,7 +333,7 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
     [baseCommission, hurdle1Commission, hurdle2Commission]
     Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool (TODO) */
     let totalServiceComm: number
-    const sh = staffHurdle as TStaffHurdle // get an iterable version of the staffHurdle import
+    const sh = staffHurdle as TStaffHurdles // get an iterable version of the staffHurdle import
     // TODO review if we really need shm or could simply use the import staffHurdle directly
     const shm = new Map<TStaffID, any>()
     // TODO Do we really need to build a new map from the entirety of the staff hurdle object? Surely need only this staff member
@@ -336,8 +353,11 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
             hurdle3: { ...emptyServComm.hurdle3 },
         }
         // const serviceRev = commComponents[SERV_COMM_INDEX];
-        const staffCommConfig: IStaffCommConfig = shm.get(staffID)
-
+        const tempStaffCommConfig: unknown = shm.get(staffID)
+        let staffCommConfig: StaffCommConfig
+        if (tempStaffCommConfig) {
+            staffCommConfig = tempStaffCommConfig as StaffCommConfig
+        } else throw new Error(`Missing staff commission config for StaffID: ${staffID}`)
         let baseRevenue = 0
         let baseRate = 0
         let hurdle1Revenue = 0
@@ -596,7 +616,9 @@ async function getTalenoxEmployees(): Promise<TStaffMap> {
     return staffMap
 }
 
-async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
+async function createPayroll(
+    staffMap: TStaffMap
+): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
     const url = new URL(`https://${TALENOX_BASE_URL}/payroll/payroll_payment`)
 
     const myHeaders = new Headers()
@@ -607,11 +629,12 @@ async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
         employee_ids.push(staffID)
     })
 
-    const payment: ITalenoxPayrollPayment = {
+    const payment: TalenoxPayrollPayment = {
         year: config.PAYROLL_YEAR,
         month: config.PAYROLL_MONTH,
         period: TALENOX_WHOLE_MONTH,
         with_pay_items: true,
+        pay_group: "",
     }
 
     const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll)
@@ -622,14 +645,16 @@ async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
         redirect: "follow",
         method: "POST",
     }
-    try {
-        const response = await fetch(url, init)
-        if (!response.ok) {
-            throw new Error(`${response.status}: ${response.statusText}`)
-        }
+    const response = await fetch(url, init)
+    if (!response.ok) {
+        // Something went horribly wrong. Unlikely we can do anything useful with the failure
+        return [Error(`${response.status}: ${response.statusText}`), undefined]
+    }
 
-        /**
-         *  result: { message:"Successfully updated payment.",
+    /**
+         * Sample response.text():
+         * 
+         result: { message:"Successfully updated payment.",
             month:"May"
             pay_group:null
             payment_id:793605
@@ -637,15 +662,13 @@ async function createPayroll(staffMap: TStaffMap): Promise<[boolean, any]> {
             year:"2020" }
          */
 
-        const result = JSON.parse(await response.text())
-
-        return [response.ok, result as ITalenoxPayrollPaymentResult]
-    } catch (error) {
-        return [false, error]
-    }
+    const result = JSON.parse(await response.text())
+    return [undefined, result as TalenoxPayrollPaymentResult]
 }
 
-async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolean, any]> {
+async function uploadAdHocPayments(
+    payments: ITalenoxPayment[]
+): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
     const url = new URL(`https://${TALENOX_BASE_URL}/payroll/adhoc_payment`)
 
     const myHeaders = new Headers()
@@ -681,14 +704,14 @@ async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolea
         redirect: "follow",
         method: "POST",
     }
-    try {
-        const response = await fetch(url, init)
-        if (!response.ok) {
-            throw new Error(`${response.status}: ${response.statusText}`)
-        }
 
-        const result = JSON.parse(await response.text())
-        /* Result has form
+    const response = await fetch(url, init)
+    if (!response.ok) {
+        return [new Error(`${response.status}: ${response.statusText}`), undefined]
+    }
+
+    const result = JSON.parse(await response.text())
+    /* Result has form
         {
             "payment_id":790462,
             "month":"May",
@@ -697,10 +720,7 @@ async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[boolea
             "pay_group":null,
             "message":"Successfully updated payment."
         } */
-        return [response.ok, result]
-    } catch (error) {
-        return [false, error]
-    }
+    return [undefined, result as TalenoxUploadAdHocPaymentsResult]
 }
 
 async function main(): Promise<void> {
@@ -809,19 +829,24 @@ async function main(): Promise<void> {
 
                                 // Old way - services revenue is a single number
                                 if (staffID) {
-                                    value = sumServiceRevenues(
+                                    const totalServicesRevenues = sumServiceRevenues(
                                         getServicesRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                     )
 
                                     // New way - some revenues from "general services", some revenues from custom pay rates
-                                    const generalServRevenue = getServicesRevenue(
+                                    const servicesRevenues = getServicesRevenue(
                                         wsaa,
                                         currentTotalForRow,
                                         currentStaffIDRow,
                                         revCol,
                                         staffID
-                                    ).get(GENERAL_SERV_REVENUE)
-                                    value = generalServRevenue ? generalServRevenue[0] : 0
+                                    )
+                                    // const generalServRevenue= servicesRevenues.get(GENERAL_SERV_REVENUE)
+                                    // value = generalServRevenue ? generalServRevenue.revenue : 0
+
+                                    if (servicesRevenues) {
+                                        servicesRevenues.forEach((element) => {})
+                                    }
 
                                     commComponents[SERV_REV_INDEX] = value
                                     // set services comm to zero for now. Will fill-in later
@@ -859,25 +884,49 @@ async function main(): Promise<void> {
         }
     }
 
-    /* Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
-and populate the commMap service commission map */
+    /*
+ Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
+ and populate the commMap service commission map
+*/
+
     // Call calcServiceCommission(staffID!, commMap);
     // TODO: loop through commMap and update the service commission for everyone
 
-    /* Create a spreadsheet containing one line for each payment to be made for each of the staff.
+    /*
+Create a spreadsheet containing one line for each payment to be made for each of the staff.
 This spreadsheet will be copied/pasted into Talenox and together with their salary payments will
-form the payroll for the month */
+form the payroll for the month 
+*/
 
     const payments = createAdHocPayments(commMap, staffMap)
     writePaymentsWorkBook(payments)
-    /*     console.log(`Requesting new payroll payment creation from Talenox`)
-    const createPayrollResult = await createPayroll(staffMap)
-    console.log(`New payroll payment is complete`)
-    console.log(`${createPayrollResult[0] ? "OK" : "Failed"}: ${createPayrollResult[1].message}`)
-    console.log(`Pushing ad-hoc payments into new payroll`)
-    const uploadAdHocResult = await uploadAdHocPayments(payments)
-    console.log(`Pushing ad-hoc payments is complete`)
-    console.log(`${uploadAdHocResult[0] ? "OK" : "Failed"}: ${uploadAdHocResult[1].message}`) */
+
+    /* 
+    If configuration permits updating Talenox, create a new payroll and push into it the adhoc payments for service commission, tips and product commission.
+    */
+
+    if (config.updateTalenox) {
+        console.log(`Requesting new payroll payment creation from Talenox`)
+        const createPayrollResult = await createPayroll(staffMap)
+        console.log(`New payroll payment is complete`)
+        if (createPayrollResult[1]) {
+            console.log(`OK: ${createPayrollResult[1].message}`)
+        } else {
+            if (createPayrollResult[0]) {
+                console.log(`Failed: ${createPayrollResult[0].message}`)
+            } else console.log("Failed: Unknown reason")
+        }
+        console.log(`Pushing ad-hoc payments into new payroll`)
+        const uploadAdHocResult = await uploadAdHocPayments(payments)
+        console.log(`Pushing ad-hoc payments is complete`)
+        if (uploadAdHocResult[1]) {
+            console.log(`OK: ${uploadAdHocResult[1].message}`)
+        } else {
+            if (uploadAdHocResult[0]) {
+                console.log(`Failed: ${uploadAdHocResult[0].message}`)
+            } else console.log("Failed: Unknown reason")
+        }
+    }
 }
 
 main()
