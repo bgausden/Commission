@@ -818,7 +818,8 @@ async function main(): Promise<void> {
                                     // value = generalServRevenue ? generalServRevenue.revenue : 0
 
                                     if (servicesRevenues) {
-                                        servicesRevenues.forEach((element) => {})
+                                        servicesRevenues.forEach((element) => 
+                                        {})
                                     }
 
                                     commComponents[SERV_REV_INDEX] = value
