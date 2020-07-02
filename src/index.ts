@@ -688,8 +688,8 @@ async function main(): Promise<void> {
                             payComponent === COMM_FOR ||
                             payComponent.startsWith(TOTAL_FOR)
                         ) {
-                            // work out what the value is for the Tip or Commission
-                            // by looking at the last cell in the row
+                            /* Work out what the value is for the Tip or Commission
+                            by looking at the last cell in the row */
                             const maxRowIndex = wsaa[rowIndex - j].length - 1
                             if (wsaa[rowIndex - j][maxRowIndex] !== undefined) {
                                 value = Number(wsaa[rowIndex - j][maxRowIndex])
