@@ -2,6 +2,13 @@
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 // TODO add new commission calculation where at a certain service revenue, *all* revenue pays at the same rate (no more hurdles, no more income)
+// TODO add support for hourly wage staff:
+/*
+Gausden, ElizabethStaff ID #: 048 								
+Hourly Pay (10.5306 hours @ HK$&nbsp;40/hr):								421.22
+			# Services	# Clients	# Comps	Base Earnings		Earnings
+Total for Gausden, Elizabeth			0	0	0	HK$ 0		421.22
+*/
 
 import { config } from "node-config-ts"
 import prettyjson from "prettyjson"
@@ -234,8 +241,9 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
     let totalServiceComm: number
     const sh = staffHurdle as TStaffHurdle // get an iterable version of the staffHurdle import
     const shm = new Map<TStaffID, any>()
-    // eslint-disable-next-line arrow-parens
-    Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
+    // TODO Do we really need to build a new map from the entirety of the staff hurdle object? Surely need only this staff member
+    // Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
+    shm.set(staffID, sh[staffID])
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
     if (shm.has(staffID)) {
@@ -656,10 +664,12 @@ async function main(): Promise<void> {
                     We expect to fall through to here. Not every row contains a staff ID and name
                 } */
             }
-            if ((element as string).startsWith(TOTAL_FOR)) {
-                // If we've found a line beginning with "Total for " then we've got to the subtotals  and total for a staff member
-                // Keep track of the last totals row (for the previous employee) because we'll need to search
-                // back to this row to locate all of the revenue numbers for the current staff member.
+            if ((element as string).startsWith(TOTAL_FOR)) { // If we've found a line beginning with "Total for " then we've got to the subtotals  and total for a staff member
+                if (staffID === undefined) throw new Error("Reached Totals row with no identified StaffID") // Probably a new member of staff with no assigned StaffID in Mindbody
+
+                /* Keep track of the last totals row (for the previous employee) because we'll need to search
+                    back to this row to locate all of the revenue numbers for the current staff member.
+                */
                 // currentIDRow = currentTotalForRow;
                 currentTotalForRow = rowIndex
                 // const staffID = getStaffID(wsaa, prevTotalForRow);
@@ -706,7 +716,7 @@ async function main(): Promise<void> {
                                 payComponent = "Services Commission"
                                 const serviceRevenue = value
                                 value = calcServiceCommission(
-                                    staffID!,
+                                    staffID,
                                     staffMap,
                                     serviceRevenue // The  value is the the total services revenue calculated above
                                 )
@@ -755,6 +765,6 @@ form the payroll for the month */
 
 main()
     .then(() => {
-        "Waiting on Talenox updates."
+        console.log("Done!")
     })
     .catch((error) => console.error(`${error}`))
