@@ -789,7 +789,13 @@ async function main(): Promise<void> {
                 /**
                  * @var commComponents - array containing [tips, product commission, services commission, services revenue]
                  */
-                const commComponents: [number, number, number, number] = [0, 0, 0, 0]
+                // const commComponents: [number, number, number, number] = [0, 0, 0, 0]
+                const commComponents: TCommComponents = {
+                    tips: 0,
+                    productCommission: 0,
+                    generalServiceCommission: 0,
+                    specialRateCommission: {}
+                }
                 /* find and process tips, product commission and services commission
                 go back 3 lines from the "Total for:" line - the tips and product commission
                 should be in that range .
@@ -843,14 +849,14 @@ async function main(): Promise<void> {
                                     )
                                     // const generalServRevenue= servicesRevenues.get(GENERAL_SERV_REVENUE)
                                     // value = generalServRevenue ? generalServRevenue.revenue : 0
-
+                                    value = 0
                                     if (servicesRevenues) {
                                         servicesRevenues.forEach((element) => 
-                                        {})
+                                        {value += element.revenue})
                                     }
 
                                     commComponents[SERV_REV_INDEX] = value
-                                    // set services comm to zero for now. Will fill-in later
+                                    // set services comm to  total revenue for now. Will fill-in later
                                     payComponent = "Services Commission"
                                     const serviceRevenue = value
 
@@ -860,6 +866,7 @@ async function main(): Promise<void> {
                                         serviceRevenue // The  value is the the total services revenue calculated above
                                     )
                                 }
+                                // TODO once commComponents is refactored into an object, we can add the servicesRevenues to the object alongside the tips, product comm and general services comm
                                 commComponents[SERV_COMM_INDEX] = value
                                 console.log(`${payComponent} ${value}`)
                             }
