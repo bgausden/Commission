@@ -212,7 +212,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
  * @param {TStaffID} staffID - ID for the member of staff for whom we are calculating revenues/comms
  */
 
-function getServicesRevenue(
+function getServiceRevenues(
     wsArray: unknown[][],
     currentTotalRow: number,
     // tslint:disable-next-line: no-shadowed-variable
@@ -233,6 +233,7 @@ function getServicesRevenue(
     const sh = (staffHurdle as TStaffHurdles)[staffID]
     const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
     let servType = GENERAL_SERV_REVENUE
+    // TODO we need to go top-down and make sure we reset the servType
     for (let i = numSearchRows; i >= 1; i--) {
         /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
           i.e. <revenue category> Pay Rate: <service name> (<commission rate>)
@@ -769,10 +770,12 @@ async function main(): Promise<void> {
                     generalServiceCommission: 0,
                     specialRateCommission: {}
                 }
-                /* find and process tips, product commission and services commission
+                /*
+                Find and process tips, product commission and services commission
                 go back 3 lines from the "Total for:" line - the tips and product commission
                 should be in that range .
-                Note tips and or product commission may not exist. */
+                Note tips and or product commission may not exist. 
+                */
                 console.log(`Payroll details for  ${staffID} ${staffName}`)
                 for (let j = 3; j >= 0; j--) {
                     let payComponent: string = wsaa[rowIndex - j][0] as string
@@ -790,12 +793,12 @@ async function main(): Promise<void> {
                                 value = Number(wsaa[rowIndex - j][maxRowIndex])
                                 if (payComponent === TIPS_FOR) {
                                     payComponent = "Tips:"
-                                    commComponents[TIPS_INDEX] = value
+                                    commComponents.tips = value
                                     console.log(`${payComponent} ${value}`)
                                 }
                                 if (payComponent === COMM_FOR) {
                                     payComponent = "Product Commission:"
-                                    commComponents[PROD_COMM_INDEX] = value
+                                    commComponents.productCommission = value
                                     console.log(`${payComponent} ${value}`)
                                 }
                             } else {
@@ -809,11 +812,11 @@ async function main(): Promise<void> {
                                 // Old way - services revenue is a single number
                                 if (staffID) {
                                     const totalServicesRevenues = sumServiceRevenues(
-                                        getServicesRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
+                                        getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                     )
 
                                     // New way - some revenues from "general services", some revenues from custom pay rates
-                                    const servicesRevenues = getServicesRevenue(
+                                    const servicesRevenues = getServiceRevenues(
                                         wsaa,
                                         currentTotalForRow,
                                         currentStaffIDRow,
@@ -828,7 +831,7 @@ async function main(): Promise<void> {
                                         {value += element.revenue})
                                     }
 
-                                    commComponents[SERV_REV_INDEX] = value
+                                    commComponents.totalServiceRevenue = value
                                     // set services comm to  total revenue for now. Will fill-in later
                                     payComponent = "Services Commission"
                                     const serviceRevenue = value
