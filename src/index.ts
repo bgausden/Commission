@@ -200,7 +200,8 @@ function sumRevenue(
     // tslint:disable-next-line: no-shadowed-variable
     currentStaffIDRow: number,
     // tslint:disable-next-line: no-shadowed-variable
-    revCol: number
+    revCol: number,
+    staffID: TStaffID // to assist with debugging
 ): number {
     /* starting on the staff member's totals row, sum all the numeric values in the revenue column
     back as far as the prior staff member's totals row + 1. Use this as the service revenue so we can ignore
@@ -352,6 +353,20 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
                 hurdle1Revenue = 0
             }
         }
+
+        /*  
+        Rex 019 has a special legacy arrangement. If he hits 100k in Service Revenue
+        his commission is calculated at hurdle2 rate applied to total Service Revenue 
+        ( not just the revenue between hurdle1 and hurdle2)
+        */
+
+        if (staffID === "019") {
+            hurdle1Revenue = 0
+            hurdle2Revenue = serviceRev
+            hurdle3Revenue = 0
+            console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
+        }
+
         // no hurdles so work out how much they receive in comm by applying base rate to entire services revenue
 
         // TODO: sum and set servicesComm once we have all the components.
@@ -710,7 +725,7 @@ async function main(): Promise<void> {
                                 // Reached the end of this staff members block in the report
 
                                 payComponent = "Services Revenue:"
-                                value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol)
+                                value = sumRevenue(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                 commComponents[SERV_REV_INDEX] = value
                                 // set services comm to zero for now. Will fill-in later
                                 payComponent = "Services Commission"
