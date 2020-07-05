@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
@@ -10,6 +11,7 @@
 Gausden, ElizabethStaff ID #: 048 								
 Hourly Pay (10.5306 hours @ HK$&nbsp;40/hr):								421.22
 			# Services	# Clients	# Comps	Base Earnings		Earnings
+// eslint-disable-next-line no-irregular-whitespace
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		421.22
 */
 
@@ -41,6 +43,7 @@ import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
+import { StaffHurdle } from "./IStaffHurdle"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -336,7 +339,7 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
     let totalServiceComm: number
     const sh = staffHurdle as TStaffHurdles // get an iterable version of the staffHurdle import
     // TODO review if we really need shm or could simply use the import staffHurdle directly
-    const shm = new Map<TStaffID, any>()
+    const shm = new Map<TStaffID, StaffHurdle>()
     // TODO Do we really need to build a new map from the entirety of the staff hurdle object? Surely need only this staff member
     // Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
     shm.set(staffID, sh[staffID])
@@ -797,6 +800,7 @@ async function main(): Promise<void> {
                     productCommission: 0,
                     generalServiceCommission: 0,
                     specialRateCommission: {},
+                    totalServiceRevenue: 0
                 }
                 /*
                 Find and process tips, product commission and services commission
@@ -871,7 +875,7 @@ async function main(): Promise<void> {
                                     )
                                 }
                                 // TODO once commComponents is refactored into an object, we can add the servicesRevenues to the object alongside the tips, product comm and general services comm
-                                commComponents[SERV_COMM_INDEX] = value
+                                commComponents.generalServiceCommission = value
                                 console.log(`${payComponent} ${value}`)
                             }
                             value = 0

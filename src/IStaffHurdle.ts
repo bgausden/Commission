@@ -1,3 +1,7 @@
+
+// TODO find a way to limit this to the actual services defined in Mindbody (get from Services REST API)
+export type TServiceType = string
+
 export type CustomPayRate = { [name: string]: number|undefined}
 
 export interface StaffHurdle {
