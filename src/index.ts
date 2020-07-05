@@ -553,20 +553,20 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
                     payment = { ...paymentProto }
                     switch (k) {
                         case TIPS_INDEX:
-                            payment.amount = commMapEntry[TIPS_INDEX]
+                            payment.amount = commMapEntry.tips
                             payment.type = "Tips"
                             payment.remarks = TIPS_REMARK
                             payments.push(payment)
                             break
                         case PROD_COMM_INDEX:
-                            payment.amount = commMapEntry[PROD_COMM_INDEX]
+                            payment.amount = commMapEntry.productCommission
                             payment.type = "Commission (Irregular)"
                             payment.remarks = PRODUCT_COMM_REMARK
                             payments.push(payment)
                             break
                         case SERV_COMM_INDEX:
                             payment.type = "Commission (Irregular)"
-                            payment.amount = commMapEntry[SERV_COMM_INDEX]
+                            payment.amount = commMapEntry.generalServiceCommission
                             payment.remarks = SERVICES_COMM_REMARK
                             payments.push(payment)
                             break
@@ -778,7 +778,8 @@ async function main(): Promise<void> {
                     We expect to fall through to here. Not every row contains a staff ID and name
                 } */
             }
-            if ((element as string).startsWith(TOTAL_FOR)) { // If we've found a line beginning with "Total for " then we've got to the subtotals  and total for a staff member
+            if ((element as string).startsWith(TOTAL_FOR)) {
+                // If we've found a line beginning with "Total for " then we've got to the subtotals  and total for a staff member
                 if (staffID === undefined) throw new Error("Reached Totals row with no identified StaffID") // Probably a new member of staff with no assigned StaffID in Mindbody
 
                 /* Keep track of the last totals row (for the previous employee) because we'll need to search
@@ -795,7 +796,7 @@ async function main(): Promise<void> {
                     tips: 0,
                     productCommission: 0,
                     generalServiceCommission: 0,
-                    specialRateCommission: {}
+                    specialRateCommission: {},
                 }
                 /*
                 Find and process tips, product commission and services commission
@@ -854,8 +855,9 @@ async function main(): Promise<void> {
                                     // value = generalServRevenue ? generalServRevenue.revenue : 0
                                     value = 0
                                     if (servicesRevenues) {
-                                        servicesRevenues.forEach((element) => 
-                                        {value += element.revenue})
+                                        servicesRevenues.forEach((element) => {
+                                            value += element.revenue
+                                        })
                                     }
 
                                     commComponents.totalServiceRevenue = value
