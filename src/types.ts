@@ -17,7 +17,6 @@ export type THurdle3Comm = number
 export type TTalenoxPaymentType = "Commission (Irregular)" | "Tips"| "Others"
 
 export type TServiceCommMap = Map<TStaffName, IServiceComm>
-// export type TCommComponents = [TTips, TProductCommission, TServiceCommission, TServiceRevenue]
 export type TCommSimpleComponentsKeys = "tips" | "productCommission" | "generalServiceCommission"
 export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission
 export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys,TCommSimpleComponentsValues> 
@@ -26,8 +25,9 @@ export type TSpecialRateValue = {
    customRate: number
 }
 export type TCommSpecialRateKeys = Record<string,TSpecialRateValue>
-export type TCommComponents = 
-/* export type TCommComponents = {
+// export type TCommComponents = [TTips, TProductCommission, TServiceCommission, TServiceRevenue]
+export type TCommComponents = {
+   totalServiceRevenue: TServiceRevenue,
    tips: TTips,
    productCommission: TProductCommission,
    generalServiceCommission: TServiceCommission,
@@ -37,7 +37,7 @@ export type TCommComponents =
          customRate: number
       }
    }
-} */
+}
 export type TCommMap = Map<TStaffName, TCommComponents>
 export type TStaffID = string
 
