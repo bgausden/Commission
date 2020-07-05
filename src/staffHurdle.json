@@ -89,9 +89,9 @@
     "024": {
         "staffName": "Ava",
         "mbCommRate": 0.4,
-        "baseRate": 0.4,
-        "hurdle1Level": 0,
-        "hurdle1Rate": 0,
+        "baseRate": 0.0,
+        "hurdle1Level": 25000,
+        "hurdle1Rate": 0.4,
         "hurdle2Level": 0,
         "hurdle2Rate": 0
     },
@@ -292,11 +292,11 @@
         "staffName": "Monita",
         "mbCommRate": 1.0,
         "baseRate": 0,
-        "hurdle1Level": 38000,
+        "hurdle1Level": 42000,
         "hurdle1Rate": 0.1,
-        "hurdle2Level": 65000,
+        "hurdle2Level": 71000,
         "hurdle2Rate": 0.11,
-        "hurdle3Level": 76000,
+        "hurdle3Level": 84000,
         "hurdle3Rate": 0.12
     },
     "040": {
