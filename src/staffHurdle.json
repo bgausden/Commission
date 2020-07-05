@@ -428,7 +428,7 @@
         "hurdle2Level": 71000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 84000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
         "contractor": false,
         "poolsWith": [],
         "customPayRates": []

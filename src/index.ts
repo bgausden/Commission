@@ -855,9 +855,8 @@ async function main(): Promise<void> {
                                     // value = generalServRevenue ? generalServRevenue.revenue : 0
                                     value = 0
                                     if (servicesRevenues) {
-                                        servicesRevenues.forEach((element) => {
-                                            value += element.revenue
-                                        })
+                                        servicesRevenues.forEach((element) => 
+                                        {value += element.revenue})
                                     }
 
                                     commComponents.totalServiceRevenue = value
