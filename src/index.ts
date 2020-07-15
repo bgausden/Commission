@@ -35,11 +35,16 @@ import {
     TServiceRevenue,
     TCommMap,
     TStaffHurdles,
+    COMM_COMPONENT_TIPS,
+    COMM_COMPONENT_PRODUCT_COMMISSION,
+    COMM_COMPONENT_GENERAL_SERVICE_COMMISSION,
+    COMM_COMPONENT_TOTAL_SERVICE_REVENUE,
+    COMM_COMPONENT_SPECIAL_RATE_COMMISSION,
 } from "./types.js"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
-import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
+import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox_constants"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
@@ -85,10 +90,12 @@ const PRODUCT_COMM_REMARK = "Product commission"
 
 const GENERAL_SERV_REVENUE = "General Service Revenues"
 
+const REX_WONG_ID = "019"
+
 /* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
-const commMap = new Map<TStaffName, TCommComponents>()
+const commMap: TCommMap = new Map<TStaffName, TCommComponents>()
 // const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
 const serviceCommMap: TServiceCommMap = new Map<TStaffName, IServiceComm>()
 const emptyServComm: IServiceComm = {
@@ -462,11 +469,11 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
         ( not just the revenue between hurdle1 and hurdle2)
         */
 
-        if (staffID === "019") {
+        if (staffID === REX_WONG_ID) {
             hurdle1Revenue = 0
             hurdle2Revenue = serviceRev
             hurdle3Revenue = 0
-            console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
+            console.warn(`Rex ${REX_WONG_ID} has a special legacy pay scheme. See Sioban or Barry`)
         }
 
         // no hurdles so work out how much they receive in comm by applying base rate to entire services revenue
@@ -546,34 +553,57 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
                     staffName: `${staffMapEntry.lastName} ${staffMapEntry.firstName}`,
                 }
             }
-            const serviceCommMapEntry = _commMap.get(staffID)
-            if (serviceCommMapEntry === undefined) {
-                throw new Error(`Empty serviceCommMap entry returned for staffID ${staffID}. (Should never happen)`)
+            const commMapEntry = _commMap.get(staffID)
+            if (commMapEntry === undefined) {
+                throw new Error(`Empty commMap entry returned for staffID ${staffID}. (Should never happen)`)
             } else {
-                for (let k = 0; k < commMapEntry.length; k++) {
-                    /* Create a new payment object based on paymentProto which
-                contains staffID, firstName, etc. */
+                // for (let k = 0; k < commMapEntry.length; k++) {
+                for (const [key, value] of Object.entries(commMapEntry)) {
+                    /* 
+                Create a new payment object based on paymentProto which
+                contains staffID, firstName, etc. 
+                */
                     payment = { ...paymentProto }
-                    switch (k) {
-                        case TIPS_INDEX:
-                            payment.amount = commMapEntry.tips
-                            payment.type = "Tips"
+                    switch (key) {
+                        case COMM_COMPONENT_TIPS:
+                            if (typeof value === "number") {
+                                payment.amount = value
+                            } else {
+                                throw new Error(`Invalid value for 'tips' in commMapEntry`)
+                            }
+                            payment.type = TALENOX_TIPS
                             payment.remarks = TIPS_REMARK
                             payments.push(payment)
                             break
-                        case PROD_COMM_INDEX:
+                        case COMM_COMPONENT_PRODUCT_COMMISSION:
                             payment.amount = commMapEntry.productCommission
-                            payment.type = "Commission (Irregular)"
+                            payment.type = TALENOX_COMMISSION_IRREGULAR
                             payment.remarks = PRODUCT_COMM_REMARK
                             payments.push(payment)
                             break
-                        case SERV_COMM_INDEX:
-                            payment.type = "Commission (Irregular)"
+                        case COMM_COMPONENT_GENERAL_SERVICE_COMMISSION:
+                            payment.type = TALENOX_COMMISSION_IRREGULAR
                             payment.amount = commMapEntry.generalServiceCommission
                             payment.remarks = SERVICES_COMM_REMARK
                             payments.push(payment)
                             break
-                        case SERV_REV_INDEX:
+                        case COMM_COMPONENT_SPECIAL_RATE_COMMISSION:
+                            /*
+                            Loop through all the special rates services and create a Talenox payment entry for each
+                            */
+                            for (const [service, specialRateCommission] of Object.entries(
+                                commMapEntry.specialRateCommission
+                            )) {
+                                payment.amount = specialRateCommission.customRate * specialRateCommission.serviceRevenue
+                                payment.type = TALENOX_COMMISSION_IRREGULAR
+                                payment.remarks = `${service} special commission rate of ${
+                                    specialRateCommission.customRate * 100
+                                }`
+                                payments.push(payment)
+                                payment = { ...paymentProto } // reset to empty payment
+                            }
+                            break
+                        case COMM_COMPONENT_TOTAL_SERVICE_REVENUE:
                             // do nothing
                             break
                         default:
@@ -800,7 +830,7 @@ async function main(): Promise<void> {
                     productCommission: 0,
                     generalServiceCommission: 0,
                     specialRateCommission: {},
-                    totalServiceRevenue: 0
+                    totalServiceRevenue: 0,
                 }
                 /*
                 Find and process tips, product commission and services commission
@@ -859,8 +889,9 @@ async function main(): Promise<void> {
                                     // value = generalServRevenue ? generalServRevenue.revenue : 0
                                     value = 0
                                     if (servicesRevenues) {
-                                        servicesRevenues.forEach((element) => 
-                                        {value += element.revenue})
+                                        servicesRevenues.forEach((element) => {
+                                            value += element.revenue
+                                        })
                                     }
 
                                     commComponents.totalServiceRevenue = value
