@@ -1,7 +1,5 @@
-/* eslint-disable */
 import { IServiceComm } from "./IServiceComm"
 import { IStaffNames } from "./IStaffNames"
-import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH } from "./talenox_constants"
 import { StaffHurdle } from "./IStaffHurdle"
 
 export type TStaffName = string
@@ -14,26 +12,47 @@ export type THurdle1Comm = number
 export type THurdle2Comm = number
 export type THurdle3Comm = number
 
-export type TTalenoxPaymentType = "Commission (Irregular)" | "Tips"| "Others"
-
 export type TServiceCommMap = Map<TStaffName, IServiceComm>
-export type TCommSimpleComponentsKeys = "tips" | "productCommission" | "generalServiceCommission"
+type TCommSimpleComponentTips = "tips"
+type TCommSimpleComponentProductCommission = "productCommission"
+type TCommSimpleComponentGeneralServiceCommission = "generalServiceCommisison"
+export type TCommSimpleComponentsKeys = TCommSimpleComponentTips | TCommSimpleComponentProductCommission | TCommSimpleComponentGeneralServiceCommission
 export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission
 export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys,TCommSimpleComponentsValues> 
 export type TSpecialRateValue = {
-   serviceRevenue: number,
+   serviceRevenue: number
    customRate: number
 }
 export type TCommSpecialRateKeys = Record<string,TSpecialRateValue>
 // export type TCommComponents = [TTips, TProductCommission, TServiceCommission, TServiceRevenue]
+
+export const COMM_COMPONENT_TOTAL_SERVICE_REVENUE = "totalServiceRevenue"
+export const COMM_COMPONENT_TIPS = "tips"
+export const COMM_COMPONENT_PRODUCT_COMMISSION = "productCommission"
+export const COMM_COMPONENT_GENERAL_SERVICE_COMMISSION = "generalServiceCommission"
+export const COMM_COMPONENT_SPECIAL_RATE_COMMISSION = "specialRateCommission"
+export const COMM_COMPONENT_SPECIAL_RATE_COMMISSION_SERVICE_REVENUE = "serviceRevenue"
+export const COMM_COMPONENT_SPECIAL_RATE_COMMISSION_CUSTOM_RATE = "customRate"
+
+export type TCommComponentTotalServiceRevenue = typeof COMM_COMPONENT_TOTAL_SERVICE_REVENUE
+export type TCommComponentTips = typeof COMM_COMPONENT_TIPS
+export type TCommComponentProductCommission = typeof COMM_COMPONENT_PRODUCT_COMMISSION
+export type TCommComponentsGeneralServiceCommission = typeof COMM_COMPONENT_GENERAL_SERVICE_COMMISSION
+export type TCommComponentSpecialRateCommission = {
+   [key: string]: { // key is any valid service in MB so cannot be an enum (too many, changes too often)
+      serviceRevenue: TServiceRevenue
+      customRate: number
+   }
+}
+
 export type TCommComponents = {
-   totalServiceRevenue: TServiceRevenue,
-   tips: TTips,
-   productCommission: TProductCommission,
-   generalServiceCommission: TServiceCommission,
+   totalServiceRevenue: TServiceRevenue
+   tips: TTips
+   productCommission: TProductCommission
+   generalServiceCommission: TServiceCommission
    specialRateCommission: {
-      [key: string]: {
-         serviceRevenue: TServiceRevenue,
+      [key: string]: { // key is any valid service in MB so cannot be an enum (too many, changes too often)
+         serviceRevenue: TServiceRevenue
          customRate: number
       }
    }
