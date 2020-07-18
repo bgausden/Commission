@@ -417,7 +417,7 @@
         "hurdle3Rate": 0,
         "contractor": false,
         "poolsWith": [],
-        "customPayRates": [{ "Toner": 0.33 }]
+        "customPayRates": [{ "Shampoo and Blow Dry": 0.33 }, {"Smoothing - Brazilian Blowout": 0.50}]
     },
     "039": {
         "staffName": "Monita",
@@ -501,7 +501,7 @@
         "hurdle3Rate": 0,
         "contractor": false,
         "poolsWith": [],
-        "customPayRates": []
+        "customPayRates": [{"Extensions - Application":0.50}, {"Extensions - Removal": 0.50}]
     },
     "045": {
         "staffName": "Erica",

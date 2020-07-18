@@ -1,9 +1,9 @@
 {
-    "PAYROLL_WB_NAME": "data/Payroll Report 6-1-2020 - 6-30-2020.xlsx",
-    "PAYROLL_MONTH": "June",
+    "PAYROLL_WB_NAME": "data/Payroll Report 7-1-2020 - 7-16-2020.xlsx",
+    "PAYROLL_MONTH": "July",
     "PAYROLL_YEAR": "2020",
-    "PAYMENTS_WB_NAME": "Talenox Payments 202006.xlsx",
+    "PAYMENTS_WB_NAME": "Talenox Payments 202007.xlsx",
     "PAYMENTS_WS_NAME": "Payments",
     "missingStaffAreFatal": false,
-    "updateTalenox": false
+    "updateTalenox": true
 }
