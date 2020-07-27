@@ -16,12 +16,15 @@ export type TServiceCommMap = Map<TStaffName, GeneralServiceComm>
 type TCommSimpleComponentTips = "tips"
 type TCommSimpleComponentProductCommission = "productCommission"
 type TCommSimpleComponentGeneralServiceCommission = "generalServiceCommisison"
-export type TCommSimpleComponentsKeys = TCommSimpleComponentTips | TCommSimpleComponentProductCommission | TCommSimpleComponentGeneralServiceCommission
+export type TCommSimpleComponentsKeys =
+    | TCommSimpleComponentTips
+    | TCommSimpleComponentProductCommission
+    | TCommSimpleComponentGeneralServiceCommission
 export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission
-export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys,TCommSimpleComponentsValues> 
+export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>
 export type TCustomRateEntry = {
-   serviceRevenue: number
-   customRate: number | null
+    serviceRevenue: number
+    customRate: number | null
 }
 
 export const COMM_COMPONENT_TOTAL_SERVICE_REVENUE = "totalServiceRevenue"
@@ -39,17 +42,17 @@ export type TCommComponentsGeneralServiceCommission = typeof COMM_COMPONENT_GENE
 export type TCommComponentCustomRateCommission = typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION
 export type TCommComponentTotalServiceCommission = typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION
 export type TCommComponentCustomRateCommissions = {
-   [key: string]: TServiceCommission
+    [key: string]: TServiceCommission
 }
 
 export type TCommComponents = {
-   totalServiceRevenue: TServiceRevenue
-   tips: TTips
-   productCommission: TProductCommission
-   generalServiceCommission: TServiceCommission
-   customRateCommission: TServiceCommission
-   customRateCommissions: TCommComponentCustomRateCommissions
-   totalServiceCommission: TServiceCommission
+    totalServiceRevenue: TServiceRevenue
+    tips: TTips
+    productCommission: TProductCommission
+    generalServiceCommission: TServiceCommission
+    customRateCommission: TServiceCommission
+    customRateCommissions: TCommComponentCustomRateCommissions
+    totalServiceCommission: TServiceCommission
 }
 export type TCommMap = Map<TStaffName, TCommComponents>
 export type TStaffID = string
@@ -58,9 +61,9 @@ export type TStaffID = string
 export type TStaffMap = Map<TStaffID, IStaffNames>
 
 export type TStaffHurdles = {
-   [key: string]: StaffHurdle
+    [key: string]: StaffHurdle
 }
 
 export type TServiceName = string
-export type TServiceCustomRate =  number | null
+export type TServiceCustomRate = number | null
 export type TServRevenueMap = Map<TServiceName, TCustomRateEntry>

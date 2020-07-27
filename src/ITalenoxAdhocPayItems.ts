@@ -1,4 +1,4 @@
-import { TTalenoxPaymentType } from "./talenox_types"
+import { TTalenoxPaymentType } from "./talenox-types"
 
 /* eslint-disable */
 export interface ITalenoxAdhocPayItems {

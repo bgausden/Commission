@@ -14,12 +14,13 @@ Sales Commission:									36
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10	
 */
 
-import { config } from "node-config-ts"
+import node_config_ts from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
-import fetch from "node-fetch"
 import { StaffInfo } from "./IStaffInfo"
-import { Headers, RequestInit } from "node-fetch"
+import {Headers}  from "node-fetch"
+import fetch from "node-fetch"
+import { RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { GeneralServiceComm } from "./IServiceComm"
@@ -48,13 +49,17 @@ import {
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
-import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox_constants"
+import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox-constants.js"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
 import { StaffHurdle } from "./IStaffHurdle"
+import { mainDebug } from "./debug.js"
+import { getUserToken } from "./mb-functions.js"
+import { SITE_ID } from "./mb-constants.js"
 
-// const FILE_PATH: string = "Payroll Report.xlsx";
+const config = node_config_ts.config
+
 const FILE_PATH = config.PAYROLL_WB_NAME
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
@@ -743,6 +748,9 @@ async function main(): Promise<void> {
     console.log(`Requesting employees from Talenox`)
     const staffMap = await getTalenoxEmployees()
     console.log(`Requesting employees complete`)
+    const userToken = await getUserToken()
+    mainDebug(`Requesting User Token for Site: ${SITE_ID} complete`)
+    process.abort()
     const WS = readExcelFile(config.PAYROLL_WB_NAME)
     // Using option {header:1} returns an array of arrays
     // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off

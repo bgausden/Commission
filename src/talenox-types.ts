@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { TALENOX_COMMISSION_IRREGULAR, TALENOX_TIPS, TALENOX_OTHERS } from "./talenox_constants";
+import { TALENOX_COMMISSION_IRREGULAR, TALENOX_TIPS, TALENOX_OTHERS } from "./talenox-constants";
 
 export type TTalenox_Commission_Irregular = typeof TALENOX_COMMISSION_IRREGULAR
 export type TTalenox_Commission_Tips = typeof TALENOX_TIPS
