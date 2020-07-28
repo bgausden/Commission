@@ -12,7 +12,8 @@
             "program": "${workspaceFolder}/dist/index.js",
             "runtimeArgs": ["--experimental-json-modules"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "sourceMaps": true
+            "sourceMaps": true,
+            "smartStep": true
         },
         {
             "name": "Current TS File",

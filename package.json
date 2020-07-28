@@ -29,6 +29,7 @@
         "xlsx": "^0.14.5"
     },
     "devDependencies": {
+        "@types/extend": "^3.0.1",
         "@types/node": "^13.13.9",
         "@types/node-fetch": "^2.5.7",
         "@types/prettyjson": "0.0.29",

@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
 // TODO Implement per-service payment rates (Pay rate: Mens Cut and Blow Dry - immediately follows staff id # line)
@@ -13,12 +12,13 @@ Sales Commission:									36
 			# Services	# Clients	# Comps	Base Earnings		Earnings	
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10	
 */
+// TODO continue work on sourcing data from MB when the payroll endpoint is more mature.
 
 import node_config_ts from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
-import {Headers}  from "node-fetch"
+import { Headers } from "node-fetch"
 import fetch from "node-fetch"
 import { RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
@@ -49,14 +49,18 @@ import {
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
-import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox-constants.js"
+import {
+    TALENOX_BASE_URL,
+    TALENOX_WHOLE_MONTH,
+    TALENOX_TIPS,
+    TALENOX_COMMISSION_IRREGULAR,
+} from "./talenox-constants.js"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
 import { StaffHurdle } from "./IStaffHurdle"
 import { mainDebug } from "./debug.js"
-import { getUserToken } from "./mb-functions.js"
-import { SITE_ID } from "./mb-constants.js"
+import { getServices, getSales } from "./mb-functions.js"
 
 const config = node_config_ts.config
 
@@ -195,7 +199,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
                 // Missing Staff ID in MB?
                 throw new Error(
                     `${staffInfo[staffNameIndex].split(",")[1]} ${
-                    staffInfo[staffNameIndex].split(",")[0]
+                        staffInfo[staffNameIndex].split(",")[0]
                     } does not appear to have a Staff ID in MB`
                 )
             }
@@ -312,12 +316,13 @@ function getServiceRevenues(
     return servRevenueMap
 }
 
-
 function isContractor(staffID: TStaffID): boolean {
     const sh = staffHurdle as TStaffHurdles
     if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
         return sh[staffID].contractor
-    } else { return false }
+    } else {
+        return false
+    }
 }
 
 function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
@@ -748,9 +753,16 @@ async function main(): Promise<void> {
     console.log(`Requesting employees from Talenox`)
     const staffMap = await getTalenoxEmployees()
     console.log(`Requesting employees complete`)
-    const userToken = await getUserToken()
-    mainDebug(`Requesting User Token for Site: ${SITE_ID} complete`)
-    process.abort()
+
+    const services = await getServices()
+    mainDebug("Successfully retrieved MB services")
+
+    const firstOfMonth = new Date(`${config.PAYROLL_MONTH} 1,${config.PAYROLL_YEAR}`)
+    const lastOfMonth = new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth() + 1, 0)
+    const sales = await getSales(firstOfMonth, lastOfMonth)
+
+    // TODO need the payroll/ScheduledServiceEarnings endpoint to provide the revenue for the service.
+    // Otherwise need to pull all services and sales and then process from there.
     const WS = readExcelFile(config.PAYROLL_WB_NAME)
     // Using option {header:1} returns an array of arrays
     // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off
@@ -786,9 +798,9 @@ async function main(): Promise<void> {
                         } else {
                             const text = `${staffID ? staffID : "null"}${
                                 staffInfo.firstName ? " " + staffInfo.firstName : ""
-                                }${
+                            }${
                                 staffInfo.lastName ? " " + staffInfo.lastName : ""
-                                } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                            } in MB Payroll Report line ${rowIndex} not in Talenox.`
                             if (config.missingStaffAreFatal) {
                                 throw new Error("Fatal: " + text)
                             } else {
@@ -829,7 +841,7 @@ async function main(): Promise<void> {
                     customRateCommissions: {},
                     totalServiceRevenue: 0,
                     customRateCommission: 0,
-                    totalServiceCommission: 0
+                    totalServiceCommission: 0,
                 }
                 /*
                 Find and process tips, product commission and services commission
@@ -871,7 +883,8 @@ async function main(): Promise<void> {
                                 payComponent = "Services Revenue:"
 
                                 // Old way - services revenue is a single number
-                                if (staffID) { // have a guard further up so this check might be superfluous
+                                if (staffID) {
+                                    // have a guard further up so this check might be superfluous
                                     /* const totalServicesRevenues = sumServiceRevenues(
                                         getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                     ) */
@@ -920,7 +933,8 @@ async function main(): Promise<void> {
                                     if (servicesRevenues) {
                                         servicesRevenues.forEach((customRateEntry, serviceName) => {
                                             if (serviceName !== GENERAL_SERV_REVENUE) {
-                                                const customServiceRevenue = customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
+                                                const customServiceRevenue =
+                                                    customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
                                                 commComponents.customRateCommissions[serviceName] = customServiceRevenue
                                                 totalCustomServiceCommission += customServiceRevenue
                                             }
@@ -931,7 +945,6 @@ async function main(): Promise<void> {
                                 } else {
                                     throw new Error(`Somehow don't have a staffID despite guard further up`)
                                 }
-
                             }
                             value = 0
                         }
@@ -1004,4 +1017,4 @@ main()
     .then(() => {
         console.log("Done!")
     })
-    .catch((error) => console.error(`${error}`))
+    .catch((error) => console.error(`${(error as Error).message}`))
