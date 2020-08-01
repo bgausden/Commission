@@ -360,12 +360,13 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
         ( not just the revenue between hurdle1 and hurdle2)
         */
 
-        if (staffID === "019") {
-            hurdle1Revenue = 0
-            hurdle2Revenue = serviceRev
-            hurdle3Revenue = 0
-            console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
-        }
+       if (staffID === "019" && serviceRev > hurdle2Level) {
+        let monthlySalary = (hurdle1Level * hurdle1Rate) // back out salary instead of hard-coding
+        hurdle1Revenue = 0
+        hurdle2Revenue = serviceRev - (monthlySalary / hurdle2Rate) // monthlySalary / hurdle2Rate will pay out at $monthlySalary
+        hurdle3Revenue = 0
+        console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
+    }
 
         // no hurdles so work out how much they receive in comm by applying base rate to entire services revenue
 
