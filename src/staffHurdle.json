@@ -84,7 +84,9 @@
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["007"]
+        "poolsWith": [
+            "007"
+        ]
     },
     "024": {
         "staffName": "Ava",
@@ -115,7 +117,15 @@
         "hurdle2Level": 82000,
         "hurdle2Rate": 0.11,
         "hurdle3Level": 96000,
-        "hurdle3Rate": 0.12
+        "hurdle3Rate": 0.12,
+        "customPayRates": [
+            {
+                "Laser - Boyzilian - Men": 0.15
+            },
+            {
+                "Laser - Thong Line - Men": 0.15
+            }
+        ]
     },
     "032": {
         "staffName": "Coey",
@@ -250,7 +260,9 @@
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["006"]
+        "poolsWith": [
+            "006"
+        ]
     },
     "019": {
         "staffName": "Rex",
@@ -343,7 +355,30 @@
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0
+        "hurdle2Rate": 0,
+        "customPayRates": [
+            {
+                "Eyelash Extension": 0.60
+            },
+            {
+                "Eyelash Extension - Refill": 0.60
+            },
+            {
+                "Eyelash Extension - Strip": 0.60
+            },
+            {
+                "Eyelash Lift": 0.60
+            },
+            {
+                "Extensions - Application": 0.68
+            },
+            {
+                "Extensions - Removal": 0.68
+            },
+            {
+                "Extensions - Wash": 0.68
+            }
+        ]
     },
     "045": {
         "staffName": "Erica",
