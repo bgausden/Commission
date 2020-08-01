@@ -308,7 +308,7 @@
         "hurdle3Rate": 0,
         "contractor": false,
         "poolsWith": [],
-        "customPayRates": []
+        "customPayRates": [{"Make Up Lesson":0.60},{"Professional Eye Makeup":0.60},{"Professional Make Up":0.60}]
     },
     "017": {
         "staffName": "Melody",
@@ -418,7 +418,7 @@
         "hurdle3Rate": 0,
         "contractor": false,
         "poolsWith": [],
-        "customPayRates": [{ "Shampoo and Blow Dry": 0.33 }, {"Smoothing - Brazilian Blowout": 0.50}]
+        "customPayRates": []
     },
     "039": {
         "staffName": "Monita",
@@ -493,7 +493,7 @@
     "044": {
         "staffName": "Fei",
         "mbCommRate": 0,
-        "baseRate": 0.0,
+        "baseRate": 0.5,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,

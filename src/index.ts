@@ -653,7 +653,7 @@ async function createPayroll(
         month: config.PAYROLL_MONTH,
         period: TALENOX_WHOLE_MONTH,
         with_pay_items: true,
-        pay_group: "",
+        pay_group: `${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`,
     }
 
     const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll)
