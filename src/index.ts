@@ -233,6 +233,9 @@ function isContractor(staffID: string): boolean {
 }
 
 function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
+    if (staffID==="019") {
+        console.log("Processing Rex")
+    }
     /* iterate through commissionComponents
     for each entry, locate corresponding hurdles
     calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next
@@ -357,12 +360,12 @@ function calcServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRe
         /*  
         Rex 019 has a special legacy arrangement. If he hits 100k in Service Revenue
         his commission is calculated at hurdle2 rate applied to total Service Revenue 
-        ( not just the revenue between hurdle1 and hurdle2)
+        ( not just the revenue between hurdle1 and hurdle2).
         */
 
-        if (staffID === "019") {
-            hurdle1Revenue = 0
-            hurdle2Revenue = serviceRev
+        if (staffID === "019" && serviceRev > hurdle2Level) {
+            let monthlySalary = (hurdle1Level * hurdle1Rate)
+            hurdle1Revenue = (serviceRev * hurdle2Rate) - monthlySalary
             hurdle3Revenue = 0
             console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
         }
@@ -769,9 +772,9 @@ form the payroll for the month */
     const payments = createAdHocPayments(commMap, staffMap)
     writePaymentsWorkBook(payments)
     console.log(`Requesting new payroll payment creation from Talenox`)
-    const createPayrollResult = await createPayroll(staffMap)
+    // const createPayrollResult = await createPayroll(staffMap)
     console.log(`New payroll payment is complete`)
-    console.log(`${createPayrollResult[0] ? "OK" : "Failed"}: ${createPayrollResult[1].message}`)
+    // console.log(`${createPayrollResult[0] ? "OK" : "Failed"}: ${createPayrollResult[1].message}`)
     console.log(`Pushing ad-hoc payments into new payroll`)
     const uploadAdHocResult = await uploadAdHocPayments(payments)
     console.log(`Pushing ad-hoc payments is complete`)
