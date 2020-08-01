@@ -119,11 +119,9 @@
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "hurdle3Level": 110000,
-        "hurdle3Rate": 0.16,
-        "contractor": false,
-        "poolsWith": ["007"],
-        "customPayRates": []
+        "poolsWith": [
+            "007"
+        ]
     },
     "024": {
         "staffName": "Ava",
@@ -163,9 +161,14 @@
         "hurdle2Rate": 0.11,
         "hurdle3Level": 96000,
         "hurdle3Rate": 0.12,
-        "contractor": false,
-        "poolsWith": [],
-        "customPayRates": []
+        "customPayRates": [
+            {
+                "Laser - Boyzilian - Men": 0.15
+            },
+            {
+                "Laser - Thong Line - Men": 0.15
+            }
+        ]
     },
     "032": {
         "staffName": "Coey",
@@ -357,11 +360,9 @@
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "hurdle3Level": 0,
-        "hurdle3Rate": 0,
-        "contractor": false,
-        "poolsWith": ["006"],
-        "customPayRates": []
+        "poolsWith": [
+            "006"
+        ]
     },
     "019": {
         "staffName": "Rex",
@@ -497,11 +498,29 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "hurdle3Level": 0,
-        "hurdle3Rate": 0,
-        "contractor": false,
-        "poolsWith": [],
-        "customPayRates": [{"Extensions - Application":0.50}, {"Extensions - Removal": 0.50}]
+        "customPayRates": [
+            {
+                "Eyelash Extension": 0.60
+            },
+            {
+                "Eyelash Extension - Refill": 0.60
+            },
+            {
+                "Eyelash Extension - Strip": 0.60
+            },
+            {
+                "Eyelash Lift": 0.60
+            },
+            {
+                "Extensions - Application": 0.68
+            },
+            {
+                "Extensions - Removal": 0.68
+            },
+            {
+                "Extensions - Wash": 0.68
+            }
+        ]
     },
     "045": {
         "staffName": "Erica",
