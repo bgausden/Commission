@@ -1,6 +1,6 @@
-import { GeneralServiceComm } from "./IServiceComm"
-import { IStaffNames } from "./IStaffNames"
-import { StaffHurdle } from "./IStaffHurdle"
+import { GeneralServiceComm } from "./interfaces/IServiceComm"
+import { IStaffNames } from "./interfaces/IStaffNames"
+import { StaffHurdle } from "./interfaces/IStaffHurdle"
 
 export type TStaffName = string
 export type TTips = number

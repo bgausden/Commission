@@ -6,9 +6,9 @@ of the desired class implementation. Instead we import the named export.
 /* /// <reference path="src\@types\request-rate-limiter\index.d.ts"> */
 import { RequestRateLimiter, RequestRequestHandler } from "request-rate-limiter"
 import debug from "debug"
+import { requestRateDebug } from "./debug"
 
 
-const requestRateDebug = debug("requestRateDebug")
 const TOO_MANY_REQUESTS = 429
 
 function initLimiter(backoffTime = 10, requestRate = 1000, interval = 60, timeout = 600): RequestRateLimiter {

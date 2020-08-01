@@ -5,6 +5,7 @@ import { USER_NAME, USER_PASSWORD, MB_BASE_URL, MB_DEFAULT_HEADERS } from "./mb-
 import { requestOptions } from "request-rate-limiter"
 import { Response } from "request"
 import extend from "extend"
+import { userTokenDebug, getServicesDebug } from "./debug.js"
 
 //import {RequestConfig} from "request-rate-limiter"
 
@@ -22,7 +23,6 @@ export class AuthToken {
 
 export async function updateUserToken(): Promise<string> {
     let token = ""
-    const userTokenDebug = debug("userToken")
     userTokenDebug("Retrieving MB user token")
 
     /*  
@@ -78,7 +78,6 @@ export async function getServices(): Promise<{}[]> {
     const servicesMaxRequestSize = 100 // appears to be enforced by MB API
     let requestOffset = 0
     let servicesCount = 0
-    const getServicesDebug = debug("getServices")
     getServicesDebug("Retrieving MB Services")
 
     const headers = extend(MB_DEFAULT_HEADERS, { Authorization: await AuthToken.getAuthToken() })

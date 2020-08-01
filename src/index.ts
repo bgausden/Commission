@@ -17,15 +17,15 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 import node_config_ts from "node-config-ts"
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
-import { StaffInfo } from "./IStaffInfo"
+import { StaffInfo } from "./interfaces/IStaffInfo"
 import { Headers } from "node-fetch"
 import fetch from "node-fetch"
 import { RequestInit } from "node-fetch"
 import staffHurdle from "./staffHurdle.json"
-import { ITalenoxPayment } from "./ITalenoxPayment"
-import { GeneralServiceComm } from "./IServiceComm"
-import { StaffCommConfig } from "./IStaffCommConfig"
-import { IStaffNames } from "./IStaffNames"
+import { ITalenoxPayment } from "./talenox/ITalenoxPayment"
+import { GeneralServiceComm } from "./interfaces/IServiceComm"
+import { StaffCommConfig } from "./interfaces/IStaffCommConfig"
+import { IStaffNames } from "./interfaces/IStaffNames"
 import {
     TStaffID,
     TServiceCommMap,
@@ -46,19 +46,19 @@ import {
     COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS,
     COMM_COMPONENT_TOTAL_SERVICE_COMMISSION,
 } from "./types.js"
-import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
-import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
-import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
+import { ITalenoxStaffInfo } from "./talenox/ITalenoxStaffInfo"
+import { ITalenoxAdHocPayment } from "./talenox/ITalenoxAdHocPayment"
+import { ITalenoxAdhocPayItems } from "./talenox/ITalenoxAdhocPayItems"
 import {
     TALENOX_BASE_URL,
     TALENOX_WHOLE_MONTH,
     TALENOX_TIPS,
     TALENOX_COMMISSION_IRREGULAR,
-} from "./talenox-constants.js"
-import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
-import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
-import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
-import { StaffHurdle } from "./IStaffHurdle"
+} from "./talenox/talenox-constants.js"
+import { ITalenoxPayroll, TalenoxPayrollPayment } from "./talenox/ITalenoxPayrollPayment"
+import { TalenoxPayrollPaymentResult } from "./talenox/ITalenoxPayrollPaymentResult"
+import { TalenoxUploadAdHocPaymentsResult } from "./interfaces/IUploadAdHocPaymentsResult"
+import { StaffHurdle } from "./interfaces/IStaffHurdle"
 import { mainDebug } from "./debug.js"
 import { getServices, getSales } from "./mb-functions.js"
 
