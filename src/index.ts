@@ -268,14 +268,14 @@ function getServiceRevenues(
                         }
                     }
                 })
-                if (!customRate) {
-                    servName = GENERAL_SERV_REVENUE // catch-all servType for everything without a custom pay-rate
-                    customRate = null
-                }
-                if (!servRevenueMap.get(servName)) {
-                    serviceRevenue = 0
-                    servRevenueMap.set(servName, { serviceRevenue, customRate })
-                }
+            }
+            if (!customRate) {
+                servName = GENERAL_SERV_REVENUE // catch-all servType for everything without a custom pay-rate
+                customRate = null
+            }
+            if (!servRevenueMap.get(servName)) {
+                serviceRevenue = 0
+                servRevenueMap.set(servName, { serviceRevenue, customRate })
             }
         }
         let revenueCellContents = wsArray[currentTotalRow - i][revColumn]
@@ -311,6 +311,8 @@ function getServiceRevenues(
 function isContractor(staffID: TStaffID): boolean {
     const sh = staffHurdle as TStaffHurdles
     if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore ts2322
         return sh[staffID].contractor
     } else { return false }
 }
@@ -571,10 +573,12 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
                             for (const [service, specialRateCommission] of Object.entries(
                                 commMapEntry.customRateCommissions
                             )) {
-                                payment.amount = specialRateCommission
-                                payment.type = TALENOX_COMMISSION_IRREGULAR
-                                payment.remarks = `${service} at custom rate.`
-                                payments.push(payment)
+                                if (specialRateCommission) {
+                                    payment.amount = specialRateCommission
+                                    payment.type = TALENOX_COMMISSION_IRREGULAR
+                                    payment.remarks = `${service} at custom rate.`
+                                    payments.push(payment)
+                                }
                                 payment = { ...paymentProto } // reset to empty payment
                             }
                             break
