@@ -73,7 +73,6 @@ const BASE_RATE = "baseRate"
 const HURDLE_1_LEVEL = "hurdle1Level"
 const HURDLE_2_LEVEL = "hurdle2Level"
 const HURDLE_3_LEVEL = "hurdle3Level"
-const CONTRACTOR = "contractor"
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
@@ -309,12 +308,17 @@ function getServiceRevenues(
 
 
 function isContractor(staffID: TStaffID): boolean {
-    const sh = staffHurdle as TStaffHurdles
-    if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
+/*     const sh = staffHurdle as TStaffHurdles
+ */    /* if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore ts2322
         return sh[staffID].contractor
-    } else { return false }
+    } else return false */
+    return (staffHurdle as TStaffHurdles)[staffID].contractor ? true: false
+}
+
+function isPayViaTalenox(staffID: TStaffID): boolean {
+    return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false
 }
 
 function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
@@ -784,7 +788,7 @@ async function main(): Promise<void> {
                             a valid staffName. Use the info from the MB Payroll report.
                             */
                             staffName = `${staffInfo.lastName} ${staffInfo.firstName}`
-                            if (!isContractor(staffID)) {
+                            if (isPayViaTalenox(staffID)) {
                                 const text = `${staffID ? staffID : "null"}${
                                     staffInfo.firstName ? " " + staffInfo.firstName : ""
                                     }${
@@ -796,7 +800,7 @@ async function main(): Promise<void> {
                                     console.warn("Warning: " + text)
                                 }
                             } else {
-                                console.log(`Note: ${staffID} ${staffName} is configured as a contractor. Nothing will be generated for Talenox`)
+                                console.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`)
                             }
                         }
                     }
