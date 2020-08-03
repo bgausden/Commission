@@ -2,7 +2,7 @@
 // TODO find a way to limit this to the actual services defined in Mindbody (get from Services REST API)
 // export type TServiceType = string <-- overlaps with TServiceName?
 
-export type CustomPayRate = { [name: string]: number|undefined}
+export type CustomPayRate = { [name: string]: number | undefined }
 
 export interface StaffHurdle {
     staffName: string
@@ -16,6 +16,7 @@ export interface StaffHurdle {
     hurdle3Rate?: number
     poolsWith?: string[]
     contractor?: boolean
+    payViaTalenox?: boolean
     customPayRates?: CustomPayRate[]
 }
 
