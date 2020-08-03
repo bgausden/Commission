@@ -1,6 +1,6 @@
 import { TStaffID } from "./types"
 
-export interface IStaffInfo {
+export interface StaffInfo {
     staffID?: TStaffID
     firstName?: string
     lastName?: string

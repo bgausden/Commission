@@ -1,4 +1,10 @@
-export interface IStaffHurdle {
+
+// TODO find a way to limit this to the actual services defined in Mindbody (get from Services REST API)
+// export type TServiceType = string <-- overlaps with TServiceName?
+
+export type CustomPayRate = { [name: string]: number|undefined}
+
+export interface StaffHurdle {
     staffName: string
     mbCommRate?: number // unused
     baseRate: number
@@ -10,8 +16,6 @@ export interface IStaffHurdle {
     hurdle3Rate?: number
     poolsWith?: string[]
     contractor?: boolean
+    customPayRates?: CustomPayRate[]
 }
 
-export type staffID = string
-
-export type TStaffHurdle = Record<staffID, IStaffHurdle>
