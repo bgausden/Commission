@@ -8,4 +8,5 @@ interface Config {
   PAYMENTS_WS_NAME: string;
   missingStaffAreFatal: boolean;
   updateTalenox: boolean;
+  TALENOX_API_TOKEN: string;
 }

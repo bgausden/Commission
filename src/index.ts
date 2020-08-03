@@ -48,7 +48,7 @@ import {
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
-import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox_constants"
+import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_EMPLOYEE_ENDPOINT, TALENOX_PAYROLL_PAYMENT_ENDPOINT } from "./talenox_constants"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
@@ -448,13 +448,13 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
         ( not just the revenue between hurdle1 and hurdle2)
         */
 
-       if (staffID === "019" && serviceRev > hurdle2Level) {
-        let monthlySalary = (hurdle1Level * hurdle1Rate) // back out salary instead of hard-coding
-        hurdle1Revenue = 0
-        hurdle2Revenue = serviceRev - (monthlySalary / hurdle2Rate) // monthlySalary / hurdle2Rate will pay out at $monthlySalary
-        hurdle3Revenue = 0
-        console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
-    }
+        if (staffID === REX_WONG_ID && serviceRev > hurdle2Level) {
+            const monthlySalary = (hurdle1Level * hurdle1Rate) // back out salary instead of hard-coding
+            hurdle1Revenue = 0
+            hurdle2Revenue = serviceRev - (monthlySalary / hurdle2Rate) // monthlySalary / hurdle2Rate will pay out at $monthlySalary
+            hurdle3Revenue = 0
+            console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
+        }
 
         // no hurdles so work out how much they receive in comm by applying base rate to entire services revenue
 
@@ -518,12 +518,8 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
     let paymentProto: ITalenoxPayment
     _commMap.forEach((commMapEntry, staffID) => {
         if (!isContractor(staffID)) {
-            // const payment: ITalenoxPayment = { ...emptyTalenoxPayment };
-            // const staffID = staffID;
             const staffMapEntry = staffMap.get(staffID)
             let payment: ITalenoxPayment
-            /* const firstName = !!staffMapEntry ? staffMapEntry.firstName : "";
-        const lastName = !!staffMapEntry ? staffMapEntry.lastName : ""; */
             if (staffMapEntry === undefined) {
                 throw new Error(`Empty staffMap returned for staffID ${staffID}`)
             } else {
@@ -537,12 +533,11 @@ function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxP
             if (commMapEntry === undefined) {
                 throw new Error(`Empty commMap entry returned for staffID ${staffID}. (Should never happen)`)
             } else {
-                // for (let k = 0; k < commMapEntry.length; k++) {
                 for (const [key, value] of Object.entries(commMapEntry)) {
                     /* 
-                Create a new payment object based on paymentProto which
-                contains staffID, firstName, etc. 
-                */
+                    Create a new payment object based on paymentProto which
+                    contains staffID, firstName, etc. 
+                    */
                     payment = { ...paymentProto }
                     switch (key) {
                         case COMM_COMPONENT_TIPS:
@@ -614,7 +609,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
 }
 
 async function getTalenoxEmployees(): Promise<TStaffMap> {
-    const url = new URL(`https://${TALENOX_BASE_URL}/employees`)
+    const url = new URL(TALENOX_EMPLOYEE_ENDPOINT)
     const myHeaders = new Headers()
     myHeaders.append("Content-Type", "application/json; charset=utf-8")
     const init: RequestInit = {
@@ -639,7 +634,7 @@ async function getTalenoxEmployees(): Promise<TStaffMap> {
 async function createPayroll(
     staffMap: TStaffMap
 ): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
-    const url = new URL(`https://${TALENOX_BASE_URL}/payroll/payroll_payment`)
+    const url = new URL(TALENOX_PAYROLL_PAYMENT_ENDPOINT)
 
     const myHeaders = new Headers()
     myHeaders.append("Content-Type", "application/json; charset=utf-8")
@@ -744,9 +739,12 @@ async function uploadAdHocPayments(
 }
 
 async function main(): Promise<void> {
+    if (config.updateTalenox === false) {
+        console.warn(`Talenox update is disabled in config.`)
+    }
     console.log(`Payroll Month is ${config.PAYROLL_MONTH}`)
     console.log(`Requesting employees from Talenox`)
-    const staffMap = await getTalenoxEmployees()
+    const talenoxStaff = await getTalenoxEmployees()
     console.log(`Requesting employees complete`)
     const WS = readExcelFile(config.PAYROLL_WB_NAME)
     // Using option {header:1} returns an array of arrays
@@ -777,19 +775,28 @@ async function main(): Promise<void> {
                     currentStaffIDRow = rowIndex
                     staffID = staffInfo.staffID
                     if (staffID) {
-                        const staffMapInfo = staffMap.get(staffID)
+                        const staffMapInfo = talenoxStaff.get(staffID)
                         if (staffID && staffMapInfo) {
                             staffName = `${staffMapInfo.lastName} ${staffMapInfo.firstName}`
                         } else {
-                            const text = `${staffID ? staffID : "null"}${
-                                staffInfo.firstName ? " " + staffInfo.firstName : ""
-                                }${
-                                staffInfo.lastName ? " " + staffInfo.lastName : ""
-                                } in MB Payroll Report line ${rowIndex} not in Talenox.`
-                            if (config.missingStaffAreFatal) {
-                                throw new Error("Fatal: " + text)
+                            /*
+                            Even if the staffmember doesn't appear in Talenox, we will need
+                            a valid staffName. Use the info from the MB Payroll report.
+                            */
+                            staffName = `${staffInfo.lastName} ${staffInfo.firstName}`
+                            if (!isContractor(staffID)) {
+                                const text = `${staffID ? staffID : "null"}${
+                                    staffInfo.firstName ? " " + staffInfo.firstName : ""
+                                    }${
+                                    staffInfo.lastName ? " " + staffInfo.lastName : ""
+                                    } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                                if (config.missingStaffAreFatal) {
+                                    throw new Error("Fatal: " + text)
+                                } else {
+                                    console.warn("Warning: " + text)
+                                }
                             } else {
-                                console.warn("Warning: " + text)
+                                console.log(`Note: ${staffID} ${staffName} is configured as a contractor. Nothing will be generated for Talenox`)
                             }
                         }
                     }
@@ -901,7 +908,7 @@ async function main(): Promise<void> {
 
                                     const generalServiceCommission = calcGeneralServiceCommission(
                                         staffID,
-                                        staffMap,
+                                        talenoxStaff,
                                         generalServiceRevenue // The  value is the the total services revenue calculated above
                                     )
                                     commComponents.generalServiceCommission = generalServiceCommission
@@ -966,7 +973,7 @@ This spreadsheet will be copied/pasted into Talenox and together with their sala
 form the payroll for the month 
 */
 
-    const payments = createAdHocPayments(commMap, staffMap)
+    const payments = createAdHocPayments(commMap, talenoxStaff)
     writePaymentsWorkBook(payments)
 
     /* 
@@ -975,7 +982,7 @@ form the payroll for the month
 
     if (config.updateTalenox) {
         console.log(`Requesting new payroll payment creation from Talenox`)
-        const createPayrollResult = await createPayroll(staffMap)
+        const createPayrollResult = await createPayroll(talenoxStaff)
         console.log(`New payroll payment is complete`)
         if (createPayrollResult[1]) {
             console.log(`OK: ${createPayrollResult[1].message}`)
