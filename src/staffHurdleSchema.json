@@ -1,97 +1,91 @@
 {
-    "$id": "http://lissome.hk/schemas/commission_schema.json",
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "type": "object",
-    "patternProperties": {
-        "^[0-9][0-9][0-9]$": {
+  "$id": "http://lissome.hk/schemas/commission_schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "patternProperties": {
+    "^[0-9][0-9][0-9]$": {
+      "type": "object",
+      "properties": {
+        "staffName": {
+          "type": "string",
+          "defaultSnippits": {
+            "label": "staffName",
+            "body": "staffName"
+          }
+        },
+        "mbCommRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "baseRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "hurdle1Level": {
+          "type": "number"
+        },
+        "hurdle1Rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "hurdle2Level": {
+          "type": "number"
+        },
+        "hurdle2Rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "hurdle3Level": {
+          "type": "number"
+        },
+        "hurdle3Rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "contractor": {
+          "type": "boolean"
+        },
+        "payViaTalenox": {
+          "type": "boolean"
+        },
+        "customPayRates": {
+          "type": "array",
+          "items": {
             "type": "object",
-            "properties": {
-                "staffName": {
-                    "type": "string",
-                    "defaultSnippits": {
-                        "label": "staffName",
-                        "body": "staffName"
-                    }
-                },
-                "mbCommRate": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                },
-                "baseRate": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                },
-                "hurdle1Level": {
-                    "type": "number"
-                },
-                "hurdle1Rate": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                },
-                "hurdle2Level": {
-                    "type": "number"
-                },
-                "hurdle2Rate": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                },
-                "hurdle3Level": {
-                    "type": "number"
-                },
-                "hurdle3Rate": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                },
-                "contractor": {
-                    "type": "boolean"
-                },
-                "customPayRates": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "patternProperties": {
-                            "^.*$": {
-                                "type": "number",
-                                "minimum": 0,
-                                "maximum": 1
-                            }
-                        }
-                    }
-                },
-                "poolsWith": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^[0-9][0-9][0-9]$"
-                    }
-                }
-            },
-            "required": [
-                "staffName",
-                "baseRate"
-            ],
-            "dependencies": {
-                "hurdle1Level": {
-                    "required": [
-                        "hurdle1Rate"
-                    ]
-                },
-                "hurdle2Level": {
-                    "required": [
-                        "hurdle2Rate"
-                    ]
-                },
-                "hurdle3Level": {
-                    "required": [
-                        "hurdle3Rate"
-                    ]
-                }
+            "patternProperties": {
+              "^.*$": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
             }
+          }
+        },
+        "poolsWith": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9][0-9][0-9]$"
+          }
         }
+      },
+      "required": ["staffName", "baseRate"],
+      "dependencies": {
+        "hurdle1Level": {
+          "required": ["hurdle1Rate"]
+        },
+        "hurdle2Level": {
+          "required": ["hurdle2Rate"]
+        },
+        "hurdle3Level": {
+          "required": ["hurdle3Rate"]
+        }
+      }
     }
+  }
 }
