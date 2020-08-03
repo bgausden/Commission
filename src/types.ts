@@ -18,7 +18,7 @@ type TCommSimpleComponentProductCommission = "productCommission"
 type TCommSimpleComponentGeneralServiceCommission = "generalServiceCommisison"
 export type TCommSimpleComponentsKeys = TCommSimpleComponentTips | TCommSimpleComponentProductCommission | TCommSimpleComponentGeneralServiceCommission
 export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission
-export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys,TCommSimpleComponentsValues> 
+export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>
 export type TCustomRateEntry = {
    serviceRevenue: number
    customRate: number | null
@@ -62,5 +62,5 @@ export type TStaffHurdles = {
 }
 
 export type TServiceName = string
-export type TServiceCustomRate =  number | null
+export type TServiceCustomRate = number | null
 export type TServRevenueMap = Map<TServiceName, TCustomRateEntry>
