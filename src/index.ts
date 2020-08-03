@@ -1,12 +1,9 @@
 
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
-// TODO Implement per-service payment rates (Pay rate: Mens Cut and Blow Dry - immediately follows staff id # line)
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
-// TODO add new commission calculation where at a certain service revenue, *all* revenue pays at the same rate (no more hurdles, no more income)
-// TODO add support for hourly wage staff:
-/*
+/* TODO add support for hourly wage staff:
 Gausden, ElizabethStaff ID #: 048 									
 Hourly Pay (38.2775 hours @ HK$&nbsp;40/hr):								1,531.10	
 Sales Commission:									36
@@ -308,13 +305,13 @@ function getServiceRevenues(
 
 
 function isContractor(staffID: TStaffID): boolean {
-/*     const sh = staffHurdle as TStaffHurdles
- */    /* if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-        // @ts-ignore ts2322
-        return sh[staffID].contractor
-    } else return false */
-    return (staffHurdle as TStaffHurdles)[staffID].contractor ? true: false
+    /*     const sh = staffHurdle as TStaffHurdles
+     */    /* if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
+           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+           // @ts-ignore ts2322
+           return sh[staffID].contractor
+       } else return false */
+    return (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false
 }
 
 function isPayViaTalenox(staffID: TStaffID): boolean {
