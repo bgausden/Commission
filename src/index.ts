@@ -70,6 +70,7 @@ const BASE_RATE = "baseRate"
 const HURDLE_1_LEVEL = "hurdle1Level"
 const HURDLE_2_LEVEL = "hurdle2Level"
 const HURDLE_3_LEVEL = "hurdle3Level"
+const POOLS_WITH = "poolsWith"
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
@@ -307,10 +308,10 @@ function getServiceRevenues(
 function isContractor(staffID: TStaffID): boolean {
     /*     const sh = staffHurdle as TStaffHurdles
      */    /* if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
-           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-           // @ts-ignore ts2322
-           return sh[staffID].contractor
-       } else return false */
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore ts2322
+return sh[staffID].contractor
+} else return false */
     return (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false
 }
 
@@ -739,6 +740,78 @@ async function uploadAdHocPayments(
     return [undefined, result as TalenoxUploadAdHocPaymentsResult]
 }
 
+function eqSet(as: unknown[], bs: unknown[]): boolean {
+    if (as.length !== bs.length) return false;
+    for (const a of as) if (!bs.includes(a)) return false;
+    return true;
+}
+
+function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
+    let poolCounter = 0
+    const pools = new Map<number, TStaffID[]>()
+    Object.entries(staffHurdle).forEach(element => {
+        const [staffID, hurdle] = element
+        const poolingWith = hurdle.poolsWith
+        if (poolingWith && poolingWith.length > 0) {
+            let foundPoolID: number | undefined
+            let foundPoolMembers: TStaffID[] | undefined
+            for (const pool of pools) {
+                const [poolID, poolingStaff] = pool
+                if (poolingStaff.includes(staffID)) {
+                    if (foundPoolID) {
+                        if (foundPoolMembers && !eqSet(poolingStaff, foundPoolMembers)) {                        // Already appear in another pool. Something's broken
+                            throw new Error(`${staffID} appears to be a member of two `)
+                        }
+                    } else {
+                        // make sure this pool contains everyone we think we pool with
+                        // if not, the staffHurdle.json is incorrect
+                        if (eqSet(poolingStaff, poolingWith)) {
+                            foundPoolID = poolID
+                            foundPoolMembers = poolingStaff
+                        } else {
+                            throw new Error(`Pooling config for ${staffID} appears to be incorrect.`)
+                        }
+                    }
+                }
+            }
+            // Now set the pool if !foundPoolID
+            if (!foundPoolID) {
+                pools.set(poolCounter, poolingWith)
+                poolCounter += 1
+            }
+        }
+    })
+    // Now actually allocate revenues across the pools
+    for (const pool of pools) {
+        const [poolID, poolMembers] = pool
+        const aggregate: TCommComponents = {
+            totalServiceRevenue: 0,
+            totalServiceCommission: 0,
+            tips: 0,
+            productCommission: 0,
+            customRateCommission: 0,
+            customRateCommissions: {},
+            generalServiceCommission: 0
+        }
+        poolMembers.forEach(poolMember =>
+            Object.entries(aggregate).forEach(aggregateElement => {
+                const [aggregatePropName, aggregatePropValue] = aggregateElement
+                const commMapElement = commMap.get(poolMember)
+                if (commMapElement) {
+                    const commMapValue = commMapElement[aggregatePropName]
+                    if (typeof aggregatePropValue === "number" && typeof commMapValue === "number") {
+                        aggregate[aggregatePropName] = aggregatePropValue + commMapValue
+                    }
+                }
+
+            })
+        )
+        // divide the aggregate values across the pool members by updating their commComponents entries
+        // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
+    }
+    return
+}
+
 async function main(): Promise<void> {
     if (config.updateTalenox === false) {
         console.warn(`Talenox update is disabled in config.`)
@@ -823,7 +896,7 @@ async function main(): Promise<void> {
                  *      tips: number
                  *      productCommission: number
                  *      generalServiceCommission: number
-                 *      customRateCommission: Record<string, number>
+                 *      customRateCommission: {key: string]: TServiceCommission}
                  *  }
                  */
 
@@ -944,9 +1017,7 @@ async function main(): Promise<void> {
                         if (j === 0) {
                             if (staffID) {
                                 commMap.set(staffID, commComponents)
-                                // console.log(`-\nCustom Rate Commission`)
                                 console.log(prettyjson.render(commComponents))
-                                // console.log(`Total Service Revenue: ${commComponents.totalServiceRevenue}`)
                             } else {
                                 throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
                             }
@@ -959,6 +1030,8 @@ async function main(): Promise<void> {
             }
         }
     }
+
+    doPooling(commMap, staffHurdle)
 
     /*
  Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
