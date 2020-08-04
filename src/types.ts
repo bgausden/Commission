@@ -43,6 +43,7 @@ export type TCommComponentCustomRateCommissions = {
 }
 
 export type TCommComponents = {
+   [key: string]: number | TCommComponentCustomRateCommissions
    totalServiceRevenue: TServiceRevenue
    tips: TTips
    productCommission: TProductCommission
