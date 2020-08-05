@@ -71,7 +71,7 @@ const BASE_RATE = "baseRate"
 const HURDLE_1_LEVEL = "hurdle1Level"
 const HURDLE_2_LEVEL = "hurdle2Level"
 const HURDLE_3_LEVEL = "hurdle3Level"
-const POOLS_WITH = "poolsWith"
+// const POOLS_WITH = "poolsWith"
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
@@ -784,8 +784,9 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
     })
     // Now actually allocate revenues across the pools
     for (const pool of pools) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [poolID, poolMembers] = pool
-        const aggregate: TCommComponents = {
+        const aggregateComm: TCommComponents = {
             totalServiceRevenue: 0,
             totalServiceCommission: 0,
             tips: 0,
@@ -795,21 +796,46 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
             generalServiceCommission: 0
         }
         poolMembers.forEach(poolMember =>
-            Object.entries(aggregate).forEach(aggregateElement => {
+            Object.entries(aggregateComm).forEach(aggregateElement => {
                 const [aggregatePropName, aggregatePropValue] = aggregateElement
                 const commMapElement = commMap.get(poolMember)
                 if (commMapElement) {
                     const commMapValue = commMapElement[aggregatePropName]
                     if (typeof aggregatePropValue === "number" && typeof commMapValue === "number") {
-                        aggregate[aggregatePropName] = aggregatePropValue + commMapValue
+                        aggregateComm[aggregatePropName] = aggregatePropValue + commMapValue
                     }
+                } else {
+                    throw new Error(`No commMap entry for ${poolMember}. This should never happen.`)
                 }
 
             })
         )
         // divide the aggregate values across the pool members by updating their commComponents entries
         // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
+        console.log("=======================================")
+        console.log("Pooling Calculations")
+        console.log("=======================================")
+
+        poolMembers.forEach(poolMember => {
+            console.log(`Pooling for ${poolMember}`)
+            console.log(`Pool contains ${poolMembers.length} members: ${poolMembers.toString()}`)
+            Object.entries(aggregateComm).forEach(aggregate => {
+                const [aggregatePropName, aggregatePropValue] = aggregate
+                const comm = commMap.get(poolMember)
+                if (comm) {
+                    if (typeof aggregatePropValue === "number") {
+                        comm[aggregatePropName] = (Math.round(aggregatePropValue * 100 / 3)) / 100
+                        console.log(`${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${comm[aggregatePropName]}`)
+                    }
+                } else {
+                    throw new Error(`No commMap entry for ${poolMember}. This should never happen.`)
+                }
+            })
+            console.log("--------------")
+        })
     }
+    console.log("=======================================")
+
     return
 }
 
