@@ -10,15 +10,25 @@
             // "preLaunchTask": "build",
             "name": "Launch Program",
             "program": "${workspaceFolder}/dist/index.js",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "runtimeArgs": [
+                "--experimental-json-modules"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
             "sourceMaps": true,
         },
         {
             "name": "Current TS File",
             "type": "node",
             "request": "launch",
-            "args": ["${relativeFile}"],
-            "runtimeArgs": ["-r", "ts-node/register"],
+            "args": [
+                "${relativeFile}"
+            ],
+            "runtimeArgs": [
+                "-r",
+                "ts-node/register"
+            ],
             "cwd": "${workspaceRoot}",
             "protocol": "inspector",
             "internalConsoleOptions": "openOnSessionStart"

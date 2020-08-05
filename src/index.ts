@@ -11,7 +11,8 @@ Sales Commission:									36
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10	
 */
 
-import { config } from "node-config-ts"
+import nodeConfigTS from "node-config-ts"
+const config = nodeConfigTS.config
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import fetch from "node-fetch"
@@ -45,7 +46,7 @@ import {
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
-import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_EMPLOYEE_ENDPOINT, TALENOX_PAYROLL_PAYMENT_ENDPOINT } from "./talenox_constants"
+import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_EMPLOYEE_ENDPOINT, TALENOX_PAYROLL_PAYMENT_ENDPOINT } from "./talenox_constants.js"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
@@ -307,10 +308,10 @@ function getServiceRevenues(
 function isContractor(staffID: TStaffID): boolean {
     /*     const sh = staffHurdle as TStaffHurdles
      */    /* if (Object.prototype.hasOwnProperty.call(sh[staffID], CONTRACTOR)) {
-           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-           // @ts-ignore ts2322
-           return sh[staffID].contractor
-       } else return false */
+         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+         // @ts-ignore ts2322
+         return sh[staffID].contractor
+     } else return false */
     return (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false
 }
 
