@@ -747,7 +747,7 @@ function eqSet(as: unknown[], bs: unknown[]): boolean {
     return true;
 }
 
-function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
+function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TStaffMap): void {
     let poolCounter = 0
     const pools = new Map<number, TStaffID[]>()
     Object.entries(staffHurdle).forEach(element => {
@@ -766,6 +766,7 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
                     } else {
                         // make sure this pool contains everyone we think we pool with
                         // if not, the staffHurdle.json is incorrect
+                        poolingWith.push(staffID)
                         if (eqSet(poolingStaff, poolingWith)) {
                             foundPoolID = poolID
                             foundPoolMembers = poolingStaff
@@ -776,7 +777,8 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
                 }
             }
             // Now set the pool if !foundPoolID
-            if (!foundPoolID) {
+            if (foundPoolID === undefined) {
+                poolingWith.push(staffID)
                 pools.set(poolCounter, poolingWith)
                 poolCounter += 1
             }
@@ -817,25 +819,31 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles): void {
         console.log("=======================================")
 
         poolMembers.forEach(poolMember => {
-            console.log(`Pooling for ${poolMember}`)
-            console.log(`Pool contains ${poolMembers.length} members: ${poolMembers.toString()}`)
+            const staffName = `${talenoxStaff.get(poolMember)?.lastName}, ${talenoxStaff.get(poolMember)?.firstName}`
+            console.log(`Pooling for ${poolMember} ${staffName}`)
+            let memberList = ""
+            let comma = ""
+            poolMembers.forEach(member => {
+                memberList += `${comma}${member} ${talenoxStaff.get(member)?.lastName} ${talenoxStaff.get(member)?.firstName}`
+                comma = ", "
+            })
+            console.log(`Pool contains ${poolMembers.length} members: ${memberList}`)
             Object.entries(aggregateComm).forEach(aggregate => {
                 const [aggregatePropName, aggregatePropValue] = aggregate
                 const comm = commMap.get(poolMember)
                 if (comm) {
                     if (typeof aggregatePropValue === "number") {
-                        comm[aggregatePropName] = (Math.round(aggregatePropValue * 100 / 3)) / 100
+                        comm[aggregatePropName] = (Math.round(aggregatePropValue * 100 / poolMembers.length)) / 100
                         console.log(`${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${comm[aggregatePropName]}`)
                     }
                 } else {
-                    throw new Error(`No commMap entry for ${poolMember}. This should never happen.`)
+                    throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`)
                 }
             })
             console.log("--------------")
         })
     }
     console.log("=======================================")
-
     return
 }
 
@@ -1058,7 +1066,7 @@ async function main(): Promise<void> {
         }
     }
 
-    doPooling(commMap, staffHurdle)
+    doPooling(commMap, staffHurdle, talenoxStaff)
 
     /*
  Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
