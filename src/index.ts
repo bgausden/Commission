@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
@@ -11,7 +12,8 @@ Sales Commission:									36
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10	
 */
 
-import {config} from "node-config-ts"
+import ncts from "node-config-ts"
+const {config} = ncts
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
