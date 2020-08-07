@@ -1,27 +1,17 @@
-diff --git a/node_modules/node-config-ts/index.js b/node_modules/node-config-ts/index.js
-index 7decaf5..96c3373 100644
---- a/node_modules/node-config-ts/index.js
-+++ b/node_modules/node-config-ts/index.js
-@@ -2,6 +2,8 @@
- /**
-  * Created by tushar on 30/12/17.
-  */
--Object.defineProperty(exports, "__esModule", { value: true });
-+/* Object.defineProperty(exports, "__esModule", { value: true });
- const mergeAllConfigs_1 = require("./src/mergeAllConfigs");
--exports.config = mergeAllConfigs_1.mergeAllConfigs(process);
-+exports.config = mergeAllConfigs_1.mergeAllConfigs(process); */
-+import { mergeAllConfigs } from "./src/mergeAllConfigs.js"
-+export const config = mergeAllConfigs(process)
-\ No newline at end of file
 diff --git a/node_modules/node-config-ts/package.json b/node_modules/node-config-ts/package.json
-index 8c5ca63..460906b 100644
+index ee0935a..cb6b535 100644
 --- a/node_modules/node-config-ts/package.json
 +++ b/node_modules/node-config-ts/package.json
-@@ -1,26 +1,28 @@
+@@ -1,33 +1,38 @@
  {
 -  "_from": "https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz",
-+  "_from": "node-config-ts@^2.3.1",
++  "_args": [
++    [
++      "node-config-ts@2.3.1",
++      "D:\\git\\Commission"
++    ]
++  ],
++  "_from": "node-config-ts@2.3.1",
    "_id": "node-config-ts@2.3.1",
    "_inBundle": false,
    "_integrity": "sha512-Vid5g5pP2FH0yimaICyzaa29oj/fTb04GPrFKZFplyB7abS4rSdtYY1nKK/m0fzy29jUxFvRQqdaSoJnXU+0xQ==",
@@ -30,68 +20,50 @@ index 8c5ca63..460906b 100644
    "_requested": {
 -    "type": "remote",
 -    "raw": "node-config-ts@https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz",
-+    "type": "range",
++    "type": "version",
 +    "registry": true,
-+    "raw": "node-config-ts@^2.3.1",
++    "raw": "node-config-ts@2.3.1",
      "name": "node-config-ts",
      "escapedName": "node-config-ts",
 -    "rawSpec": "https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz",
 -    "saveSpec": "https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz",
 -    "fetchSpec": "https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz"
-+    "rawSpec": "^2.3.1",
++    "rawSpec": "2.3.1",
 +    "saveSpec": null,
-+    "fetchSpec": "^2.3.1"
++    "fetchSpec": "2.3.1"
    },
    "_requiredBy": [
-+    "#USER",
      "/"
    ],
    "_resolved": "https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz",
-   "_shasum": "d38f3d8ee7f395b3f72b68a882f92849f613f3a5",
+-  "_shasum": "d38f3d8ee7f395b3f72b68a882f92849f613f3a5",
 -  "_spec": "node-config-ts@https://registry.npmjs.org/node-config-ts/-/node-config-ts-2.3.1.tgz",
--  "_where": "C:\\Users\\Barry\\AppData\\Local\\Temp\\tmp-462767qpJq2iNygYu",
-+  "_spec": "node-config-ts@^2.3.1",
-+  "_where": "/mnt/d/git/Commission",
+-  "_where": "C:\\Users\\Barry\\AppData\\Local\\Temp\\tmp-11140E48THDvwngEF",
++  "_spec": "2.3.1",
++  "_where": "D:\\git\\Commission",
    "bin": {
      "node-config-ts": "bin/cli"
    },
-@@ -54,6 +56,7 @@
-     "tslint-config-prettier": "^1.18.0",
-     "typescript": "^3.7.2"
+   "bugs": {
+     "url": "https://github.com/tusharmath/node-config-ts/issues"
    },
-+  "exports": "./index.js",
-   "homepage": "https://github.com/tusharmath/node-config-ts#readme",
-   "license": "MIT",
-   "name": "node-config-ts",
-@@ -71,5 +74,6 @@
+-  "bundleDependencies": false,
+   "config": {
+     "commitizen": {
+       "path": "./node_modules/cz-conventional-changelog"
+@@ -38,7 +43,6 @@
+     "minimist": "^1.2.0",
+     "ramda": "^0.26.1"
+   },
+-  "deprecated": false,
+   "description": "[![Build Status](https://travis-ci.org/tusharmath/node-config-ts.svg?branch=master)](https://travis-ci.org/tusharmath/node-config-ts) [![Greenkeeper badge](https://badges.greenkeeper.io/tusharmath/node-config-ts.svg)](https://greenkeeper.io/) ![npm](https://img.shields.io/npm/v/node-config-ts.svg)",
+   "devDependencies": {
+     "@types/minimist": "^1.2.0",
+@@ -71,5 +75,6 @@
      "test": "mocha --require=ts-node/register --watch-extensions ts test/*.ts",
      "travis-deploy-once": "travis-deploy-once"
    },
-+  "type": "module",
++  "type": "commonjs",
    "version": "2.3.1"
  }
 \ No newline at end of file
-diff --git a/node_modules/node-config-ts/src/mergeAllConfigs.js b/node_modules/node-config-ts/src/mergeAllConfigs.js
-index b274611..8901112 100644
---- a/node_modules/node-config-ts/src/mergeAllConfigs.js
-+++ b/node_modules/node-config-ts/src/mergeAllConfigs.js
-@@ -1,9 +1,8 @@
- "use strict";
--Object.defineProperty(exports, "__esModule", { value: true });
- /**
-  * Created by tushar on 30/12/17.
-  */
--const R = require("ramda");
-+import R from "ramda"
- const loadCliConfigs_1 = require("./loadCliConfigs");
- const loadFileConfigs_1 = require("./loadFileConfigs");
- const replaceWithEnvVar_1 = require("./replaceWithEnvVar");
-@@ -11,7 +10,7 @@ const mergeFileConfigs_1 = require("./mergeFileConfigs");
- /**
-  * Loads all the configs from files and cli and merges them.
-  */
--exports.mergeAllConfigs = R.converge(R.mergeDeepRight, [
-+export const mergeAllConfigs = R.converge(R.mergeDeepRight, [
-     R.converge(replaceWithEnvVar_1.replaceWithEnvVar, [
-         R.compose(mergeFileConfigs_1.mergeFileConfigs, loadFileConfigs_1.loadFileConfigs),
-         R.identity
