@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import {config} from "node-config-ts"
+import ncts from "node-config-ts"
+const { config } = ncts
 import { ITalenoxPayment } from "./ITalenoxPayment";
 import {
     TStaffID,
