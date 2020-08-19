@@ -1,6 +1,5 @@
-import nodeConfigTS from "node-config-ts"
-
-const config = nodeConfigTS.config
+import ncts from "node-config-ts"
+const { config } = ncts
 
 export const TALENOX_BASE_URL = `www.talenox.com/api/v1/${config.TALENOX_API_TOKEN}`
 export const TALENOX_EMPLOYEE_ENDPOINT = `https://${TALENOX_BASE_URL}/employees`
