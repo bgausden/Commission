@@ -2,6 +2,9 @@
 
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
+
+/*$env:DEBUG="express:router" ; node --experimental-json-modules dist/index.js*/
+
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 /* TODO add support for hourly wage staff:
@@ -13,7 +16,7 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 */
 
 import ncts from "node-config-ts"
-const {config} = ncts
+const { config } = ncts
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
@@ -37,6 +40,11 @@ import {
 import { StaffHurdle } from "./IStaffHurdle"
 import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPayments } from "./talenox_functions.js"
 import { checkRate, stripToNumeric, isPayViaTalenox, eqSet } from "./utility_functions.js"
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import { router } from "./router.js"
+
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -557,7 +565,7 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
     return
 }
 
-async function main(): Promise<void> {
+async function runCommission(): Promise<void> {
     if (config.updateTalenox === false) {
         console.warn(`Talenox update is disabled in config.`)
     }
@@ -823,8 +831,27 @@ form the payroll for the month
     }
 }
 
-main()
+if (!config.port) {
+    process.exit(1)
+}
+const PORT = config.port
+const app = express()
+
+app.use(function (req, res, next) {
+    console.log('%s %s %s', req.method, req.url, req.path)
+    next()
+})
+app.use(helmet())
+app.use(cors())
+app.use(express.json())
+app.use('/', router)
+
+const server = app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`)
+})
+
+/* runCommission()
     .then(() => {
         console.log("Done!")
     })
-    .catch((error) => console.error(`${error}`))
+    .catch((error) => console.error(`${error}`)) */

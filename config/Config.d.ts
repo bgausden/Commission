@@ -9,4 +9,5 @@ interface Config {
   missingStaffAreFatal: boolean;
   updateTalenox: boolean;
   TALENOX_API_TOKEN: string;
+  port: number;
 }

@@ -6,5 +6,6 @@
     "PAYMENTS_WS_NAME": "Payments",
     "missingStaffAreFatal": false,
     "updateTalenox": false,
-    "TALENOX_API_TOKEN": "0de2d0e87053fbffec39ba5377feee3010f73b8e"
+    "TALENOX_API_TOKEN": "0de2d0e87053fbffec39ba5377feee3010f73b8e",
+    "port": 7452
 }
