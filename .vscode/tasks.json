@@ -8,10 +8,18 @@
             "type": "typescript",
             "tsconfig": "tsconfig.json",
             "problemMatcher": ["$tsc"],
+            "group": "build"
+        },
+        {
+            "type": "npm",
+            "script": "build",
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+            "problemMatcher": [],
+            "label": "npm: build",
+            "detail": "run-script-os"
         }
     ]
 }
