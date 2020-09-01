@@ -1,0 +1,16 @@
+<div
+    id="dndCardContent"
+    class="card-content white-text"
+    ondrop="dropHandler(event)"
+    ondragover="dragOverHandler(event)"
+    ondragleave="dragLeaveHandler(event)"
+>
+    <span class="card-title">1. Upload</span>
+</div>
+
+<div class="drop-zone center-align white-text">
+    <input type="file" id="drop_zone" hidden multiple />
+    <p>Drag and drop file(s) here</p>
+    <p>or</p>
+    <label class="waves-effect waves-light btn" for="drop_zone">Browse for file</label>
+</div>

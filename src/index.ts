@@ -1,9 +1,9 @@
+/* eslint-env node */
 /* eslint-disable @typescript-eslint/no-var-requires */
-
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 /* eslint-disable @typescript-eslint/camelcase */
 
-/*$env:DEBUG="express:router" ; node --experimental-json-modules dist/index.js*/
+/* Run from commandline (Powershell) --> $env:DEBUG="express:router" ; node --experimental-json-modules dist/index.js*/
 
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
@@ -15,36 +15,37 @@ Sales Commission:									36
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10	
 */
 
+import cors from "cors"
+import express from "express"
+import helmet from "helmet"
 import ncts from "node-config-ts"
-const { config } = ncts
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
-import { StaffInfo } from "./IStaffInfo"
-import staffHurdle from "./staffHurdle.json"
-import { ITalenoxPayment } from "./ITalenoxPayment"
 import { GeneralServiceComm } from "./IServiceComm"
 import { StaffCommConfig } from "./IStaffCommConfig"
-import {
-    TStaffID,
-    TServiceCommMap,
-    TCommComponents,
-    TStaffName,
-    TStaffMap,
-    TServiceRevenue,
-    TCommMap,
-    TStaffHurdles,
-    TCustomRateEntry,
-    TServRevenueMap,
-    TServiceName,
-} from "./types.js"
 import { StaffHurdle } from "./IStaffHurdle"
-import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPayments } from "./talenox_functions.js"
-import { checkRate, stripToNumeric, isPayViaTalenox, eqSet } from "./utility_functions.js"
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
+import { StaffInfo } from "./IStaffInfo"
+import { ITalenoxPayment } from "./ITalenoxPayment"
 import { router } from "./router.js"
-
+import staffHurdle from "./staffHurdle.json"
+import { createAdHocPayments, createPayroll, getTalenoxEmployees, uploadAdHocPayments } from "./talenox_functions.js"
+import {
+    TCommComponents,
+    TCommMap,
+    TCustomRateEntry,
+    TServiceCommMap,
+    TServiceName,
+    TServiceRevenue,
+    TServRevenueMap,
+    TStaffHurdles,
+    TStaffID,
+    TStaffMap,
+    TStaffName,
+} from "./types.js"
+import { checkRate, eqSet, isPayViaTalenox, stripToNumeric } from "./utility_functions.js"
+const { config } = ncts
+import expressCSPHeader from "express-csp-header"
+const { expressCspHeader, INLINE, NONE, SELF } = expressCSPHeader
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -66,8 +67,6 @@ const HURDLE_1_LEVEL = "hurdle1Level"
 const HURDLE_2_LEVEL = "hurdle2Level"
 const HURDLE_3_LEVEL = "hurdle3Level"
 // const POOLS_WITH = "poolsWith"
-
-
 
 const GENERAL_SERV_REVENUE = "General Services"
 
@@ -149,7 +148,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
                 // Missing Staff ID in MB?
                 throw new Error(
                     `${staffInfo[staffNameIndex].split(",")[1]} ${
-                    staffInfo[staffNameIndex].split(",")[0]
+                        staffInfo[staffNameIndex].split(",")[0]
                     } does not appear to have a Staff ID in MB`
                 )
             }
@@ -265,7 +264,6 @@ function getServiceRevenues(
     }
     return servRevenueMap
 }
-
 
 function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
     /* iterate through commissionComponents
@@ -399,9 +397,9 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
         */
 
         if (staffID === REX_WONG_ID && serviceRev > hurdle2Level) {
-            const monthlySalary = (hurdle1Level * hurdle1Rate) // back out salary instead of hard-coding
+            const monthlySalary = hurdle1Level * hurdle1Rate // back out salary instead of hard-coding
             hurdle1Revenue = 0
-            hurdle2Revenue = serviceRev - (monthlySalary / hurdle2Rate) // monthlySalary / hurdle2Rate will pay out at $monthlySalary
+            hurdle2Revenue = serviceRev - monthlySalary / hurdle2Rate // monthlySalary / hurdle2Rate will pay out at $monthlySalary
             hurdle3Revenue = 0
             console.warn("Rex 019 has a special legacy pay scheme. See Sioban")
         }
@@ -468,7 +466,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
 function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TStaffMap): void {
     let poolCounter = 0
     const pools = new Map<number, TStaffID[]>()
-    Object.entries(staffHurdle).forEach(element => {
+    Object.entries(staffHurdle).forEach((element) => {
         const [staffID, hurdle] = element
         const poolingWith = hurdle.poolsWith
         if (poolingWith && poolingWith.length > 0) {
@@ -478,7 +476,8 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
                 const [poolID, poolingStaff] = pool
                 if (poolingStaff.includes(staffID)) {
                     if (foundPoolID) {
-                        if (foundPoolMembers && !eqSet(poolingStaff, foundPoolMembers)) {                        // Already appear in another pool. Something's broken
+                        if (foundPoolMembers && !eqSet(poolingStaff, foundPoolMembers)) {
+                            // Already appear in another pool. Something's broken
                             throw new Error(`${staffID} appears to be a member of two `)
                         }
                     } else {
@@ -513,10 +512,10 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
             productCommission: 0,
             customRateCommission: 0,
             customRateCommissions: {},
-            generalServiceCommission: 0
+            generalServiceCommission: 0,
         }
-        poolMembers.forEach(poolMember =>
-            Object.entries(aggregateComm).forEach(aggregateElement => {
+        poolMembers.forEach((poolMember) =>
+            Object.entries(aggregateComm).forEach((aggregateElement) => {
                 const [aggregatePropName, aggregatePropValue] = aggregateElement
                 const commMapElement = commMap.get(poolMember)
                 if (commMapElement) {
@@ -527,7 +526,6 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
                 } else {
                     throw new Error(`No commMap entry for ${poolMember}. This should never happen.`)
                 }
-
             })
         )
         // divide the aggregate values across the pool members by updating their commComponents entries
@@ -536,23 +534,27 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         console.log("Pooling Calculations")
         console.log("=======================================")
 
-        poolMembers.forEach(poolMember => {
+        poolMembers.forEach((poolMember) => {
             const staffName = `${talenoxStaff.get(poolMember)?.lastName}, ${talenoxStaff.get(poolMember)?.firstName}`
             console.log(`Pooling for ${poolMember} ${staffName}`)
             let memberList = ""
             let comma = ""
-            poolMembers.forEach(member => {
-                memberList += `${comma}${member} ${talenoxStaff.get(member)?.lastName} ${talenoxStaff.get(member)?.firstName}`
+            poolMembers.forEach((member) => {
+                memberList += `${comma}${member} ${talenoxStaff.get(member)?.lastName} ${
+                    talenoxStaff.get(member)?.firstName
+                }`
                 comma = ", "
             })
             console.log(`Pool contains ${poolMembers.length} members: ${memberList}`)
-            Object.entries(aggregateComm).forEach(aggregate => {
+            Object.entries(aggregateComm).forEach((aggregate) => {
                 const [aggregatePropName, aggregatePropValue] = aggregate
                 const comm = commMap.get(poolMember)
                 if (comm) {
                     if (typeof aggregatePropValue === "number") {
-                        comm[aggregatePropName] = (Math.round(aggregatePropValue * 100 / poolMembers.length)) / 100
-                        console.log(`${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${comm[aggregatePropName]}`)
+                        comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100
+                        console.log(
+                            `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${comm[aggregatePropName]}`
+                        )
                     }
                 } else {
                     throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`)
@@ -614,9 +616,9 @@ async function runCommission(): Promise<void> {
                             if (isPayViaTalenox(staffID)) {
                                 const text = `${staffID ? staffID : "null"}${
                                     staffInfo.firstName ? " " + staffInfo.firstName : ""
-                                    }${
+                                }${
                                     staffInfo.lastName ? " " + staffInfo.lastName : ""
-                                    } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                                } in MB Payroll Report line ${rowIndex} not in Talenox.`
                                 if (config.missingStaffAreFatal) {
                                     throw new Error("Fatal: " + text)
                                 } else {
@@ -660,7 +662,7 @@ async function runCommission(): Promise<void> {
                     customRateCommissions: {},
                     totalServiceRevenue: 0,
                     customRateCommission: 0,
-                    totalServiceCommission: 0
+                    totalServiceCommission: 0,
                 }
                 /*
                 Find and process tips, product commission and services commission
@@ -702,7 +704,8 @@ async function runCommission(): Promise<void> {
                                 payComponent = "Services Revenue:"
 
                                 // Old way - services revenue is a single number
-                                if (staffID) { // have a guard further up so this check might be superfluous
+                                if (staffID) {
+                                    // have a guard further up so this check might be superfluous
                                     /* const totalServicesRevenues = sumServiceRevenues(
                                         getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                     ) */
@@ -751,7 +754,8 @@ async function runCommission(): Promise<void> {
                                     if (servicesRevenues) {
                                         servicesRevenues.forEach((customRateEntry, serviceName) => {
                                             if (serviceName !== GENERAL_SERV_REVENUE) {
-                                                const customServiceRevenue = customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
+                                                const customServiceRevenue =
+                                                    customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
                                                 commComponents.customRateCommissions[serviceName] = customServiceRevenue
                                                 totalCustomServiceCommission += customServiceRevenue
                                             }
@@ -762,7 +766,6 @@ async function runCommission(): Promise<void> {
                                 } else {
                                     throw new Error(`Somehow don't have a staffID despite guard further up`)
                                 }
-
                             }
                             value = 0
                         }
@@ -838,14 +841,34 @@ const PORT = config.port
 const app = express()
 
 app.use(function (req, res, next) {
-    console.log('%s %s %s', req.method, req.url, req.path)
+    console.log("%s %s %s", req.method, req.url, req.path)
     next()
 })
 app.use(helmet())
 app.use(cors())
 app.use(express.json())
-app.use('/', router)
+app.use(
+    expressCspHeader({
+        directives: {
+            "default-src": [SELF],
+            "font-src": ["https://fonts.gstatic.com/"],
+            "script-src": [SELF, INLINE, "https://cdnjs.cloudflare.com/ajax/libs/materialize/"],
+            "style-src": [
+                SELF,
+                INLINE,
+                "https://cdnjs.cloudflare.com/ajax/libs/materialize/",
+                "https://fonts.googleapis.com/",
+            ],
+            "img-src": [SELF, "data:"],
+            "worker-src": [NONE],
+            "block-all-mixed-content": true,
+        },
+    })
+)
+app.use(express.static("public"))
+app.use("/", router)
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const server = app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`)
 })

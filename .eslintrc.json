@@ -4,33 +4,42 @@
         "es6": true,
         "node": true
     },
-    "extends": [
-        "eslint:recommended",
-        "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/recommended-requiring-type-checking"
-        // "plugin:import/errors",
-        // "plugin:import/warnings",
-        // "plugin:import/typescript,"
-        // "plugin:prettier/recommended"
-    ],
+    "extends": ["eslint:recommended"],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
     },
-    "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 6,
+        "ecmaVersion": 2020,
         "sourceType": "module",
         "project": "tsconfig.json"
     },
-    "plugins": ["@typescript-eslint"],
-    "rules": {
-        "@typescript-eslint/member-delimiter-style": [
-            "warn",
-            {
-                "multiline": { "delimiter": "none" }
+    "overrides": [
+        {
+            "files": ["**/*.ts", "**/*.tsx"],
+            "env": { "browser": true, "es6": true, "node": true },
+            "extends": [
+                "eslint:recommended",
+                "plugin:@typescript-eslint/eslint-recommended",
+                "plugin:@typescript-eslint/recommended"
+            ],
+            "globals": { "Atomics": "readonly", "SharedArrayBuffer": "readonly" },
+            "parser": "@typescript-eslint/parser",
+            "parserOptions": {
+                "ecmaFeatures": { "jsx": true },
+                "ecmaVersion": 2020,
+                "sourceType": "module",
+                "project": "./tsconfig.json"
+            },
+            "plugins": ["@typescript-eslint"],
+            "rules": {
+                "@typescript-eslint/member-delimiter-style": [
+                    "warn",
+                    {
+                        "multiline": { "delimiter": "none" }
+                    }
+                ]
             }
-        ]
-    }
+        }
+    ]
 }

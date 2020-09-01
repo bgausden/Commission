@@ -1,0 +1,29 @@
+.centered {
+    text-align: center;
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+.visible {
+    visibility: visible;
+}
+
+.overflow {
+    overflow-y: scroll;
+    height: 60%;
+    padding: 1rem;
+}
+
+.fixed-card-height {
+    height: 300px;
+}
+
+.align-bottom {
+    align-self: ;
+}
+
+.drop-zone {
+    border: inset yellowgreen;
+}
