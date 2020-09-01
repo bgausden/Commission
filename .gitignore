@@ -5,3 +5,4 @@ node_modules/
 *.xlsx
 data/**
 .fuse_hidden*
+uploads/**
