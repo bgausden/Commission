@@ -592,5 +592,47 @@
     "contractor": false,
     "poolsWith": [],
     "customPayRates": []
+  },
+  "052": {
+    "staffName": "Sanjana",
+    "mbCommRate": 0,
+    "baseRate": 0.0,
+    "hurdle1Level": 0,
+    "hurdle1Rate": 0,
+    "hurdle2Level": 0,
+    "hurdle2Rate": 0,
+    "hurdle3Level": 0,
+    "hurdle3Rate": 0,
+    "contractor": false,
+    "poolsWith": [],
+    "customPayRates": []
+  },
+  "051": {
+    "staffName": "Renuka",
+    "mbCommRate": 0,
+    "baseRate": 0.0,
+    "hurdle1Level": 0,
+    "hurdle1Rate": 0,
+    "hurdle2Level": 0,
+    "hurdle2Rate": 0,
+    "hurdle3Level": 0,
+    "hurdle3Rate": 0,
+    "contractor": false,
+    "poolsWith": [],
+    "customPayRates": []
+  },
+  "053": {
+    "staffName": "Humira",
+    "mbCommRate": 0,
+    "baseRate": 0.0,
+    "hurdle1Level": 0,
+    "hurdle1Rate": 0,
+    "hurdle2Level": 0,
+    "hurdle2Rate": 0,
+    "hurdle3Level": 0,
+    "hurdle3Rate": 0,
+    "contractor": false,
+    "poolsWith": [],
+    "customPayRates": []
   }
 }
