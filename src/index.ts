@@ -13,7 +13,7 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 */
 
 import ncts from "node-config-ts"
-const {config} = ncts
+const { config } = ncts
 import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
@@ -95,6 +95,8 @@ const emptyServComm: GeneralServiceComm = {
     generalServiceComm: 0,
     generalServiceRevenue: 0,
 }
+
+export const defaultStaffID = "000"
 
 function readExcelFile(fileName?: string): XLSX.WorkSheet {
     const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
@@ -189,8 +191,13 @@ function getServiceRevenues(
     const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>()
     let serviceRevenue = 0
     let customRate = null
-    const sh = (staffHurdle as TStaffHurdles)[staffID]
-    const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
+    const sh = (staffHurdle as TStaffHurdles)[staffID] ? (staffHurdle as TStaffHurdles)[staffID] : (staffHurdle as TStaffHurdles)[defaultStaffID]
+    if (!sh) {
+        //console.log(`Staff ID ${staffID} is not present in staffHurdle.json`)
+    }
+    const customPayRates = sh ? sh.customPayRates : []
+    // const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
+    //const customPayRates = sh.customPayRates ?? []
     let servName: TServiceName = GENERAL_SERV_REVENUE
     for (let i = numSearchRows; i >= 1; i--) {
         /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
@@ -270,7 +277,8 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
     const shm = new Map<TStaffID, StaffHurdle>()
     // TODO Do we really need to build a new map from the entirety of the staff hurdle object? Surely need only this staff member
     // Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
-    shm.set(staffID, sh[staffID])
+    if (sh[staffID]) { shm.set(staffID, sh[staffID]) }
+    else { shm.set(staffID, sh[defaultStaffID]) }
     // cm.forEach((commComponents, staffID) => {
     // const commComponents = cm.get(staffID)!;
     if (shm.has(staffID)) {
@@ -285,11 +293,15 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
             hurdle3: { ...emptyServComm.hurdle3 },
         }
         // const serviceRev = commComponents[SERV_COMM_INDEX];
-        const tempStaffCommConfig: unknown = shm.get(staffID)
+        let tempStaffCommConfig: unknown = shm.get(staffID)
         let staffCommConfig: StaffCommConfig
         if (tempStaffCommConfig) {
             staffCommConfig = tempStaffCommConfig as StaffCommConfig
-        } else throw new Error(`Missing staff commission config for StaffID: ${staffID}`)
+        } else {
+            //throw new Error(`Missing staff commission config for StaffID: ${staffID}`) 
+            tempStaffCommConfig = shm.get(defaultStaffID)
+            staffCommConfig = tempStaffCommConfig as StaffCommConfig
+        }
         let baseRevenue = 0
         let baseRate = 0
         let hurdle1Revenue = 0
