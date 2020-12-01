@@ -5,6 +5,7 @@ import {
     TStaffID,
     TStaffHurdles
 } from "./types.js";
+import { defaultStaffID } from "./index.js";
 
 export function checkRate(rate: unknown): boolean {
     if (typeof rate === "number") {
@@ -53,5 +54,10 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-    return (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false;
+    let isContractor = false
+    if (!(staffHurdle as TStaffHurdles)[staffID]) { staffID = defaultStaffID }
+    if (Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf("contractor")) {
+        isContractor = (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false
+    }
+    return isContractor
 }
