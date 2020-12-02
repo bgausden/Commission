@@ -11,6 +11,9 @@ Sales Commission:									36
 			# Services	# Clients	# Comps	Base Earnings		Earnings	
 Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10	
 */
+/* TODO fix rounding for pay calculated from custom pay rates
+Extensions - Application:   28152.000000000004
+*/
 
 import ncts from "node-config-ts"
 const { config } = ncts
@@ -191,9 +194,17 @@ function getServiceRevenues(
     const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>()
     let serviceRevenue = 0
     let customRate = null
-    const sh = (staffHurdle as TStaffHurdles)[staffID] ? (staffHurdle as TStaffHurdles)[staffID] : (staffHurdle as TStaffHurdles)[defaultStaffID]
+    let sh = undefined
+    if ((staffHurdle as TStaffHurdles)[staffID]) {
+        sh = (staffHurdle as TStaffHurdles)[staffID]
+    } else {
+        console.warn(`Warning: Staff ID ${staffID} is not present in staffHurdle.json`)
+        sh = (staffHurdle as TStaffHurdles)[defaultStaffID]
+    }
+    // const sh = (staffHurdle as TStaffHurdles)[staffID] ? (staffHurdle as TStaffHurdles)[staffID] : (staffHurdle as TStaffHurdles)[defaultStaffID]
     if (!sh) {
-        //console.log(`Staff ID ${staffID} is not present in staffHurdle.json`)
+        console.error(`Error: Staff ID ${staffID} is not present and there is no default with ID 000 in staffHurdle.json`)
+        process.exit(1)
     }
     const customPayRates = sh ? sh.customPayRates : []
     // const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
