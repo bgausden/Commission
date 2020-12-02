@@ -652,5 +652,19 @@
         "contractor": false,
         "poolsWith": [],
         "customPayRates": []
+    },
+    "054": {
+        "staffName": "Bonnie",
+        "mbCommRate": 1.0,
+        "baseRate": 0,
+        "hurdle1Level": 42000,
+        "hurdle1Rate": 0.1,
+        "hurdle2Level": 71000,
+        "hurdle2Rate": 0.11,
+        "hurdle3Level": 84000,
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     }
 }
