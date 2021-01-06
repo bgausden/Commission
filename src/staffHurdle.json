@@ -649,6 +649,7 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
+        "payViaTalenox": true,
         "contractor": false,
         "poolsWith": [],
         "customPayRates": []
@@ -663,7 +664,38 @@
         "hurdle2Rate": 0.11,
         "hurdle3Level": 84000,
         "hurdle3Rate": 0.12,
+        "payViaTalenox": true,
         "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "058": {
+        "staffName": "Sarahann",
+        "mbCommRate": 1.0,
+        "baseRate": 0,
+        "hurdle1Level": 50000,
+        "hurdle1Rate": 0.4,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "payViaTalenox": true,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "059": {
+        "staffName": "Alex",
+        "mbCommRate": 1.0,
+        "baseRate": 0.5,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "payViaTalenox": false,
+        "contractor": true,
         "poolsWith": [],
         "customPayRates": []
     }
