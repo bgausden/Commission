@@ -29,13 +29,13 @@ import {
     TServiceCommMap,
     TCommComponents,
     TStaffName,
-    TStaffMap,
     TServiceRevenue,
     TCommMap,
     TStaffHurdles,
     TCustomRateEntry,
     TServRevenueMap,
     TServiceName,
+    TTalenoxInfoStaffMap,
 } from "./types.js"
 import { StaffHurdle } from "./IStaffHurdle"
 import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPayments } from "./talenox_functions.js"
@@ -277,7 +277,7 @@ function getServiceRevenues(
 }
 
 
-function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, serviceRev: TServiceRevenue): number {
+function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TTalenoxInfoStaffMap, serviceRev: TServiceRevenue): number {
     /* iterate through commissionComponents
     for each entry, locate corresponding hurdles and then calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next store the amounts payable in a new Map where the key is the staff name and the value is an array containing
     [baseCommission, hurdle1Commission, hurdle2Commission]
@@ -430,7 +430,7 @@ function calcGeneralServiceCommission(staffID: TStaffID, staffMap: TStaffMap, se
 
         const staffName = staffMap.get(staffID)
 
-        tempServComm.staffName = `${staffName?.lastName} ${staffName?.firstName}`
+        tempServComm.staffName = `${staffName?.last_name} ${staffName?.first_name}`
         tempServComm.generalServiceRevenue = serviceRev
 
         tempServComm.base.baseCommRevenue = baseRevenue
@@ -480,7 +480,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
     XLSX.writeFile(paymentsWB, config.PAYMENTS_WB_NAME)
 }
 
-function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TStaffMap): void {
+function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TTalenoxInfoStaffMap): void {
     let poolCounter = 0
     const pools = new Map<number, TStaffID[]>()
     Object.entries(staffHurdle).forEach(element => {
@@ -552,12 +552,12 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         console.log("=======================================")
 
         poolMembers.forEach(poolMember => {
-            const staffName = `${talenoxStaff.get(poolMember)?.lastName}, ${talenoxStaff.get(poolMember)?.firstName}`
+            const staffName = `${talenoxStaff.get(poolMember)?.last_name}, ${talenoxStaff.get(poolMember)?.first_name}`
             console.log(`Pooling for ${poolMember} ${staffName}`)
             let memberList = ""
             let comma = ""
             poolMembers.forEach(member => {
-                memberList += `${comma}${member} ${talenoxStaff.get(member)?.lastName} ${talenoxStaff.get(member)?.firstName}`
+                memberList += `${comma}${member} ${talenoxStaff.get(member)?.last_name} ${talenoxStaff.get(member)?.first_name}`
                 comma = ", "
             })
             console.log(`Pool contains ${poolMembers.length} members: ${memberList}`)
@@ -619,7 +619,7 @@ async function main(): Promise<void> {
                     if (staffID) {
                         const staffMapInfo = talenoxStaff.get(staffID)
                         if (staffID && staffMapInfo) {
-                            staffName = `${staffMapInfo.lastName} ${staffMapInfo.firstName}`
+                            staffName = `${staffMapInfo.last_name} ${staffMapInfo.first_name}`
                         } else {
                             /*
                             Even if the staffmember doesn't appear in Talenox, we will need
