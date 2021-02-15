@@ -1,6 +1,7 @@
 import { GeneralServiceComm } from "./IServiceComm"
 import { IStaffNames } from "./IStaffNames"
 import { StaffHurdle } from "./IStaffHurdle"
+import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 
 export type TStaffName = string
 export type TTips = number
@@ -57,6 +58,7 @@ export type TStaffID = string
 
 // TODO: make this a singleton
 export type TStaffMap = Map<TStaffID, IStaffNames>
+export type TTalenoxInfoStaffMap = Map<TStaffID,Partial<ITalenoxStaffInfo>>
 
 export type TStaffHurdles = {
    [key: string]: StaffHurdle

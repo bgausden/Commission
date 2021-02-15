@@ -4,7 +4,6 @@ const { config } = ncts
 import { ITalenoxPayment } from "./ITalenoxPayment";
 import {
     TStaffID,
-    TStaffMap,
     TCommMap,
     COMM_COMPONENT_TIPS,
     COMM_COMPONENT_PRODUCT_COMMISSION,
@@ -12,7 +11,8 @@ import {
     COMM_COMPONENT_TOTAL_SERVICE_REVENUE,
     COMM_COMPONENT_CUSTOM_RATE_COMMISSION,
     COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS,
-    COMM_COMPONENT_TOTAL_SERVICE_COMMISSION
+    COMM_COMPONENT_TOTAL_SERVICE_COMMISSION,
+    TTalenoxInfoStaffMap
 } from "./types.js";
 import { TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox_constants.js";
 import { isContractor } from "./utility_functions.js";
@@ -24,14 +24,13 @@ import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult";
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult";
 import fetch from "node-fetch";
 import { Headers, RequestInit } from "node-fetch";
-import { IStaffNames } from "./IStaffNames";
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo";
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
 
-export function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): ITalenoxPayment[] {
+export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoStaffMap): ITalenoxPayment[] {
     const emptyTalenoxPayment: ITalenoxPayment = {
         staffID: "",
         staffName: "",
@@ -53,7 +52,7 @@ export function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): IT
                 paymentProto = {
                     ...emptyTalenoxPayment,
                     staffID,
-                    staffName: `${staffMapEntry.lastName} ${staffMapEntry.firstName}`,
+                    staffName: `${staffMapEntry.last_name} ${staffMapEntry.first_name}`,
                 };
             }
             const commMapEntry = _commMap.get(staffID);
@@ -127,7 +126,7 @@ export function createAdHocPayments(_commMap: TCommMap, staffMap: TStaffMap): IT
     return payments;
 }
 
-export async function getTalenoxEmployees(): Promise<TStaffMap> {
+export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
     const url = new URL(TALENOX_EMPLOYEE_ENDPOINT);
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json; charset=utf-8");
@@ -143,25 +142,15 @@ export async function getTalenoxEmployees(): Promise<TStaffMap> {
     }
 
     const result = JSON.parse(await response.text()) as ITalenoxStaffInfo[];
-    const staffMap = new Map<TStaffID, IStaffNames>();
+    const staffMap = new Map<TStaffID, Partial<ITalenoxStaffInfo>>();
     result.forEach((staffInfo) => {
-        staffMap.set(staffInfo.employee_id, { firstName: staffInfo.first_name, lastName: staffInfo.last_name });
+        staffMap.set(staffInfo.employee_id, { first_name: staffInfo.first_name, last_name: staffInfo.last_name, resign_date: staffInfo.resign_date });
     });
     return staffMap;
 }
 
-/* import fetch from "node-fetch";
-import { Headers, RequestInit } from "node-fetch";
-import { ITalenoxPayment } from "./ITalenoxPayment";
-import {
-    TStaffID,
 
-
-
-    TStaffMap
-} from "./types.js"; */
-
-export async function createPayroll(staffMap: TStaffMap): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
+export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
     const url = new URL(TALENOX_PAYROLL_PAYMENT_ENDPOINT);
 
     const myHeaders = new Headers();
@@ -169,7 +158,11 @@ export async function createPayroll(staffMap: TStaffMap): Promise<[Error | undef
 
     const employee_ids: TStaffID[] = [];
     staffMap.forEach((staffInfo, staffID) => {
-        employee_ids.push(staffID);
+        if (staffInfo.resign_date) {
+            console.log(`${staffInfo.first_name} ${staffInfo.last_name} resigned. Not including in payroll.`)
+        } else {
+            employee_ids.push(staffID);
+        }
     });
 
     const payment: TalenoxPayrollPayment = {
