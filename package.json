@@ -37,7 +37,7 @@
         "eslint-plugin-import": "^2.22.0",
         "eslint-plugin-prefer-arrow": "^1.2.2",
         "ncp": "^2.0.0",
-        "run-script-os": "^1.1.1",
+        "run-script-os": "^1.1.5",
         "typescript": "^3.9.7",
         "webpack": "^4.44.1"
     }
