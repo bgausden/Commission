@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/member-delimiter-style */
 /* eslint-disable camelcase */
+
+import { ITalenoxJob } from "./ITalenoxJob";
+
 /* eslint-disable @typescript-eslint/interface-name-prefix */
 export interface ITalenoxStaffInfo {
     id: string
@@ -9,8 +12,8 @@ export interface ITalenoxStaffInfo {
     last_name: string
     email: string
     payment_method: string
-    hired_date: Date
-    resign_date: Date
+    hired_date: string
+    resign_date: string
     race: string
     religion: string
     blood_group: string
@@ -29,8 +32,8 @@ export interface ITalenoxStaffInfo {
     birthdate: Date
     cost_centre: string
     current_job: string
-    jobs: any[]
-    next_of_kins: any[]
+    jobs: ITalenoxJob[]
+    next_of_kins: ITalenoxNextOfKin[]
     bank_account: BankAccount
 }
 
