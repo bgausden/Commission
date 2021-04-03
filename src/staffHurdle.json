@@ -24,7 +24,8 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
-        "contractor": false,
+        "contractor": true,
+        "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": []
     },
@@ -129,13 +130,14 @@
     },
     "006": {
         "staffName": "Anson",
-        "mbCommRate": 0.35,
-        "baseRate": 0,
-        "hurdle1Level": 37142.8571,
-        "hurdle1Rate": 0.35,
+        "mbCommRate": 0.4,
+        "baseRate": 0.4,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
-        "poolsWith": ["007"]
+        "payViaTalenox": false,
+        "contractor": true
     },
     "024": {
         "staffName": "Ava",
@@ -280,7 +282,8 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
-        "contractor": false,
+        "contractor": true,
+        "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": []
     },
@@ -322,7 +325,8 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
-        "contractor": false,
+        "contractor": true,
+        "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": [
             { "Make Up Lesson": 0.6 },
@@ -368,7 +372,8 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
-        "contractor": false,
+        "contractor": true,
+        "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": []
     },
@@ -379,8 +384,7 @@
         "hurdle1Level": 37142.8571,
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
-        "hurdle2Rate": 0,
-        "poolsWith": ["006"]
+        "hurdle2Rate": 0
     },
     "019": {
         "staffName": "Rex",
@@ -491,7 +495,7 @@
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
         "contractor": true,
-        "payViaTalenox": true,
+        "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": []
     },
@@ -517,6 +521,8 @@
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false,
         "customPayRates": [
             {
                 "Eyelash Extension": 0.6
