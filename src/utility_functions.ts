@@ -61,3 +61,9 @@ export function isContractor(staffID: TStaffID): boolean {
     }
     return isContractor
 }
+
+export function payrollStartDate(config: Config): Date {
+    const payrollFirstDay = new Date(Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`))
+    console.log(payrollFirstDay)
+    return payrollFirstDay
+}
