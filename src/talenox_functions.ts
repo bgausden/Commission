@@ -15,7 +15,7 @@ import {
     TTalenoxInfoStaffMap
 } from "./types.js";
 import { TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR } from "./talenox_constants.js";
-import { isContractor } from "./utility_functions.js";
+import { isContractor, payrollStartDate } from "./utility_functions.js";
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment";
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems";
 import { TALENOX_BASE_URL, TALENOX_WHOLE_MONTH, TALENOX_PAYROLL_PAYMENT_ENDPOINT, TALENOX_EMPLOYEE_ENDPOINT } from "./talenox_constants.js";
@@ -29,6 +29,8 @@ import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo";
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
+
+const firstDay = payrollStartDate(config)
 
 export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoStaffMap): ITalenoxPayment[] {
     const emptyTalenoxPayment: ITalenoxPayment = {
@@ -158,8 +160,13 @@ export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Er
 
     const employee_ids: TStaffID[] = [];
     staffMap.forEach((staffInfo, staffID) => {
-        if (staffInfo.resign_date) {
-            console.log(`${staffInfo.first_name} ${staffInfo.last_name} resigned. Not including in payroll.`)
+        if (typeof staffInfo.resign_date !== "undefined") {
+            const resignDate = new Date(Date.parse(staffInfo.resign_date))
+            if (resignDate < firstDay) {
+                console.log(`${staffInfo.first_name} ${staffInfo.last_name} resigned prior to this payroll month`)
+            } else {
+                employee_ids.push(staffID);
+            }
         } else {
             employee_ids.push(staffID);
         }
@@ -201,7 +208,7 @@ export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Er
     return [undefined, result as TalenoxPayrollPaymentResult];
 }
 
-export async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
+export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, payments: ITalenoxPayment[]): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
     const url = new URL(`https://${TALENOX_BASE_URL}/payroll/adhoc_payment`);
 
     const myHeaders = new Headers();
@@ -218,14 +225,32 @@ export async function uploadAdHocPayments(payments: ITalenoxPayment[]): Promise<
     const pay_items: ITalenoxAdhocPayItems[] = [];
     payments.forEach((mbPayment) => {
         // eslint-disable-next-line @typescript-eslint/camelcase
-        pay_items.push({
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            employee_id: mbPayment.staffID,
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            item_type: mbPayment.type,
-            remarks: mbPayment.remarks,
-            amount: mbPayment.amount,
-        });
+        const resignDateString = staffMap.get(mbPayment.staffID)?.resign_date
+        if (resignDateString) {
+            const resignDate = new Date(Date.parse(resignDateString))
+            if (resignDate < firstDay) {
+                console.warn(`${mbPayment.staffName} has commission due but resigned prior to this payroll month`)
+            }
+            else {
+                pay_items.push({
+                    // eslint-disable-next-line @typescript-eslint/camelcase
+                    employee_id: mbPayment.staffID,
+                    // eslint-disable-next-line @typescript-eslint/camelcase
+                    item_type: mbPayment.type,
+                    remarks: mbPayment.remarks,
+                    amount: mbPayment.amount,
+                });
+            }
+        } else {
+            pay_items.push({
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                employee_id: mbPayment.staffID,
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                item_type: mbPayment.type,
+                remarks: mbPayment.remarks,
+                amount: mbPayment.amount,
+            });
+        }
     });
 
     const body = JSON.stringify({ payment, pay_items });

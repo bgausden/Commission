@@ -834,7 +834,7 @@ form the payroll for the month
             } else console.log("Failed: Unknown reason")
         }
         console.log(`Pushing ad-hoc payments into new payroll`)
-        const uploadAdHocResult = await uploadAdHocPayments(payments)
+        const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments)
         console.log(`Pushing ad-hoc payments is complete`)
         if (uploadAdHocResult[1]) {
             console.log(`OK: ${uploadAdHocResult[1].message}`)
