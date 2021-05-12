@@ -825,13 +825,13 @@ form the payroll for the month
     if (config.updateTalenox) {
         console.log(`Requesting new payroll payment creation from Talenox`)
         const createPayrollResult = await createPayroll(talenoxStaff)
-        console.log(`New payroll payment is complete`)
+        console.log(`New payroll payment is created in Talenox.`)
         if (createPayrollResult[1]) {
             console.log(`OK: ${createPayrollResult[1].message}`)
         } else {
             if (createPayrollResult[0]) {
-                console.log(`Failed: ${createPayrollResult[0].message}`)
-            } else console.log("Failed: Unknown reason")
+                console.log(`Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`)
+            } else console.log(`Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`)
         }
         console.log(`Pushing ad-hoc payments into new payroll`)
         const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments)
