@@ -14,6 +14,8 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 /* TODO fix rounding for pay calculated from custom pay rates
 Extensions - Application:   28152.000000000004
 */
+// TODO fix catching staff missing from staffhurdle.json
+// TODO fix no warning about not paying via Talenox for Tracey, Anson, Davy and Keith
 
 import ncts from "node-config-ts"
 const { config } = ncts
