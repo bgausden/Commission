@@ -5,6 +5,6 @@
     "PAYMENTS_WB_NAME": "Talenox Payments 202105.xlsx",
     "PAYMENTS_WS_NAME": "Payments",
     "missingStaffAreFatal": true,
-    "updateTalenox": true,
+    "updateTalenox": false,
     "TALENOX_API_TOKEN": "0de2d0e87053fbffec39ba5377feee3010f73b8e"
 }
