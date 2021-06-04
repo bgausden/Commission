@@ -785,11 +785,15 @@ async function main(): Promise<void> {
                         }
 
                         if (j === 0) {
-                            if (staffID) {
+                            if (staffID === undefined || staffID === null || staffID === "") {
+                                throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
+                            } else {
                                 commMap.set(staffID, commComponents)
                                 console.log(prettyjson.render(commComponents))
-                            } else {
-                                throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
+                                console.log(`General Service Commission:`, `${commComponents.generalServiceCommission}`)
+                                console.log(`Custom Rate Service Commission:`, `${commComponents.customRateCommission}`)
+                                console.log(`Product Commission:`, `${commComponents.productCommission}`)
+                                console.log(`Tips:`, `${commComponents.tips}`)
                             }
                             console.log("==========")
                         }
