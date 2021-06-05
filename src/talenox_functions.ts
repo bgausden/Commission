@@ -30,7 +30,7 @@ const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
 
-const firstDay = payrollStartDate(config)
+export const firstDay = payrollStartDate(config)
 
 export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoStaffMap): ITalenoxPayment[] {
     const emptyTalenoxPayment: ITalenoxPayment = {
