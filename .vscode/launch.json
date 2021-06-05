@@ -17,6 +17,10 @@
                 "${workspaceFolder}/dist/**/*.js"
             ],
             "sourceMaps": true,
+            "env": {
+                "DEBUG": "*",
+                "DEBUG_COLORS": "true"
+            }
         },
         {
             "name": "Current TS File",

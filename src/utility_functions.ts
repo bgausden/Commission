@@ -44,7 +44,7 @@ export function isPayViaTalenox(staffID: TStaffID): boolean {
   if (!("payViaTalenox" in (staffHurdle as TStaffHurdles)[staffID])) {
     throw new Error(`${staffID} has no payViaTalenox property.`);
   }
-  return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false;
+  return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false
 }
 
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
@@ -66,6 +66,5 @@ export function isContractor(staffID: TStaffID): boolean {
 
 export function payrollStartDate(config: Config): Date {
   const payrollFirstDay = new Date(Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`));
-  console.log(payrollFirstDay);
   return payrollFirstDay;
 }
