@@ -16,7 +16,7 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 Extensions - Application:   28152.000000000004
 */
 // TODO fix catching staff missing from staffhurdle.json
-// TODO fix no warning about not paying via Talenox for Tracey, Anson, Davy and Keith
+// TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
 
 import ncts from "node-config-ts"
 const { config } = ncts
@@ -699,15 +699,17 @@ async function main(): Promise<void> {
                 should be in that range .
                 Note tips and or product commission may not exist. 
                 */
-        contractorLogger.info('')
+        //contractorLogger.info('')
         if (!isPayViaTalenox(staffID) && !isContractor(staffID)) {
           commissionLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`)
         }
         let text = `Payroll details for ${staffID} ${staffName}`
         if (isContractor(staffID)) {
           text += ` [CONTRACTOR]`
+          contractorLogger.info('')
           contractorLogger.info(text)
         } else {
+          commissionLogger.info('')
           commissionLogger.info(text)
         } for (let j = 3; j >= 0; j--) {
           let payComponent: string = wsaa[rowIndex - j][0] as string
