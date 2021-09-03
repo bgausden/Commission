@@ -1,8 +1,8 @@
 {
-    "PAYROLL_WB_NAME": "data/Payroll Report 5-1-2021 - 5-31-2021.xlsx",
-    "PAYROLL_MONTH": "May",
+    "PAYROLL_WB_NAME": "data/Payroll Report 7-1-2021 - 7-31-2021.xlsx",
+    "PAYROLL_MONTH": "July",
     "PAYROLL_YEAR": "2021",
-    "PAYMENTS_WB_NAME": "Talenox Payments 202105.xlsx",
+    "PAYMENTS_WB_NAME": "Talenox Payments 202107.xlsx",
     "PAYMENTS_WS_NAME": "Payments",
     "missingStaffAreFatal": true,
     "updateTalenox": false,
