@@ -47,7 +47,7 @@
     "021": {
         "staffName": "Wing",
         "mbCommRate": 1.0,
-        "baseRate": 0.05,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -72,7 +72,14 @@
         "contractor": false,
         "payViaTalenox": true,
         "poolsWith": [],
-        "customPayRates": [{ "Professional Eye Makeup": 0.3 }, { "Professional Make Up": 0.3 }]
+        "customPayRates": [
+            {
+                "Professional Eye Makeup": 0.3
+            },
+            {
+                "Professional Make Up": 0.3
+            }
+        ]
     },
     "018": {
         "staffName": "Rennie",
@@ -345,9 +352,15 @@
         "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": [
-            { "Make Up Lesson": 0.6 },
-            { "Professional Eye Makeup": 0.6 },
-            { "Professional Make Up": 0.6 }
+            {
+                "Make Up Lesson": 0.6
+            },
+            {
+                "Professional Eye Makeup": 0.6
+            },
+            {
+                "Professional Make Up": 0.6
+            }
         ]
     },
     "017": {
@@ -412,10 +425,10 @@
         "staffName": "Rex",
         "mbCommRate": 1.0,
         "baseRate": 0,
-        "hurdle1Level": 60606.06060606060606,
-        "hurdle1Rate": 0.33,
-        "hurdle2Level": 100000,
-        "hurdle2Rate": 0.365,
+        "hurdle1Level": 53333.33333333333,
+        "hurdle1Rate": 0.375,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
         "contractor": false,
@@ -783,6 +796,21 @@
         "hurdle3Rate": 0.0,
         "payViaTalenox": false,
         "contractor": true,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "063": {
+        "staffName": "HoiLing",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "payViaTalenox": true,
+        "contractor": false,
         "poolsWith": [],
         "customPayRates": []
     }
