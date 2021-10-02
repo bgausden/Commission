@@ -70,7 +70,7 @@ const HURDLE_3_LEVEL = "hurdle3Level"
 
 const GENERAL_SERV_REVENUE = "General Services"
 
-const REX_WONG_ID = "019"
+/* const REX_WONG_ID = "019" */
 
 /* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
@@ -415,19 +415,21 @@ function calcGeneralServiceCommission(
     }
 
     /*  
+        Note: This special comission structure was removed in the 2021 September payroll
+        
         Rex 019 has a special legacy arrangement. If he hits 100k in Service Revenue
         his commission is calculated at hurdle2 rate applied to total Service Revenue 
         ( not just the revenue between hurdle1 and hurdle2)
         */
 
-    if (staffID === REX_WONG_ID && serviceRev > hurdle2Level) {
-      const monthlySalary = hurdle1Level * hurdle1Rate // back out salary instead of hard-coding
-      hurdle1Revenue = 0
-      hurdle2Revenue = serviceRev - monthlySalary / hurdle2Rate // monthlySalary / hurdle2Rate will pay out at $monthlySalary
-      hurdle3Revenue = 0
-      commissionLogger.warn("Rex 019 has a special legacy pay scheme. See Sioban")
-    }
-
+    /*     if (staffID === REX_WONG_ID && serviceRev > hurdle2Level) {
+          const monthlySalary = hurdle1Level * hurdle1Rate // back out salary instead of hard-coding
+          hurdle1Revenue = 0
+          hurdle2Revenue = serviceRev - monthlySalary / hurdle2Rate // monthlySalary / hurdle2Rate will pay out at $monthlySalary
+          hurdle3Revenue = 0
+          commissionLogger.warn("Rex 019 has a special legacy pay scheme. See Sioban")
+        }
+     */
     // no hurdles so work out how much they receive in comm by applying base rate to entire services revenue
 
     // TODO: sum and set servicesComm once we have all the components.
@@ -634,9 +636,9 @@ async function main(): Promise<void> {
             if (staffID && staffMapInfo) {
               // found staffmember in Talenox
               staffName = `${staffMapInfo.last_name} ${staffMapInfo.first_name}`
-/*               if (!isPayViaTalenox(staffID)) {
-                warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox but is in Talenox.`)
-              } */
+              /*               if (!isPayViaTalenox(staffID)) {
+                              warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox but is in Talenox.`)
+                            } */
             } else {
               /*
                 Even if the staffmember doesn't appear in Talenox, we will need
@@ -818,26 +820,26 @@ async function main(): Promise<void> {
                   commissionLogger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
                   commissionLogger.info(fws32Left("Product Commission:"), fws12RightHKD(commComponents.productCommission))
                   commissionLogger.info(fws32Left(`Tips:`), fws12RightHKD(commComponents.tips))
-                  commissionLogger.info(fws32Left(''),fws12Right('------------'))
+                  commissionLogger.info(fws32Left(''), fws12Right('------------'))
                   commissionLogger.info(
                     fws32Left(`Total Payable`),
                     fws12RightHKD(commComponents.customRateCommission +
-                    commComponents.generalServiceCommission +
-                    commComponents.productCommission +
-                    commComponents.tips)
+                      commComponents.generalServiceCommission +
+                      commComponents.productCommission +
+                      commComponents.tips)
                   )
                 } else {
                   contractorLogger.info(fws32Left("General Service Commission:"), fws12RightHKD(commComponents.generalServiceCommission))
                   contractorLogger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
                   contractorLogger.info(fws32Left("Product Commission:"), fws12RightHKD(commComponents.productCommission))
                   contractorLogger.info(fws32Left(`Tips:`), fws12RightHKD(commComponents.tips))
-                  contractorLogger.info(fws32Left(''),fws12Right('------------'))
+                  contractorLogger.info(fws32Left(''), fws12Right('------------'))
                   contractorLogger.info(
                     fws32Left(`Total Payable`),
                     fws12RightHKD(commComponents.customRateCommission +
-                    commComponents.generalServiceCommission +
-                    commComponents.productCommission +
-                    commComponents.tips)
+                      commComponents.generalServiceCommission +
+                      commComponents.productCommission +
+                      commComponents.tips)
                   )
                 }
               }
