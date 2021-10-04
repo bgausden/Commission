@@ -784,10 +784,10 @@ async function main(): Promise<void> {
                   // log(`${payComponent} ${generalServiceCommission}`)
 
                   /*
-                                    Calculate the commission for each of the custom pay rate services
-                                    in servicesRevenues and add to commComponents.customRateCommission.
-                                    While we're here we can also add up the total custom service commission.
-                                    */
+                  Calculate the commission for each of the custom pay rate services
+                  in servicesRevenues and add to commComponents.customRateCommission.
+                  While we're here we can also add up the total custom service commission.
+                  */
                   let totalCustomServiceCommission = 0
                   if (servicesRevenues) {
                     servicesRevenues.forEach((customRateEntry, serviceName) => {

@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            // "preLaunchTask": "build",
+            "preLaunchTask": "build",
             "name": "Launch Program",
             "program": "${workspaceFolder}/dist/index.js",
             "runtimeArgs": [
