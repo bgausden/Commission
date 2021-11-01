@@ -163,6 +163,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
       return null
     }
   } else {
+    // could legit be that we're on a line with no Staff ID#: string
     return null
   }
 }
@@ -617,6 +618,7 @@ async function main(): Promise<void> {
   const revCol = revenueCol(wsaa)
   let currentStaffIDRow = -1
   let currentTotalForRow = 0
+  let staffInfo: StaffInfo | null = null
   // start building commission components working through the rows of the spreadsheet (array of arrays)
   // ignore the first row which contains the date range for the report
   for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
@@ -626,7 +628,11 @@ async function main(): Promise<void> {
       // We null out staffID when we've finished processing the previous staffmember's commission.
       // If staffID has a value then were still processing commission for one of the team
       if (staffID === undefined) {
-        const staffInfo = getStaffIDAndName(wsaa, rowIndex)
+
+        staffInfo = getStaffIDAndName(wsaa, rowIndex) // may return null if we don't find the magic string in the current row
+
+
+
         if (staffInfo) {
           // found staffID so keep a note of which row it's on
           currentStaffIDRow = rowIndex
@@ -660,14 +666,16 @@ async function main(): Promise<void> {
               }
             }
           }
-        } /* else {
-                    We expect to fall through to here. Not every row contains a staff ID and name
-                } */
+        }
       }
       if ((element as string).startsWith(TOTAL_FOR)) {
         // If we've found a line beginning with "Total for " then we've got to the subtotals  and total for a staff member
-        if (staffID === undefined) throw new Error("Reached Totals row with no identified StaffID") // Probably a new member of staff with no assigned StaffID in Mindbody
-
+        if (staffID === undefined) {
+          // Likely a new member of staff in Mindbody has not been assigned a staffID
+          // When there's no staffID assigned, the Total row will likely contain the offending person's name.
+          const possibleStaffName = (element as string).slice(TOTAL_FOR.length) 
+          throw new Error("Reached Totals row with no identified StaffID. Staff name is possibly "+possibleStaffName)
+      }
         /* Keep track of the last totals row (for the previous employee) because we'll need to search
                     back to this row to locate all of the revenue numbers for the current staff member.
                 */
