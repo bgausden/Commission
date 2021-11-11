@@ -1,7 +1,9 @@
-import ncts from "node-config-ts"
-const { config } = ncts
+/* import ncts from "node-config-ts"
+const { config } = ncts */
 
-export const TALENOX_BASE_URL = `www.talenox.com/api/v1/${config.TALENOX_API_TOKEN}`
+// TALENOX_API_TOKEN is loaded into process.env by adding "-r dotenv/config" to the launch command-line (see launch.json)
+export const TALENOX_API_TOKEN = process.env.TALENOX_API_TOKEN
+export const TALENOX_BASE_URL = `www.talenox.com/api/v1/${TALENOX_API_TOKEN}`
 export const TALENOX_EMPLOYEE_ENDPOINT = `https://${TALENOX_BASE_URL}/employees`
 export const TALENOX_PAYROLL_PAYMENT_ENDPOINT = `https://${TALENOX_BASE_URL}/payroll/payroll_payment`
 export const TALENOX_ADHOC_PAYMENT_ENDPOINT = `https://${TALENOX_BASE_URL}/payroll/adhoc_payment`

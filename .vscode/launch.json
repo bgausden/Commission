@@ -11,7 +11,10 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/dist/index.js",
             "runtimeArgs": [
-                "--experimental-json-modules"
+                "--experimental-json-modules",
+                // read .env into process.env from the get-go
+                "-r",
+                "dotenv/config"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
