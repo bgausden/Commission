@@ -1,0 +1,70 @@
+{
+    "appenders": {
+        "commission": {
+            "type": "file",
+            "filename": "commission.log",
+            "layout": {
+                "type": "messagePassThrough"
+            }
+        },
+        "contractor": {
+            "type": "file",
+            "filename": "contractors.log",
+            "layout": {
+                "type": "messagePassThrough"
+            }
+        },
+        "debug": {
+            "type": "stderr"
+        },
+        "info": {
+            "type": "stdout"
+        },
+        "warn": {
+            "type": "stdout"
+        },
+        "error": {
+            "type": "stderr"
+        }
+    },
+    "categories": {
+        "default": {
+            "appenders": [
+                "commission",
+                "info"
+            ],
+            "level": "info"
+        },
+        "contractor": {
+            "appenders": [
+                "contractor",
+                "info"
+            ],
+            "level": "info"
+        },
+        "debug": {
+            "appenders": [
+                "debug"
+            ],
+            "level": "info"
+        },
+        "info": {
+            "appenders": [
+                "info"
+            ],
+            "level": "info"
+        },
+        "warn": {
+            "appenders": [
+                "warn"
+            ],
+            "level": "warn"
+        },
+        "error": {
+            "appenders": [
+                "error"
+            ],
+            "level": "error"
+        }
+    }
+}
