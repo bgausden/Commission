@@ -7,6 +7,6 @@ data/**
 uploads/
 data/
 dist/
-config/
 commission.log
 contractors.log
+.env
