@@ -1,1 +1,1 @@
-tsc -p tsconfig.json && cp ./src/staffHurdle.json ./dist/
+tsc -p tsconfig.json && cp ./src/staffHurdle.json ./log4js.json ./dist/

@@ -26,6 +26,9 @@ isExecutable("./node_modules/.bin/tsc").then((executable) => {
         ncp("./src/staffHurdle.json", "./dist/", (error) => {
           error ? console.error(error.Message) : console.log(`Copied staffHurdle.json to ${DIST}`);
         });
+        ncp("./log4js.json", "./dist/", (error) => {
+          error ? console.error(error.Message) : console.log(`Copied logging config template to ${DIST}`);
+        });
       })
       .catch((err) => {
         console.error(err);
