@@ -18,9 +18,10 @@
             ],
             "sourceMaps": true,
             "env": {
-                "DEBUG": "*",
+                "DEBUG": "*,-log4js:*,-streamroller:*",
                 "DEBUG_COLORS": "true"
-            }
+            },
+            "console": "integratedTerminal",
         },
         {
             "name": "Current TS File",
