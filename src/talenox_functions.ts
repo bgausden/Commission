@@ -14,7 +14,7 @@ import {
     COMM_COMPONENT_TOTAL_SERVICE_COMMISSION,
     TTalenoxInfoStaffMap
 } from "./types.js"
-import { TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_ADHOC_PAYMENT_ENDPOINT } from "./talenox_constants.js"
+import { TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_ADHOC_PAYMENT_ENDPOINT, TALENOX_API_TOKEN } from "./talenox_constants.js"
 import { isContractor, payrollStartDate } from "./utility_functions.js"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
@@ -134,8 +134,11 @@ export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoSt
 export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
     const getEmployeesDebug = talenoxFunctionsDebug.extend("getTalenoxEmployees")
     const url = TALENOX_EMPLOYEE_ENDPOINT
-    const myHeaders = new Headers()
-    myHeaders.append("Content-Type", "application/json; charset=utf-8")
+    const myHeaders = new Headers({
+        "Content-Type": "application/json;charset=utf-8",
+        "Authorization": `Bearer ${TALENOX_API_TOKEN}`
+    })
+    //myHeaders.append("Content-Type", "application/json;charset=utf-8")
     const init: RequestInit = {
         headers: myHeaders,
         redirect: "follow",
@@ -160,8 +163,12 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
 export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
     const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT
 
-    const myHeaders = new Headers()
-    myHeaders.append("Content-Type", "application/json; charset=utf-8")
+    /* const myHeaders = new Headers()
+    myHeaders.append("Content-Type", "application/json; charset=utf-8") */
+    const myHeaders = new Headers({
+        "Content-Type": "application/json;charset=utf-8",
+        "Authorization": `Bearer ${TALENOX_API_TOKEN}`
+    })
 
     const employee_ids: TStaffID[] = []
     staffMap.forEach((staffInfo, staffID) => {
@@ -216,8 +223,12 @@ export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Er
 export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, payments: ITalenoxPayment[]): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
     const url = TALENOX_ADHOC_PAYMENT_ENDPOINT
 
-    const myHeaders = new Headers()
-    myHeaders.append("Content-Type", "application/json; charset=utf-8")
+    /* const myHeaders = new Headers()
+    myHeaders.append("Content-Type", "application/json; charset=utf-8") */
+    const myHeaders = new Headers({
+        "Content-Type": "application/json;charset=utf-8",
+        "Authorization": `Bearer ${TALENOX_API_TOKEN}`
+    })
 
     const payment: ITalenoxAdHocPayment = {
         // id: 790479,
