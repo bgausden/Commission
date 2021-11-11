@@ -25,10 +25,13 @@ import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
 import fetch from "node-fetch"
 import { Headers, RequestInit } from "node-fetch"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
+import debug from "debug"
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
 const PRODUCT_COMM_REMARK = "Product commission"
+
+const talenoxFunctionsDebug = debug("talenox_functions")
 
 export const firstDay = payrollStartDate(config)
 
@@ -129,6 +132,7 @@ export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoSt
 }
 
 export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
+    const getEmployeesDebug = talenoxFunctionsDebug.extend("getTalenoxEmployees")
     const url = TALENOX_EMPLOYEE_ENDPOINT
     const myHeaders = new Headers()
     myHeaders.append("Content-Type", "application/json; charset=utf-8")
@@ -137,7 +141,8 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
         redirect: "follow",
         method: "GET",
     }
-
+    getEmployeesDebug("url: %s", url)
+    getEmployeesDebug("init: %O", init)
     const response = await fetch(url, init)
     if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`)
