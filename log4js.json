@@ -9,7 +9,7 @@
         },
         "contractor": {
             "type": "file",
-            "filename": "contractors.log",
+            "filename": "contractor.log",
             "layout": {
                 "type": "messagePassThrough"
             }

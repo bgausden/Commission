@@ -8,8 +8,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "postinstall": "node-config-ts",
         "build": "run-script-os",
-        "build:win32": ".\\scripts\\build.cmd",
-        "build:default": "./scripts/build.sh"
+        "build:win32": "scripts\\build.cmd",
+        "build:default": "scripts/build.sh"
     },
     "repository": {
         "type": "git",
