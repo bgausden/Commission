@@ -5,14 +5,16 @@
             "filename": "commission.log",
             "layout": {
                 "type": "messagePassThrough"
-            }
+            },
+            "flags": "w"
         },
         "contractor": {
             "type": "file",
             "filename": "contractor.log",
             "layout": {
                 "type": "messagePassThrough"
-            }
+            },
+            "flags": "w"
         },
         "debug": {
             "type": "stderr"
