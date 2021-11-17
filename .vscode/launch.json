@@ -21,7 +21,7 @@
             ],
             "sourceMaps": true,
             "env": {
-                "DEBUG": "*,-log4js:*,-streamroller:*",
+                "DEBUG": "-*,-log4js:categories,-streamroller:*",
                 "DEBUG_COLORS": "true"
             },
             "console": "integratedTerminal",

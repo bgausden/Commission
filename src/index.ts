@@ -17,6 +17,9 @@ Extensions - Application:   28152.000000000004
 */
 // TODO fix catching staff missing from staffhurdle.json
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
+// TODO place payments spreadsheets into a "payments" folder
+// TODO remove --experimental-json-modules in favour of approach in logging_functions. ts --> const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
+
 
 import ncts from "node-config-ts"
 const { config } = ncts
@@ -673,9 +676,9 @@ async function main(): Promise<void> {
         if (staffID === undefined) {
           // Likely a new member of staff in Mindbody has not been assigned a staffID
           // When there's no staffID assigned, the Total row will likely contain the offending person's name.
-          const possibleStaffName = (element as string).slice(TOTAL_FOR.length) 
-          throw new Error("Reached Totals row with no identified StaffID. Staff name is possibly "+possibleStaffName)
-      }
+          const possibleStaffName = (element as string).slice(TOTAL_FOR.length)
+          throw new Error("Reached Totals row with no identified StaffID. Staff name is possibly " + possibleStaffName)
+        }
         /* Keep track of the last totals row (for the previous employee) because we'll need to search
                     back to this row to locate all of the revenue numbers for the current staff member.
                 */

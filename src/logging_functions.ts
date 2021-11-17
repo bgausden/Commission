@@ -9,12 +9,38 @@ import { basename, extname } from 'path'
 
 // the template in the root of the project needs to be copied to /src
 // the npm script "build" does this for us (see /scripts)
-let log4jsConfigFile = './log4js.json'
-if (process.env.log4jsConfigFile) {
+const log4jsConfigFile = process.env.log4jsConfigFile ?? '../log4js.json'
+/* if (process.env.log4jsConfigFile) {
     log4jsConfigFile = process.env.log4jsConfigFile
-}
+} */
+const logsDir = process.env.logsDir ?? 'logs/'
 
 const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
+
+// @ts-ignore ts-2339
+const commissionLogFileName = log4jsConfig.appenders?.commission?.filename ?? './commission.log'
+const commissionLogFileExt = extname(commissionLogFileName)
+const commissionLogFileBaseName = basename(commissionLogFileName, commissionLogFileExt)
+let date = (new Date()).toISOString().replace(new RegExp(':', 'g'), '')
+// @ts-ignore ts-2339
+log4jsConfig.appenders.commission.filename = `${logsDir}/${commissionLogFileBaseName}-${date}${commissionLogFileExt}`
+
+// @ts-ignore ts-2339
+const contractorLogFileName = log4jsConfig.appenders?.contractor?.filename ?? './contractor.log'
+const contractorLogFileExt = extname(contractorLogFileName)
+const contractorLogFileBaseName = basename(contractorLogFileName, contractorLogFileExt)
+date = (new Date()).toISOString().replace(new RegExp(':', 'g'), '')
+// @ts-ignore ts-2339
+log4jsConfig.appenders.contractor.filename = `${logsDir}/${contractorLogFileBaseName}-${date}${contractorLogFileExt}`
+
+configure(log4jsConfig)
+
+export const commissionLogger = getLogger("commission")
+commissionLogger.level = 'info'
+
+export const contractorLogger = getLogger('contractor')
+contractorLogger.level = 'info'
+
 
 export const debugLogger = getLogger('debug')
 debugLogger.level = 'debug'
@@ -31,32 +57,3 @@ errorLogger.level = 'error'
 export function shutdownLogging(): void {
     l4js.shutdown()
 }
-
-// TODO put this into an init() function
-// TODO create the contractor and commission log files as part of init()
-
-// change the filenames we'll log to by appending the datetime to the file names
-// @ts-ignore ts-2339
-const commissionLogFileName = log4jsConfig.appenders?.commission?.filename ?? './commission.log'
-const commissionLogFileExt = extname(commissionLogFileName)
-const commissionLogFileBaseName = basename(commissionLogFileName, commissionLogFileExt)
-let date = (new Date()).toISOString()
-// @ts-ignore ts-2339
-log4jsConfig.appenders.commission.filename = `log4jsConfig.appenders.commission.${commissionLogFileBaseName}-${date}${commissionLogFileExt}`
-
-// @ts-ignore ts-2339
-const contractorLogFileName = log4jsConfig.appenders?.contractor?.filename ?? './contractor.log'
-const contractorLogFileExt = extname(contractorLogFileName)
-const contractorLogFileBaseName = basename(contractorLogFileName, contractorLogFileExt)
-date = (new Date()).toISOString()
-// @ts-ignore ts-2339
-log4jsConfig.appenders.commission.filename = `log4jsBaseConfig.appenders.contractor.${contractorLogFileBaseName}-${date}${contractorLogFileExt}`
-
-configure(log4jsConfig)
-
-export const commissionLogger = getLogger("commission")
-commissionLogger.level = 'info'
-
-export const contractorLogger = getLogger('contractor')
-contractorLogger.level = 'info'
-
