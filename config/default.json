@@ -1,9 +1,9 @@
 {
-    "PAYROLL_WB_NAME": "data/Payroll Report 11-1-2021 - 11-17-2021 Danielle.xlsx",
-    "PAYROLL_MONTH": "November",
+    "PAYROLL_WB_NAME": "data/Payroll Report 12-1-2021 - 12-31-2021.xls",
+    "PAYROLL_MONTH": "December",
     "PAYROLL_YEAR": "2021",
-    "PAYMENTS_WB_NAME": "Talenox Payments 202111 Danielle.xlsx",
-    "PAYMENTS_WS_NAME": "Payments Danielle",
+    "PAYMENTS_WB_NAME": "Talenox Payments 202112",
+    "PAYMENTS_WS_NAME": "December 2021",
     "missingStaffAreFatal": true,
-    "updateTalenox": false
+    "updateTalenox": true
 }
