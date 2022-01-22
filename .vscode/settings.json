@@ -1,4 +1,5 @@
 {
     "prettier.printWidth": 120,
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }
