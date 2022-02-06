@@ -19,7 +19,7 @@ Extensions - Application:   28152.000000000004
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
 // TODO place payments spreadsheets into a "payments" folder
 // TODO remove --experimental-json-modules in favour of approach in logging_functions. ts --> const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
-
+// TODO move payments xlsx files to new directory "payment sheets" so not in root
 
 import ncts from "node-config-ts"
 const { config } = ncts
