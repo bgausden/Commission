@@ -843,5 +843,20 @@
         "contractor": true,
         "poolsWith": [],
         "customPayRates": []
+    },
+    "072": {
+        "staffName": "Danny",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 42857,
+        "hurdle1Rate": 0.35,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "payViaTalenox": true,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
     }
 }
