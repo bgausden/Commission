@@ -491,8 +491,8 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
-        "contractor": false,
-        "payViaTalenox": true,
+        "contractor": true,
+        "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": []
     },
@@ -843,5 +843,75 @@
         "contractor": true,
         "poolsWith": [],
         "customPayRates": []
+    },
+    "072": {
+        "staffName": "Danny",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 42857,
+        "hurdle1Rate": 0.35,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "payViaTalenox": true,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "073": {
+        "staffName": "TracyTam",
+        "mbCommRate": 0,
+        "baseRate": 0.5,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false,
+        "customPayRates": [
+            {
+                "Eyelash Extension": 0.6
+            },
+            {
+                "Eyelash Extension - Refill": 0.6
+            },
+            {
+                "Eyelash Extension - Strip": 0.6
+            },
+            {
+                "Eyelash Lift": 0.6
+            },
+            {
+                "Extensions - Application": 0.68
+            },
+            {
+                "Extensions - Removal": 0.68
+            },
+            {
+                "Extensions - Wash": 0.68
+            }
+        ]
+    },
+    "079": {
+        "staffName": "Carol",
+        "mbCommRate": 1.0,
+        "baseRate": 0,
+        "hurdle1Level": 48000,
+        "hurdle1Rate": 0.1,
+        "hurdle2Level": 82000,
+        "hurdle2Rate": 0.11,
+        "hurdle3Level": 96000,
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "payViaTalenox": true,
+        "customPayRates": [
+            {
+                "Laser - Boyzilian - Men": 0.15
+            },
+            {
+                "Laser - Thong Line - Men": 0.15
+            }
+        ]
     }
 }
