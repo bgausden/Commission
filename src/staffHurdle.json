@@ -412,7 +412,7 @@
         "staffName": "Ari",
         "mbCommRate": 0.33,
         "baseRate": 0.0,
-        "hurdle1Level": 37142.8571,
+        "hurdle1Level": 37142.857,
         "hurdle1Rate": 0.35,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
@@ -862,7 +862,7 @@
     "073": {
         "staffName": "TracyTam",
         "mbCommRate": 0,
-        "baseRate": 0.5,
+        "baseRate": 0.50,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -871,25 +871,10 @@
         "payViaTalenox": false,
         "customPayRates": [
             {
-                "Eyelash Extension": 0.6
+                "Tracy Custom Nails": 0.55
             },
             {
-                "Eyelash Extension - Refill": 0.6
-            },
-            {
-                "Eyelash Extension - Strip": 0.6
-            },
-            {
-                "Eyelash Lift": 0.6
-            },
-            {
-                "Extensions - Application": 0.68
-            },
-            {
-                "Extensions - Removal": 0.68
-            },
-            {
-                "Extensions - Wash": 0.68
+                "Eyelash Extension": 0.55
             }
         ]
     },
