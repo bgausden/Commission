@@ -16,8 +16,8 @@
     },
     "025": {
         "staffName": "Tracey",
-        "mbCommRate": 0.45,
-        "baseRate": 0.45,
+        "mbCommRate": 0.50,
+        "baseRate": 0.50,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -410,10 +410,10 @@
     },
     "007": {
         "staffName": "Ari",
-        "mbCommRate": 0.33,
+        "mbCommRate": 0.37,
         "baseRate": 0.0,
-        "hurdle1Level": 37142.857,
-        "hurdle1Rate": 0.35,
+        "hurdle1Level": 35135.14,
+        "hurdle1Rate": 0.37,
         "hurdle2Level": 0,
         "hurdle2Rate": 0,
         "contractor": false,
@@ -862,7 +862,7 @@
     "073": {
         "staffName": "TracyTam",
         "mbCommRate": 0,
-        "baseRate": 0.50,
+        "baseRate": 0.55,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -898,5 +898,33 @@
                 "Laser - Thong Line - Men": 0.15
             }
         ]
+    },
+    "080": {
+        "staffName": "Mildred",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "payViaTalenox": true,
+        "contractor": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "081": {
+        "staffName": "Edith",
+        "mbCommRate": 1.0,
+        "baseRate": 0.50,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
     }
 }
