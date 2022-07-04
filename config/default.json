@@ -5,5 +5,5 @@
     "PAYMENTS_WB_NAME": "Talenox Payments 202206.xlsx",
     "PAYMENTS_WS_NAME": "Payments June 2022",
     "missingStaffAreFatal": true,
-    "updateTalenox": false
+    "updateTalenox": true
 }
