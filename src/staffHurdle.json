@@ -891,6 +891,19 @@
         "contractor": true,
         "payViaTalenox": false
     },
+    "075": {
+        "staffName": "India",
+        "mbCommRate": 1.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "payViaTalenox": true
+    },
     "079": {
         "staffName": "Carol",
         "mbCommRate": 1.0,
