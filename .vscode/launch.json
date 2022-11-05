@@ -38,7 +38,6 @@
                 "ts-node/register"
             ],
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]
