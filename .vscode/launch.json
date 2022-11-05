@@ -21,7 +21,7 @@
             ],
             "sourceMaps": true,
             "env": {
-                "DEBUG": "*,-log4js:*,-streamroller:*",
+                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
                 "DEBUG_COLORS": "true"
             },
             "console": "integratedTerminal",
