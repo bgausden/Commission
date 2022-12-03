@@ -966,6 +966,58 @@
         "contractor": true,
         "payViaTalenox": false
     },
+    "083": {
+        "staffName": "ChristinaBoulieris",
+        "mbCommRate": 0.55,
+        "baseRate": 0.55,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
+    },
+    "084": {
+        "staffName": "JoyceLo",
+        "mbCommRate": 0.55,
+        "baseRate": 0.55,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
+    },
+    "085": {
+        "staffName": "KaYan",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "payViaTalenox": true
+    },
+    "088": {
+        "staffName": "Jessica",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": false,
+        "payViaTalenox": true
+    },
     "094": {
         "staffName": "Vikti",
         "mbCommRate": 0.0,
