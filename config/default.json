@@ -1,9 +1,9 @@
 {
-    "PAYROLL_WB_NAME": "data/Payroll Report 10-1-2022 - 10-31-2022.xlsx",
-    "PAYROLL_MONTH": "October",
+    "PAYROLL_WB_NAME": "data/Payroll Report 11-1-2022 - 11-30-2022.xlsx",
+    "PAYROLL_MONTH": "November",
     "PAYROLL_YEAR": "2022",
-    "PAYMENTS_WB_NAME": "Talenox Payments 202210.xlsx",
-    "PAYMENTS_WS_NAME": "Payments October 2022",
+    "PAYMENTS_WB_NAME": "Talenox Payments 202211.xlsx",
+    "PAYMENTS_WS_NAME": "Payments November 2022",
     "missingStaffAreFatal": true,
     "updateTalenox": false
 }
