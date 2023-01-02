@@ -1,9 +1,5 @@
-/* eslint-disable no-var */
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 
-/* eslint-disable @typescript-eslint/prefer-regexp-exec */
-/* eslint-disable @typescript-eslint/camelcase */
-// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 /* TODO add support for hourly wage staff:
 Gausden, ElizabethStaff ID #: 048 									
@@ -27,7 +23,7 @@ const { config } = ncts
 // import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
-import staffHurdle from "./staffHurdle.json"
+import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { GeneralServiceComm } from "./IServiceComm"
 import { StaffCommConfig } from "./IStaffCommConfig"
@@ -600,7 +596,7 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
 }
 
 async function main(): Promise<void> {
-  commissionLogger.info(`Commission run begins ${firstDay}`)
+  commissionLogger.info(`Commission run begins ${firstDay.toDateString()}`)
   if (config.updateTalenox === false) {
     commissionLogger.info(`Talenox update is disabled in config.`)
   }
