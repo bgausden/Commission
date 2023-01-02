@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
-/* eslint-disable @typescript-eslint/camelcase */
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 /* TODO add support for hourly wage staff:
@@ -444,7 +443,7 @@ function calcGeneralServiceCommission(
 
     const staffName = staffMap.get(staffID)
 
-    tempServComm.staffName = `${staffName?.last_name} ${staffName?.first_name}`
+    tempServComm.staffName = `${staffName?.last_name ?? "<Last Name>"} ${staffName?.first_name ?? "<First Name>"}`
     tempServComm.generalServiceRevenue = serviceRev
 
     tempServComm.base.baseCommRevenue = baseRevenue
@@ -566,12 +565,12 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
     commissionLogger.info("=======================================")
 
     poolMembers.forEach((poolMember) => {
-      const staffName = `${talenoxStaff.get(poolMember)?.last_name}, ${talenoxStaff.get(poolMember)?.first_name}`
+      const staffName = `${talenoxStaff.get(poolMember)?.last_name ?? "<Last Name>"}, ${talenoxStaff.get(poolMember)?.first_name ?? "<First Name>"}`
       commissionLogger.info(`Pooling for ${poolMember} ${staffName}`)
       let memberList = ""
       let comma = ""
       poolMembers.forEach((member) => {
-        memberList += `${comma}${member} ${talenoxStaff.get(member)?.last_name} ${talenoxStaff.get(member)?.first_name
+        memberList += `${comma}${member} ${talenoxStaff.get(member)?.last_name ?? "<Last Name>"} ${talenoxStaff.get(member)?.first_name ?? "<First Name>"
           }`
         comma = ", "
       })
@@ -582,8 +581,9 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         if (comm) {
           if (typeof aggregatePropValue === "number") {
             comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100
+            const aggregateCommString = (typeof comm[aggregatePropName] === "number") ? comm[aggregatePropName].toString() : JSON.stringify(comm[aggregatePropName])
             commissionLogger.info(
-              `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${comm[aggregatePropName]}`
+              `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`
             )
           }
         } else {
@@ -600,7 +600,7 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
 }
 
 async function main(): Promise<void> {
-  commissionLogger.info(`Commission run begins ${firstDay}`)
+  commissionLogger.info(`Commission run begins ${firstDay.toDateString()}`)
   if (config.updateTalenox === false) {
     commissionLogger.info(`Talenox update is disabled in config.`)
   }
@@ -645,7 +645,7 @@ async function main(): Promise<void> {
             const staffMapInfo = talenoxStaff.get(staffID)
             if (staffID && staffMapInfo) {
               // found staffmember in Talenox
-              staffName = `${staffMapInfo.last_name} ${staffMapInfo.first_name}`
+              staffName = `${staffMapInfo.last_name ?? "<Last Name>"} ${staffMapInfo.first_name ?? "<First Name>"}`
               /*               if (!isPayViaTalenox(staffID)) {
                               warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox but is in Talenox.`)
                             } */
@@ -654,7 +654,7 @@ async function main(): Promise<void> {
                 Even if the staffmember doesn't appear in Talenox, we will need
                 a valid staffName. Use the info from the MB Payroll report.
              */
-              staffName = `${staffInfo.lastName} ${staffInfo.firstName}`
+              staffName = `${staffInfo.lastName ?? "<Last Name>"} ${staffInfo.firstName ?? "<First Name>"}`
               if (isPayViaTalenox(staffID)) {
                 const text = `${staffID ? staffID : "null"}${staffInfo.firstName ? " " + staffInfo.firstName : ""}${staffInfo.lastName ? " " + staffInfo.lastName : ""
                   } in MB Payroll Report line ${rowIndex} not in Talenox.`
@@ -715,9 +715,9 @@ async function main(): Promise<void> {
                 */
         //contractorLogger.info('')
         if (!isPayViaTalenox(staffID) && !isContractor(staffID)) {
-          commissionLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`)
+          commissionLogger.warn(`Note: ${staffID} ${staffName ? staffName : "<Staff Name>"} is configured to NOT pay via Talenox.`)
         }
-        let text = `Payroll details for ${staffID} ${staffName}`
+        let text = `Payroll details for ${staffID} ${staffName ? staffName : "<Staff Name>"}`
         if (isContractor(staffID)) {
           text += ` [CONTRACTOR]`
           contractorLogger.info('')
@@ -822,7 +822,7 @@ async function main(): Promise<void> {
 
             if (j === 0) {
               if (!staffID) {
-                throw new Error(`Fatal: Missing staffID for staff: ${staffName}`)
+                throw new Error(`Fatal: Missing staffID for staff: ${staffName ? staffName : "<Staff Name>"}`)
               } else {
                 commMap.set(staffID, commComponents)
                 //log(prettyjson.render(commComponents))
@@ -920,6 +920,12 @@ main()
     shutdownLogging()
   })
   .catch((error) => {
-    errorLogger.error(`${error}`)
+    if (error instanceof Error) {
+      errorLogger.error(`${error.message}`)
+    } else if (error instanceof String) {
+      errorLogger.error(`${error.toString()}`)
+    } else {
+      errorLogger.error(`Cannot log caught error. Unknown error type: ${typeof error}`)
+    }
     shutdownLogging()
   })
