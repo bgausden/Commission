@@ -1,4 +1,4 @@
-import staffHurdle from "./staffHurdle.json" assert { type: "json" }
+import staffHurdle from "./staffHurdle.json"
 import { TStaffID, TStaffHurdles } from "./types.js"
 import { defaultStaffID } from "./index.js"
 import { config } from "node-config-ts"
