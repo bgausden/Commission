@@ -26,7 +26,7 @@ const { config } = ncts
 // import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
-import staffHurdle from "./staffHurdle.json"
+import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { ITalenoxPayment } from "./ITalenoxPayment"
 import { GeneralServiceComm } from "./IServiceComm"
 import { StaffCommConfig } from "./IStaffCommConfig"

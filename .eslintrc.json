@@ -1,7 +1,7 @@
 {
     "env": {
         "browser": true,
-        "es6": true,
+        "es2022": true,
         "node": true
     },
     "extends": [
@@ -20,16 +20,19 @@
     },
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 6,
         "sourceType": "module",
         "project": "tsconfig.json"
     },
-    "plugins": ["@typescript-eslint"],
+    "plugins": [
+        "@typescript-eslint"
+    ],
     "rules": {
         "@typescript-eslint/member-delimiter-style": [
             "warn",
             {
-                "multiline": { "delimiter": "none" }
+                "multiline": {
+                    "delimiter": "none"
+                }
             }
         ]
     }
