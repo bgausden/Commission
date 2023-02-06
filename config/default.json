@@ -5,5 +5,5 @@
     "PAYMENTS_WB_NAME": "Talenox Payments 202301.xlsx",
     "PAYMENTS_WS_NAME": "Payments January 2023",
     "missingStaffAreFatal": true,
-    "updateTalenox": false
+    "updateTalenox": true
 }
