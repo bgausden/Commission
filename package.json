@@ -44,6 +44,6 @@
         "ncp": "^2.0.0",
         "run-script-os": "^1.1.5",
         "typescript": "^4.9.4",
-        "webpack": "^4.44.1"
+        "webpack": "^5.75.0"
     }
 }
