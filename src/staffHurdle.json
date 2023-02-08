@@ -62,7 +62,7 @@
     "015": {
         "staffName": "Mandy",
         "mbCommRate": 1.0,
-        "baseRate": 0.05,
+        "baseRate": 0.15,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -757,7 +757,7 @@
     },
     "060": {
         "staffName": "Mils",
-        "baseRate": 0.0,
+        "baseRate": 0.05,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -771,8 +771,8 @@
     },
     "061": {
         "staffName": "Sze",
-        "mbCommRate": 0.08,
-        "baseRate": 0.08,
+        "mbCommRate": 0.0,
+        "baseRate": 0.15,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -928,7 +928,7 @@
     "080": {
         "staffName": "Mildred",
         "mbCommRate": 0.0,
-        "baseRate": 0.0,
+        "baseRate": 0.05,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -1015,6 +1015,58 @@
         "hurdle2Rate": 0,
         "hurdle3Level": 0,
         "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
+    },
+    "089": {
+        "staffName": "Elsa",
+        "mbCommRate": 0.0,
+        "baseRate": 0.50,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
+    },
+    "090": {
+        "staffName": "Elaine",
+        "mbCommRate": 0.0,
+        "baseRate": 0.65,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
+    },
+    "092": {
+        "staffName": "Louie",
+        "mbCommRate": 0.0,
+        "baseRate": 0.45,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false
+    },
+    "093": {
+        "staffName": "Mabel",
+        "mbCommRate": 0.0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
         "contractor": false,
         "payViaTalenox": true
     },
@@ -1030,5 +1082,20 @@
         "hurdle3Rate": 0,
         "contractor": false,
         "payViaTalenox": true
+    },
+    "095": {
+        "staffName": "Tatiana",
+        "mbCommRate": 0.0,
+        "baseRate": 0,
+        "hurdle1Level": 42000,
+        "hurdle1Rate": 0.1,
+        "hurdle2Level": 71000,
+        "hurdle2Rate": 0.11,
+        "hurdle3Level": 84000,
+        "hurdle3Rate": 0.12,
+        "contractor": false,
+        "payViaTalenox": true,
+        "poolsWith": [],
+        "customPayRates": []
     }
 }
