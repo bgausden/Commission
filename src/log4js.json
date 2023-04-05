@@ -27,13 +27,17 @@
         },
         "error": {
             "type": "stderr"
+        },
+        "console": {
+            "type": "console"
         }
     },
     "categories": {
         "default": {
             "appenders": [
                 "commission",
-                "info"
+                "info",
+                "console"
             ],
             "level": "info"
         },

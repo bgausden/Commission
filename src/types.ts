@@ -56,7 +56,7 @@ export type TCommComponents = {
 export type TCommMap = Map<TStaffName, TCommComponents>
 export type TStaffID = string
 
-// TODO: make this a singleton
+// TODO: make this a cache
 export type TStaffMap = Map<TStaffID, IStaffNames>
 export type TTalenoxInfoStaffMap = Map<TStaffID,Partial<ITalenoxStaffInfo>>
 

@@ -57,7 +57,8 @@
     // "include": ["index.ts"],
     "exclude": [
         "./staffHurdle.json",
-        "other_source"
+        "other_source",
+        "test"
     ],
     "typeAcquisition": {
         "enable": true,

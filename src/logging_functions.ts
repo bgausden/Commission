@@ -54,6 +54,9 @@ warnLogger.level = 'warning'
 export const errorLogger = getLogger('error')
 errorLogger.level = 'error'
 
+export const consoleLogger = getLogger('console')
+// consoleLogger.level = 'info' -- default level is defined in log4jsConfig
+
 export function shutdownLogging(): void {
     l4js.shutdown()
 }
