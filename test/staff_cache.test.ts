@@ -5,7 +5,7 @@ import { initStaffCache, putStaffToCache, updateStaffInCache, defaultStaffCache,
 
 describe('test commission.staff_cache', function () {
     describe('test cache update', function () {
-        it('update existing cache entry', function (done) {
+        it('updates an existing cache entry', function (done) {
             let staffInfo: Partial<ITalenoxStaffInfo> = {
                 "id": "1",
                 "first_name": "staff 1",
@@ -19,7 +19,7 @@ describe('test commission.staff_cache', function () {
             done()
         })
 
-        it('update missing cache entry', function (done) {
+        it('updates a missing cache entry', function (done) {
             //initStaffCache(undefined, defaultStaffCache)
             let result = updateStaffInCache({ id: '1', first_name: 'test2' }, undefined)
             //console.log(result)
@@ -34,7 +34,7 @@ describe('test commission.staff_cache', function () {
     })
 
     describe('test cache put', function () {
-        it('put new cache entry into default cache', function (done) {
+        it('puts a new cache entry into the default cache', function (done) {
             let staff_info: Partial<ITalenoxStaffInfo> = {
                 "id": '1',
                 "first_name": "staff 1",
@@ -47,7 +47,7 @@ describe('test commission.staff_cache', function () {
             done()
         })
 
-        it('put existing cache entry into default cache', function (done) {
+        it('trys to put an existing cache entry in the default cache', function (done) {
             let staff_info: Partial<ITalenoxStaffInfo> = {
                 "id": '1',
                 "first_name": "staff 1",
@@ -63,7 +63,7 @@ describe('test commission.staff_cache', function () {
     })
 
     describe('test cache get', function () {
-        it('get existing cache entry from default cache', function (done) {
+        it('gets an existing cache entry from default cache', function (done) {
             let staffInfo: Partial<ITalenoxStaffInfo> = {
                 "id": '1',
                 "first_name": "staff 1",
@@ -78,7 +78,7 @@ describe('test commission.staff_cache', function () {
             done()
         })
 
-        it('get missing cache entry from default cache', function (done) {
+        it('trys to get a missing cache entry from default cache', function (done) {
             let result = getStaffFromCache('1', undefined)
             // console.log(result)
             assert.equal(result?.status, 'FAIL', 'result.status')
