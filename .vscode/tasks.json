@@ -7,7 +7,9 @@
             "label": "build",
             "type": "typescript",
             "tsconfig": "tsconfig.json",
-            "problemMatcher": ["$tsc"],
+            "problemMatcher": [
+                "$tsc"
+            ],
             "group": "build"
         },
         {
@@ -20,6 +22,15 @@
             "problemMatcher": [],
             "label": "npm: build",
             "detail": "run-script-os"
+        },
+        {
+            "type": "npm",
+            "script": "postinstall",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "label": "npm: postinstall",
+            "detail": "node-config-ts"
         }
     ]
 }
