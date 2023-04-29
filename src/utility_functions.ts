@@ -1,7 +1,7 @@
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { TStaffID, TStaffHurdles } from "./types.js"
 import { defaultStaffID } from "./index.js"
-import { config } from "node-config-ts"
+import { config, Config } from "node-config-ts"
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === "number") {
