@@ -28,7 +28,7 @@
         "dotenv": "^10.0.0",
         "fixed-width-string": "^2.0.0",
         "log4js": "^6.3.0",
-        "node-config-ts": "^2.3.1",
+        "node-config-ts": "^3.3.1",
         "node-fetch": "^3.1.0",
         "prettyjson": "^1.2.1",
         "xlsx": "^0.18.5"
