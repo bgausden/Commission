@@ -21,8 +21,7 @@ Extensions - Application:   28152.000000000004
 // TODO move payments xlsx files to new directory "payment sheets" so not in root
 // TODO create debug log (in addition to displaying debug in console)
 
-import ncts from "node-config-ts"
-const { config } = ncts
+import { config } from "node-config-ts"
 // import prettyjson from "prettyjson"
 import XLSX from "xlsx"
 import { StaffInfo } from "./IStaffInfo"
