@@ -11,8 +11,10 @@
         "hurdle3Rate": 0.0,
         "contractor": false,
         "payViaTalenox": false,
-        "poolsWith": [],
-        "customPayRates": []
+        "poolsWith": ["999"],
+        "customPayRates": [{
+            "none": 0    
+        }]
     },
     "025": {
         "staffName": "Tracey",

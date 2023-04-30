@@ -1,36 +1,27 @@
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { TStaffID, TStaffHurdles } from "./types.js"
+import { TStaffID, TStaffHurdles, PayRate } from "./types.js"
 import { defaultStaffID } from "./index.js"
 import { config, Config } from "node-config-ts"
 
 export function checkRate(rate: unknown): boolean {
-  if (typeof rate === "number") {
-    if (0 <= rate && rate <= 1) {
-      return true
-    } else {
-      return false
-    }
-  } else {
-    return false
-  }
+  return typeof rate === "number" && rate !== null && !isNaN(rate) && rate >= 0 && rate <= 1
 }
 
 export function stripToNumeric(n: unknown): number {
+  // strip out everything except 0-9, "." and "-"
   const numericOnly = /[^0-9.-]+/g
-  let x: number
-  if (typeof n === "string") {
-    // strip out everything except 0-9, "." and "-"
-    x = parseFloat(n.replace(numericOnly, ""))
-    if (isNaN(x)) {
-      x = 0
-    }
-  }
+
   if (typeof n === "number") {
-    x = n
-  } else {
-    x = 0
+    return n
   }
-  return x
+
+  // parse the number, or return undefined if we can't
+  if (typeof n === "string") {
+    return parseFloat(n.replace(numericOnly, ""))
+  }
+
+  // don't know what n was, so return NaN
+  return NaN
 }
 
 export function isPayViaTalenox(staffID: TStaffID): boolean {
@@ -68,4 +59,16 @@ export function isContractor(staffID: TStaffID): boolean {
 export function payrollStartDate(config: Config): Date {
   const payrollFirstDay = new Date(Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`))
   return payrollFirstDay
+}
+
+export function isString(data: unknown): data is string {
+  return typeof data === 'string';
+}
+
+export function isPayRate(data: unknown): data is PayRate {
+  return typeof data === "number" && data !== null && !isNaN(data) && data >= 0 && data <= 1
+}
+
+export function isNumber(data: unknown): data is number {
+  return typeof data === "number" && data !== null
 }

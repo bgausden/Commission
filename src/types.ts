@@ -1,4 +1,4 @@
-import { GeneralServiceComm } from "./IServiceComm"
+import { GeneralServiceComm } from "./GeneralServiceComm"
 import { IStaffNames } from "./IStaffNames"
 import { StaffHurdle } from "./IStaffHurdle"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
@@ -22,7 +22,7 @@ export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceC
 export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>
 export type TCustomRateEntry = {
    serviceRevenue: number
-   customRate: number | null
+   customRate: number | undefined
 }
 
 export const COMM_COMPONENT_TOTAL_SERVICE_REVENUE = "totalServiceRevenue"
@@ -43,7 +43,7 @@ export type TCommComponentCustomRateCommissions = {
    [key: string]: TServiceCommission
 }
 
-export type TCommComponents = {
+export type CommComponents = {
    [key: string]: number | TCommComponentCustomRateCommissions
    totalServiceRevenue: TServiceRevenue
    tips: TTips
@@ -53,12 +53,12 @@ export type TCommComponents = {
    customRateCommissions: TCommComponentCustomRateCommissions
    totalServiceCommission: TServiceCommission
 }
-export type TCommMap = Map<TStaffName, TCommComponents>
+export type TCommMap = Map<TStaffName, CommComponents>
 export type TStaffID = string
 
 // TODO: make this a singleton
 export type TStaffMap = Map<TStaffID, IStaffNames>
-export type TTalenoxInfoStaffMap = Map<TStaffID,Partial<ITalenoxStaffInfo>>
+export type TTalenoxInfoStaffMap = Map<TStaffID, Partial<ITalenoxStaffInfo>>
 
 export type TStaffHurdles = {
    [key: string]: StaffHurdle
@@ -67,3 +67,8 @@ export type TStaffHurdles = {
 export type TServiceName = string
 export type TServiceCustomRate = number | null
 export type TServRevenueMap = Map<TServiceName, TCustomRateEntry>
+
+export type PayRate = number | undefined
+export function isPayRate(data: unknown): data is PayRate {
+   return typeof data === "number" && data >= 0 && data <= 1
+}

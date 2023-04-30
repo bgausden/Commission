@@ -2,7 +2,12 @@
 // TODO find a way to limit this to the actual services defined in Mindbody (get from Services REST API)
 // export type TServiceType = string <-- overlaps with TServiceName?
 
-export type CustomPayRate = { [name: string]: number | undefined }
+import { PayRate } from "./types"
+
+export type CustomPayRate = { [name: string]: PayRate}
+export function isCustomPayRate(obj: CustomPayRate): obj is CustomPayRate {
+    return typeof Object.keys(obj)[0] === "string" &&  typeof obj[Object.keys(obj)[0]] === "number"
+}
 
 export interface StaffHurdle {
     staffName: string
