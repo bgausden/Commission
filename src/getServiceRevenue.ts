@@ -2,7 +2,7 @@ import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import {
     TStaffID, TStaffHurdles,
     TCustomRateEntry,
-    TServRevenueMap,
+    ServiceRevenue,
     TServiceName, PayRate
 } from "./types.js";
 import { CustomPayRate } from "./IStaffHurdle";
@@ -28,7 +28,7 @@ export function getServiceRevenue(
     currentStaffIDRow: number,
     // tslint:disable-next-line: no-shadowed-variable
     revCol: number,
-    staffID: TStaffID): TServRevenueMap {
+    staffID: TStaffID): ServiceRevenue {
     /*
       Starting on the staff member's first row, sum all the numeric values in the revenue column
       down as far as the staff member's totals row + 1. Use this as the service revenue so we can ignore
@@ -38,7 +38,7 @@ export function getServiceRevenue(
       */
     const numSearchRows = currentTotalRow - currentStaffIDRow - 1;
     const revColumn = revCol;
-    const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>();
+    const servRevenueMap: ServiceRevenue = new Map<TServiceName, TCustomRateEntry>();
     let serviceRevenue = 0;
     let customRate = undefined;
     let sh = undefined;

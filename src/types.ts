@@ -66,7 +66,7 @@ export type TStaffHurdles = {
 
 export type TServiceName = string
 export type TServiceCustomRate = number | null
-export type TServRevenueMap = Map<TServiceName, TCustomRateEntry>
+export type ServiceRevenue = Map<TServiceName, TCustomRateEntry>
 
 export type PayRate = number | undefined
 export function isPayRate(data: unknown): data is PayRate {

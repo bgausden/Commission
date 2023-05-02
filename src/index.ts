@@ -272,7 +272,7 @@ async function main() {
                               ) */
 
             // New way - some revenues from "general services", some revenues from custom pay rates
-            const servicesRevenues = getServiceRevenue(
+            const servicesRevenue = getServiceRevenue(
               wsaa,
               currentTotalForRow,
               currentStaffIDRow,
@@ -283,8 +283,8 @@ async function main() {
             // value = generalServRevenue ? generalServRevenue.revenue : 0
             let totalServiceRevenue = 0
             let generalServiceRevenue = 0
-            if (servicesRevenues) {
-              servicesRevenues.forEach((element, serviceName) => {
+            if (servicesRevenue) {
+              servicesRevenue.forEach((element, serviceName) => {
                 totalServiceRevenue += element.serviceRevenue
                 if (serviceName === GENERAL_SERV_REVENUE) {
                   generalServiceRevenue = element.serviceRevenue
@@ -312,8 +312,8 @@ async function main() {
             While we're here we can also add up the total custom service commission.
             */
             let totalCustomServiceCommission = 0
-            if (servicesRevenues) {
-              servicesRevenues.forEach((customRateEntry, serviceName) => {
+            if (servicesRevenue) {
+              servicesRevenue.forEach((customRateEntry, serviceName) => {
                 if (serviceName !== GENERAL_SERV_REVENUE) {
                   const customServiceRevenue =
                     customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
