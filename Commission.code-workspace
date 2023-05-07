@@ -8,6 +8,15 @@
         "typescript.tsdk": "node_modules/typescript/lib",
         "prettier.printWidth": 120,
         "files.eol": "\n",
-        "powershell.codeFormatting.addWhitespaceAroundPipe": true
+        "powershell.codeFormatting.addWhitespaceAroundPipe": true,
+        "json.schemas": [
+            
+            {
+                "fileMatch": [
+                    "staffHurdle.json"
+                ],
+                "url": "./src/staffHurdleSchema.json"
+            }
+        ]
     }
 }
