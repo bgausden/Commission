@@ -8,6 +8,8 @@
         "typescript.tsdk": "node_modules/typescript/lib",
         "prettier.printWidth": 120,
         "files.eol": "\n",
-        "powershell.codeFormatting.addWhitespaceAroundPipe": true
+        "powershell.codeFormatting.addWhitespaceAroundPipe": true,
+        "eslint.ignoreUntitled": true,
+        "eslint.lintTask.enable": true
     }
 }
