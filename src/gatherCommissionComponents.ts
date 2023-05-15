@@ -1,19 +1,19 @@
 import { CommComponents, TTalenoxInfoStaffMap } from "./types.js";
-import { isString } from "./utility_functions.js";
+import { findRevenueCol, isString } from "./utility_functions.js";
 import { GENERAL_SERV_REVENUE, getServiceRevenue } from "./getServiceRevenue.js";
 import { calcGeneralServiceCommission } from "./calcGeneralServiceCommission.js";
 import { getTipsOrProductCommissionAmounts as getTipsProdCommissionAmounts } from "./getTipsAndProductCommissionAmounts.js";
 import { TOTAL_FOR } from "./constants.js";
-import { logCommission } from "./logCommission";
-import { revenueCol, commMap } from "./index";
+import { logCommission } from "./logCommission.js";
+import { commMap } from "./index.js";
 
 export function gatherCommissionComponents(wsaa: unknown[][], rowIndex: number, commComponents: CommComponents, staffID: string, currentTotalForRow: number, currentStaffIDRow: number, talenoxStaff: TTalenoxInfoStaffMap, staffName: string | undefined) {
-    const revCol = revenueCol(wsaa);
+    const revCol = findRevenueCol(wsaa);
     for (let j = 3; j >= 0; j--) {
         let payComponent = wsaa[rowIndex - j][0];
         let value = 0;
-        let currentRowNumber = rowIndex - j;
-        let currentRow = wsaa[currentRowNumber];
+        const currentRowNumber = rowIndex - j;
+        const currentRow = wsaa[currentRowNumber];
 
         if (!isString(payComponent)) {
             // errorLogger.error(`Unexpected value ${payComponent} at row ${currentRowNumber} for ${staffName}`)

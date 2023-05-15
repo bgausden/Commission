@@ -1,7 +1,33 @@
-import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { TStaffID, TStaffHurdles, PayRate } from "./types.js"
-import { defaultStaffID } from "./index.js"
 import { config, Config } from "node-config-ts"
+import XLSX from "xlsx"
+import { REV_PER_SESS } from "./constants.js"
+import { defaultStaffID } from "./index.js"
+import staffHurdle from "./staffHurdle.json" assert { type: "json" }
+import { PayRate, TStaffHurdles, TStaffID } from "./types.js"
+
+
+export function readExcelFile(fileName?: string): XLSX.WorkSheet {
+  const FIRST_SHEET = 0
+  const FILE_PATH = config.PAYROLL_WB_NAME
+  const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
+  const WB = XLSX.readFile(fileName ? fileName : FILE_PATH, READ_OPTIONS)
+  const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]]
+  return WS
+}
+
+export function findRevenueCol(wsArray: unknown[][]): number {
+  const MAX_SEARCH_ROWS = Math.max(20, wsArray.length)
+  for (let i = 0; i < MAX_SEARCH_ROWS; i++) {
+    const rowLength = wsArray[i].length
+    for (let j = 0; j < rowLength; j++) {
+      const cell = wsArray[i][j]
+      if (cell === REV_PER_SESS) {
+        return j
+      }
+    }
+  }
+  throw new Error("Cannot find Revenue per session column")
+}
 
 export function checkRate(rate: unknown): boolean {
   return typeof rate === "number" && rate !== null && !isNaN(rate) && rate >= 0 && rate <= 1
@@ -71,4 +97,8 @@ export function isPayRate(data: unknown): data is PayRate {
 
 export function isNumber(data: unknown): data is number {
   return typeof data === "number" && data !== null
+}
+
+export function isUndefined(data: unknown): data is undefined {
+  return typeof data === "undefined"
 }

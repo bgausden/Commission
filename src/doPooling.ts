@@ -3,8 +3,8 @@ import {
     TStaffHurdles,
     TTalenoxInfoStaffMap
 } from "./types.js";
-import { eqSet } from "./utility_functions.js";
-import { commissionLogger } from "./logging_functions.js";
+import { eqSet, isUndefined } from "./utility_functions.js";
+import { commissionLogger, infoLogger } from "./logging_functions.js";
 
 export function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TTalenoxInfoStaffMap): void {
     let poolCounter = 0;
@@ -57,7 +57,7 @@ export function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenox
             customRateCommissions: {},
             generalServiceCommission: 0,
         };
-        poolMembers.forEach((poolMember) => Object.entries(aggregateComm).forEach((aggregateElement) => {
+        poolMembers.forEach((poolMember) => Object.entries(aggregateComm).forEach((aggregateElement) => { // TODO replace with simple for loop - don't need to loop through aggregateComm if there's no comm to pool
             const [aggregatePropName, aggregatePropValue] = aggregateElement;
             const commMapElement = commMap.get(poolMember);
             if (commMapElement) {
@@ -66,7 +66,8 @@ export function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenox
                     aggregateComm[aggregatePropName] = aggregatePropValue + commMapValue;
                 }
             } else {
-                throw new Error(`No commMap entry for ${poolMember}. This should never happen.`);
+                infoLogger.info(`doPooling1: No commMap entry (no commission) for ${poolMember} but configured for pooling.`);
+                // throw new Error(`No commMap entry for ${poolMember}. This should never happen.`);
             }
         })
         );
@@ -86,21 +87,26 @@ export function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenox
                 comma = ", ";
             });
             commissionLogger.info(`Pool contains ${poolMembers.length} members: ${memberList}`);
-            Object.entries(aggregateComm).forEach((aggregate) => {
-                const [aggregatePropName, aggregatePropValue] = aggregate;
-                const comm = commMap.get(poolMember);
-                if (comm) {
+            const comm = commMap.get(poolMember);
+            if (isUndefined(comm)) {
+                infoLogger.info(`doPooling2: No commMap entry (no commission) for ${poolMember} but configured for pooling.`);
+                // throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`); <-- not necessary? could be legit there's no comm?
+            }
+            else {
+                for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {
+                    //const [aggregatePropName, aggregatePropValue] = aggregate;
+
                     if (typeof aggregatePropValue === "number") {
+                        if (isUndefined(comm)) { continue }
                         comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100;
                         const aggregateCommString = (typeof comm[aggregatePropName] === "number") ? comm[aggregatePropName].toString() : JSON.stringify(comm[aggregatePropName]);
                         commissionLogger.info(
                             `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`
                         );
                     }
-                } else {
-                    throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`);
+
                 }
-            });
+            }
             commissionLogger.info("--------------");
         });
     }

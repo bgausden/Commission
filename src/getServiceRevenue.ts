@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import {
     TStaffID, TStaffHurdles,
@@ -59,7 +60,7 @@ export function getServiceRevenue(
     //const customPayRates = sh.customPayRates ?? []
     let serviceName: TServiceName = GENERAL_SERV_REVENUE;
     for (let i = numSearchRows; i >= 1; i--) {
-        let currentRow = currentTotalRow - i;
+        const currentRow = currentTotalRow - i;
         /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
               i.e. <revenue category> Pay Rate: <service name> (<commission rate>)
         */
@@ -109,7 +110,7 @@ export function getServiceRevenue(
         }
 
         // If there's no revenue on this row, don't continue processing
-        let revenue = stripToNumeric(wsArray[currentRow][revColumn]);
+        const revenue = stripToNumeric(wsArray[currentRow][revColumn]);
         if (!isNumber(revenue) || revenue == 0 || isNaN(revenue)) { continue; }
 
         //revenueCellContents = stripToNumeric(revenueCellContents)
@@ -162,7 +163,9 @@ export function getServiceRevenue(
     function findCustomRateInServices(servName: string, customPayRate: CustomPayRate): PayRate | undefined {
         // we generally don't have multiple services defined in the customPayRate object but we might in future, so we can just iterate through the keys
         if (!(servName in customPayRate)) { return undefined; }
-        if (process.env.DEBUG) { debugLogger.debug(`Found custom pay rate for ${servName}. Rate is ${customPayRate[servName]}`); }
+        if (process.env.DEBUG) { 
+            const rate = customPayRate[servName] ? JSON.stringify(customPayRate[servName]) : "undefinedPayRate"
+            debugLogger.debug(`Found custom pay rate for ${servName}. Rate is ${rate}`) }
         return customPayRate[servName];
         /*     for (const serviceWithCustomPayRate in customPayRate) {
               //if (Object.prototype.hasOwnProperty.call(customPayRate, serviceWithCustomPayRate) && servName === serviceWithCustomPayRate) {

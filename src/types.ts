@@ -43,6 +43,7 @@ export type TCommComponentCustomRateCommissions = {
    [key: string]: TServiceCommission
 }
 
+// TODO do we have to support both number and array of CustomRates?
 export type CommComponents = {
    [key: string]: number | TCommComponentCustomRateCommissions
    totalServiceRevenue: TServiceRevenue

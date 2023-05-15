@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/interface-name-prefix */
 export interface ITalenoxJob {
     //{id: 206886, title: 'Salon Assistant', department: 'Salon', start_date: '01/11/2020', end_date: '30/03/2021', …}
 amount: number // 10000.0

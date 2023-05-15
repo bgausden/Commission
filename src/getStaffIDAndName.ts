@@ -23,9 +23,9 @@ export function getStaffIDAndName(sheet: unknown[][], idRow: number): StaffInfo 
     const staffIDIndex = 1;
     const testString = sheet[idRow][staffNameIndex];
     if (!isString(testString)) {
-        infoLogger.info(`getStaffIDAndName: testString is not text: ${testString}`);
+        infoLogger.info(`getStaffIDAndName: First cell of row ${`idRow`} does not contain text`);
         return undefined;
-    } // if the cell is not a string, return null
+    }
     const regex = new RegExp("^.*,.*" + STAFF_ID_HASH);
     if (!regex.test(testString)) { return undefined; } // if the cell does not contain "Staff ID #:", return null
     const staffInfo = testString.split(STAFF_ID_HASH);

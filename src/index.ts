@@ -25,33 +25,30 @@ Extensions - Application:   28152.000000000004
 import { config } from "node-config-ts"
 // import prettyjson from "prettyjson"
 import XLSX from "xlsx"
-import { GeneralServiceComm } from "./GeneralServiceComm"
-import { StaffInfo } from "./IStaffInfo"
+import { GeneralServiceComm } from "./GeneralServiceComm.js"
+import { StaffInfo } from "./IStaffInfo.js"
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { createAdHocPayments, firstDay, getTalenoxEmployees } from "./talenox_functions.js"
 import {
   CommComponents, TCommMap, TServiceCommMap, TStaffID, TStaffName
 } from "./types.js"
-import { isContractor, isPayViaTalenox } from "./utility_functions.js"
+import { isContractor, isPayViaTalenox, readExcelFile } from "./utility_functions.js"
 //import { initDebug, log, warn, error } from "./debug_functions.js"
-import { REV_PER_SESS, STATUS_ERROR, TOTAL_FOR } from "./constants.js"
+import { STATUS_ERROR, TOTAL_FOR } from "./constants.js"
 import { doPooling } from "./doPooling.js"
-import { gatherCommissionComponents } from "./gatherCommissionComponents"
+import { gatherCommissionComponents } from "./gatherCommissionComponents.js"
 import { getStaffIDAndName as getStaffIDAndNameFromWS } from "./getStaffIDAndName.js"
 import { commissionLogger, contractorLogger, debugLogger, errorLogger, shutdownLogging, warnLogger } from "./logging_functions.js"
-import { payViaTalenoxChecks } from "./payViaTalenoxChecks"
-import { pushCommissionToTalenox } from "./pushCommissionToTalenox"
-import { setStaffName } from "./setStaffName"
+import { payViaTalenoxChecks } from "./payViaTalenoxChecks.js"
+import { pushCommissionToTalenox } from "./pushCommissionToTalenox.js"
+import { setStaffName } from "./setStaffName.js"
 import { writePaymentsWorkBook } from "./writePaymentsWorkBook.js"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
-const FILE_PATH = config.PAYROLL_WB_NAME
 
 export const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
 export const SERVICE_TYPE_INDEX = 2
-
-const FIRST_SHEET = 0
 
 // const POOLS_WITH = "poolsWith"
 
@@ -87,29 +84,6 @@ export const emptyServComm: GeneralServiceComm = {
 }
 
 export const defaultStaffID = "000"
-
-
-
-function readExcelFile(fileName?: string): XLSX.WorkSheet {
-  const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
-  const WB = XLSX.readFile(fileName ? fileName : FILE_PATH, READ_OPTIONS)
-  const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]]
-  return WS
-}
-
-export function revenueCol(wsArray: unknown[][]): number {
-  const MAX_SEARCH_ROWS = Math.max(20, wsArray.length)
-  for (let i = 0; i < MAX_SEARCH_ROWS; i++) {
-    const rowLength = wsArray[i].length
-    for (let j = 0; j < rowLength; j++) {
-      const cell = wsArray[i][j]
-      if (cell === REV_PER_SESS) {
-        return j
-      }
-    }
-  }
-  throw new Error("Cannot find Revenue per session column")
-}
 
 async function main() {
   commissionLogger.info(`Commission run begins ${firstDay.toDateString()}`)

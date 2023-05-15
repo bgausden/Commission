@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/interface-name-prefix */
 /* staffInfo.next_of_kins[0]
 {id: 22496, employee_id: 123693, name: 'Kin', relationship: 'Husband', contact_number: '999999999', …}
 birthdate:null
