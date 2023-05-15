@@ -25,29 +25,24 @@ Extensions - Application:   28152.000000000004
 import { config } from "node-config-ts"
 // import prettyjson from "prettyjson"
 import XLSX from "xlsx"
+import { GeneralServiceComm } from "./GeneralServiceComm"
 import { StaffInfo } from "./IStaffInfo"
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { GeneralServiceComm } from "./GeneralServiceComm"
+import { createAdHocPayments, firstDay, getTalenoxEmployees } from "./talenox_functions.js"
 import {
-  TStaffID,
-  TServiceCommMap,
-  CommComponents,
-  TStaffName,
-  TCommMap,
-  PayRate
+  CommComponents, TCommMap, TServiceCommMap, TStaffID, TStaffName
 } from "./types.js"
-import { createAdHocPayments, getTalenoxEmployees, firstDay } from "./talenox_functions.js"
-import { isPayViaTalenox, isContractor } from "./utility_functions.js"
+import { isContractor, isPayViaTalenox } from "./utility_functions.js"
 //import { initDebug, log, warn, error } from "./debug_functions.js"
-import { contractorLogger, commissionLogger, warnLogger, errorLogger, debugLogger, shutdownLogging } from "./logging_functions.js"
-import { getStaffIDAndName as getStaffIDAndNameFromWS } from "./getStaffIDAndName.js"
-import { writePaymentsWorkBook } from "./writePaymentsWorkBook.js"
+import { REV_PER_SESS, STATUS_ERROR, TOTAL_FOR } from "./constants.js"
 import { doPooling } from "./doPooling.js"
-import { REV_PER_SESS, TOTAL_FOR, TIPS_FOR, COMM_FOR, STATUS_UNKNOWN, STATUS_ERROR } from "./constants.js"
+import { gatherCommissionComponents } from "./gatherCommissionComponents"
+import { getStaffIDAndName as getStaffIDAndNameFromWS } from "./getStaffIDAndName.js"
+import { commissionLogger, contractorLogger, debugLogger, errorLogger, shutdownLogging, warnLogger } from "./logging_functions.js"
 import { payViaTalenoxChecks } from "./payViaTalenoxChecks"
 import { pushCommissionToTalenox } from "./pushCommissionToTalenox"
-import { gatherCommissionComponents } from "./gatherCommissionComponents"
 import { setStaffName } from "./setStaffName"
+import { writePaymentsWorkBook } from "./writePaymentsWorkBook.js"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -136,7 +131,6 @@ async function main() {
   const maxRows = wsaa.length
   let staffID: TStaffID | undefined
   let staffName: TStaffName | undefined
-  const revCol = revenueCol(wsaa)
   let currentStaffIDRow = -1
   let currentTotalForRow = 0
   let wsStaffInfo: StaffInfo | undefined = undefined
@@ -161,7 +155,7 @@ async function main() {
       }
       currentStaffIDRow = rowIndex // found staffID so keep a note of which row it's on
       staffName = setStaffName(talenoxStaff, staffID, staffName, wsStaffInfo)
-      let { status, message } = payViaTalenoxChecks(staffID, rowIndex, staffName, talenoxStaff) // check it's OK for the staffmember to be missing from Talenox. Check only once when we're starting to process a staff member's commission
+      const { status, message } = payViaTalenoxChecks(staffID, rowIndex, staffName, talenoxStaff) // check it's OK for the staffmember to be missing from Talenox. Check only once when we're starting to process a staff member's commission
       if (status == STATUS_ERROR) {
         throw new Error(message)
       }
@@ -234,7 +228,7 @@ async function main() {
       | Sales Commission:           |  |  |            |           |         |               |  |          | 228  |
       +-----------------------------+--+--+------------+-----------+---------+---------------+--+----------+------+
       |                             |  |  | # Services | # Clients | # Comps | Base Earnings |  | Earnings |      |
-      | Total for Guilfoyle, Sioban |  |  | 1          | 1         | 0       | HK$ 0         |  | 228      |      |
+      | Total for Guilfoyle, Sioban |  |  | 1          | 1         | 0       | HK$0          |  | 228      |      |
       +-----------------------------+--+--+------------+-----------+---------+---------------+--+----------+------+
       */
       gatherCommissionComponents(wsaa, rowIndex, commComponents, staffID, currentTotalForRow, currentStaffIDRow, talenoxStaff, staffName)
