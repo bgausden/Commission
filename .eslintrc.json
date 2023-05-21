@@ -28,6 +28,27 @@
         "@typescript-eslint"
     ],
     "rules": {
+        "@typescript-eslint/naming-convention": [
+            "warn",
+            {
+                "selector": "property",
+                "format": [
+                    "strictCamelCase"
+                ],
+                "filter": {
+                    // you can expand this regex to add more allowed names
+                    "regex": "^(|Authorization|Content-Type|staffID)$",
+                    "match": false
+                }
+            },
+            {
+                "selector": "typeLike",
+                "format": [
+                    "StrictPascalCase"
+                ]
+            }
+        ],
+        "@typescript-eslint/restrict-template-expressions": "warn",
         "@typescript-eslint/member-delimiter-style": [
             "warn",
             {
