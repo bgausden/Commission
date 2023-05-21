@@ -13,7 +13,8 @@
             "runtimeArgs": [
                 // read .env into process.env from the get-go
                 "-r",
-                "dotenv/config"
+                "dotenv/config",
+                "--no-warnings=ExperimentalWarning"
             ],
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
