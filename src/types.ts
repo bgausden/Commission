@@ -60,6 +60,7 @@ export type TStaffID = string
 // TODO: make this a singleton
 export type TStaffMap = Map<TStaffID, IStaffNames>
 export type TTalenoxInfoStaffMap = Map<TStaffID, Partial<ITalenoxStaffInfo>>
+// export type TTalenoxInfoStaffMap<M extends ITalenoxStaffInfo> = Map<TStaffID, M>
 
 export type TStaffHurdles = {
    [key: string]: StaffHurdle
@@ -70,6 +71,3 @@ export type TServiceCustomRate = number | null
 export type ServiceRevenue = Map<TServiceName, TCustomRateEntry>
 
 export type PayRate = number | undefined
-export function isPayRate(data: unknown): data is PayRate {
-   return typeof data === "number" && data >= 0 && data <= 1
-}

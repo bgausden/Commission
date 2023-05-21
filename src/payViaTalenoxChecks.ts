@@ -4,9 +4,9 @@ import { isPayViaTalenox, isContractor } from "./utility_functions.js";
 import { warnLogger, errorLogger } from "./logging_functions.js";
 import { STATUS, STATUS_OK, STATUS_ERROR, STATUS_WARN } from "./constants.js";
 
-export function payViaTalenoxChecks(staffID: string, rowIndex: number, staffName: string, talenoxStaff: TTalenoxInfoStaffMap): { status: STATUS; message: string; } {
+export function payViaTalenoxChecks(staffID: string, rowIndex: number, staffName: string, talenoxStaff: TTalenoxInfoStaffMap): { status: STATUS; message: string } {
     let text: string;
-    let inTalenox = (talenoxStaff.get(staffID) !== undefined);
+    const inTalenox = (talenoxStaff.get(staffID) !== undefined);
     if (isPayViaTalenox(staffID) && !inTalenox) {
         text = `${staffID} ${staffName} in MB Payroll Report line ${rowIndex} not in Talenox.`;
         if (config.missingStaffAreFatal) {

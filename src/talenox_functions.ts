@@ -1,30 +1,20 @@
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/naming-convention */
+import debug from "debug"
 import { config } from "node-config-ts"
-import { ITalenoxPayment } from "./ITalenoxPayment"
-import {
-    TStaffID,
-    TCommMap,
-    COMM_COMPONENT_TIPS,
-    COMM_COMPONENT_PRODUCT_COMMISSION,
-    COMM_COMPONENT_GENERAL_SERVICE_COMMISSION,
-    COMM_COMPONENT_TOTAL_SERVICE_REVENUE,
-    COMM_COMPONENT_CUSTOM_RATE_COMMISSION,
-    COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS,
-    COMM_COMPONENT_TOTAL_SERVICE_COMMISSION,
-    TTalenoxInfoStaffMap
-} from "./types.js"
-import { TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_ADHOC_PAYMENT_ENDPOINT, TALENOX_API_TOKEN } from "./talenox_constants.js"
-import { isContractor, payrollStartDate } from "./utility_functions.js"
+import fetch, { Headers, RequestInit } from "node-fetch"
+import { TalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
-import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
-import { TALENOX_WHOLE_MONTH, TALENOX_PAYROLL_PAYMENT_ENDPOINT, TALENOX_EMPLOYEE_ENDPOINT } from "./talenox_constants.js"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
-import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
-import fetch from "node-fetch"
-import { Headers, RequestInit } from "node-fetch"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
-import debug from "debug"
+import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
+import { TalenoxPayment } from "./TalenoxPayment"
+import { TALENOX_ADHOC_PAYMENT_ENDPOINT, TALENOX_API_TOKEN, TALENOX_COMMISSION_IRREGULAR, TALENOX_EMPLOYEE_ENDPOINT, TALENOX_PAYROLL_PAYMENT_ENDPOINT, TALENOX_TIPS, TALENOX_WHOLE_MONTH } from "./talenox_constants.js"
+import {
+    COMM_COMPONENT_CUSTOM_RATE_COMMISSION,
+    COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS, COMM_COMPONENT_GENERAL_SERVICE_COMMISSION, COMM_COMPONENT_PRODUCT_COMMISSION, COMM_COMPONENT_TIPS, COMM_COMPONENT_TOTAL_SERVICE_COMMISSION, COMM_COMPONENT_TOTAL_SERVICE_REVENUE, TCommMap, TStaffID, TTalenoxInfoStaffMap
+} from "./types.js"
+import { isContractor, isTalenoxUploadAdHocPaymentsResult, isUndefined, payrollStartDate } from "./utility_functions.js"
 
 const SERVICES_COMM_REMARK = "Services commission"
 const TIPS_REMARK = "Tips"
@@ -34,8 +24,8 @@ const talenoxFunctionsDebug = debug("talenox_functions")
 
 export const firstDay = payrollStartDate(config)
 
-export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoStaffMap): ITalenoxPayment[] {
-    const emptyTalenoxPayment: ITalenoxPayment = {
+export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoStaffMap): TalenoxPayment[] {
+    const emptyTalenoxPayment: TalenoxPayment = {
         staffID: "",
         staffName: "",
         type: "Others",
@@ -43,90 +33,91 @@ export function createAdHocPayments(_commMap: TCommMap, staffMap: TTalenoxInfoSt
         remarks: "",
     }
 
-    const payments: ITalenoxPayment[] = []
-    let paymentProto: ITalenoxPayment
-    _commMap.forEach((commMapEntry, staffID) => {
-        if (!isContractor(staffID)) {
-            const staffMapEntry = staffMap.get(staffID)
-            let payment: ITalenoxPayment
-            if (staffMapEntry === undefined) {
-                throw new Error(`Empty staffMap returned for staffID ${staffID}`)
-            }
-            else {
-                paymentProto = {
-                    ...emptyTalenoxPayment,
-                    staffID,
-                    staffName: `${staffMapEntry.last_name} ${staffMapEntry.first_name}`,
-                }
-            }
-            const commMapEntry = _commMap.get(staffID)
-            if (commMapEntry === undefined) {
-                throw new Error(`Empty commMap entry returned for staffID ${staffID}. (Should never happen)`)
-            }
-            else {
-                for (const [key, value] of Object.entries(commMapEntry)) {
-                    /*
-                    Create a new payment object based on paymentProto which
-                    contains staffID, firstName, etc.
-                    */
-                    payment = { ...paymentProto }
-                    switch (key) {
-                        case COMM_COMPONENT_TIPS:
-                            if (typeof value === "number") {
-                                payment.amount = value
+    const payments: TalenoxPayment[] = []
+    let paymentProto: TalenoxPayment
+    // _commMap.forEach((commMapEntry, staffID) => {
+    for (const staffID of _commMap.keys()) {
+        if (isContractor(staffID)) { continue }
+        const staffMapEntry = staffMap.get(staffID)
+        let payment: TalenoxPayment
+        if (isUndefined(staffMapEntry)) {
+            throw new Error(`Empty staffMap returned for staffID ${staffID}`)
+        }
+        paymentProto = {
+            ...emptyTalenoxPayment,
+            staffID,
+            staffName: `${staffMapEntry.last_name ?? "<Last Name>"} ${staffMapEntry.first_name ?? "<First Name>"}`,
+        }
+
+        const commMapEntry = _commMap.get(staffID)
+        if (commMapEntry === undefined) {
+            throw new Error(`Empty commMap entry returned for staffID ${staffID}. (Should never happen)`)
+        }
+        else {
+            for (const [key, value] of Object.entries(commMapEntry)) {
+                /*
+                Create a new payment object based on paymentProto which
+                contains staffID, firstName, etc.
+                */
+                payment = { ...paymentProto }
+                switch (key) {
+                    case COMM_COMPONENT_TIPS:
+                        if (typeof value === "number") {
+                            payment.amount = value
+                        }
+                        else {
+                            throw new Error(`Invalid value for 'tips' in commMapEntry`)
+                        }
+                        payment.type = TALENOX_TIPS
+                        payment.remarks = TIPS_REMARK
+                        payments.push(payment)
+                        break
+                    case COMM_COMPONENT_PRODUCT_COMMISSION:
+                        payment.amount = commMapEntry.productCommission
+                        payment.type = TALENOX_COMMISSION_IRREGULAR
+                        payment.remarks = PRODUCT_COMM_REMARK
+                        payments.push(payment)
+                        break
+                    case COMM_COMPONENT_GENERAL_SERVICE_COMMISSION:
+                        payment.type = TALENOX_COMMISSION_IRREGULAR
+                        payment.amount = commMapEntry.generalServiceCommission
+                        payment.remarks = SERVICES_COMM_REMARK
+                        payments.push(payment)
+                        break
+                    case COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS:
+                        /*
+                        Loop through all the special rates services and create a Talenox payment entry for each
+                        */
+                        for (const [service, specialRateCommission] of Object.entries(
+                            commMapEntry.customRateCommissions
+                        )) {
+                            if (specialRateCommission) {
+                                payment.amount = specialRateCommission
+                                payment.type = TALENOX_COMMISSION_IRREGULAR
+                                payment.remarks = `${service} at custom rate.`
+                                payments.push(payment)
                             }
-                            else {
-                                throw new Error(`Invalid value for 'tips' in commMapEntry`)
-                            }
-                            payment.type = TALENOX_TIPS
-                            payment.remarks = TIPS_REMARK
-                            payments.push(payment)
-                            break
-                        case COMM_COMPONENT_PRODUCT_COMMISSION:
-                            payment.amount = commMapEntry.productCommission
-                            payment.type = TALENOX_COMMISSION_IRREGULAR
-                            payment.remarks = PRODUCT_COMM_REMARK
-                            payments.push(payment)
-                            break
-                        case COMM_COMPONENT_GENERAL_SERVICE_COMMISSION:
-                            payment.type = TALENOX_COMMISSION_IRREGULAR
-                            payment.amount = commMapEntry.generalServiceCommission
-                            payment.remarks = SERVICES_COMM_REMARK
-                            payments.push(payment)
-                            break
-                        case COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS:
-                            /*
-                            Loop through all the special rates services and create a Talenox payment entry for each
-                            */
-                            for (const [service, specialRateCommission] of Object.entries(
-                                commMapEntry.customRateCommissions
-                            )) {
-                                if (specialRateCommission) {
-                                    payment.amount = specialRateCommission
-                                    payment.type = TALENOX_COMMISSION_IRREGULAR
-                                    payment.remarks = `${service} at custom rate.`
-                                    payments.push(payment)
-                                }
-                                payment = { ...paymentProto } // reset to empty payment
-                            }
-                            break
-                        case COMM_COMPONENT_TOTAL_SERVICE_REVENUE:
-                            // do nothing
-                            break
-                        case COMM_COMPONENT_CUSTOM_RATE_COMMISSION:
-                            // do nothing
-                            break
-                        case COMM_COMPONENT_TOTAL_SERVICE_COMMISSION:
-                            // do nothing
-                            break
-                        default:
-                            throw new Error("Commission Map has more entries than expected.")
-                            break
-                    }
+                            payment = { ...paymentProto } // reset to empty payment
+                        }
+                        break
+                    case COMM_COMPONENT_TOTAL_SERVICE_REVENUE:
+                        // do nothing
+                        break
+                    case COMM_COMPONENT_CUSTOM_RATE_COMMISSION:
+                        // do nothing
+                        break
+                    case COMM_COMPONENT_TOTAL_SERVICE_COMMISSION:
+                        // do nothing
+                        break
+                    default:
+                        throw new Error("Commission Map has more entries than expected.")
+                        break
                 }
             }
         }
-    })
+        // }
+        // })
+    }
     return payments
 }
 
@@ -174,7 +165,7 @@ export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Er
         if (typeof staffInfo.resign_date !== "undefined") {
             const resignDate = new Date(Date.parse(staffInfo.resign_date))
             if (resignDate < firstDay) {
-                console.log(`${staffInfo.first_name} ${staffInfo.last_name} resigned prior to this payroll month`)
+                console.log(`${staffInfo.first_name ?? "<First Name>"} ${staffInfo.last_name ?? "<Last Name>"} resigned prior to this payroll month`)
             } else {
                 employee_ids.push(staffID)
             }
@@ -215,11 +206,15 @@ export async function createPayroll(staffMap: TTalenoxInfoStaffMap): Promise<[Er
             period:"Whole Month"
             year:"2020" }
          */
-    const result = JSON.parse(await response.text())
+
+    const result = JSON.parse(await response.text()) as unknown
+    if (!Object.hasOwn(result as object, "payment_id")) {
+        return [Error(`${response.status}: ${response.statusText}`), undefined]
+    }
     return [undefined, result as TalenoxPayrollPaymentResult]
 }
 
-export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, payments: ITalenoxPayment[]): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
+export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, payments: TalenoxPayment[]): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
     const url = TALENOX_ADHOC_PAYMENT_ENDPOINT
 
     /* const myHeaders = new Headers()
@@ -236,10 +231,8 @@ export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, paymen
         period: TALENOX_WHOLE_MONTH,
     }
 
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    const pay_items: ITalenoxAdhocPayItems[] = []
+    const pay_items: TalenoxAdhocPayItems[] = []
     payments.forEach((mbPayment) => {
-        // eslint-disable-next-line @typescript-eslint/camelcase
         const resignDateString = staffMap.get(mbPayment.staffID)?.resign_date
         if (resignDateString) {
             const resignDate = new Date(Date.parse(resignDateString))
@@ -247,20 +240,18 @@ export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, paymen
                 console.warn(`${mbPayment.staffName} has commission due but resigned prior to this payroll month`)
             }
             else {
-                pay_items.push({
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    employee_id: mbPayment.staffID,
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    item_type: mbPayment.type,
-                    remarks: mbPayment.remarks,
-                    amount: mbPayment.amount,
-                })
+                pay_items.push(
+                    {
+                        employee_id: mbPayment.staffID,
+                        item_type: mbPayment.type,
+                        remarks: mbPayment.remarks,
+                        amount: mbPayment.amount,
+                    }
+                )
             }
         } else {
             pay_items.push({
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 employee_id: mbPayment.staffID,
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 item_type: mbPayment.type,
                 remarks: mbPayment.remarks,
                 amount: mbPayment.amount,
@@ -282,8 +273,8 @@ export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, paymen
         return [new Error(`${response.status}: ${response.statusText}`), undefined]
     }
 
-    const result = JSON.parse(await response.text())
-    /* Result has form
+    const result = (JSON.parse(await response.text()) as unknown)
+    /* Result should have shape of TalenoxUploadAdHocPaymentsResult
         {
             "payment_id":790462,
             "month":"May",
@@ -292,5 +283,7 @@ export async function uploadAdHocPayments(staffMap: TTalenoxInfoStaffMap, paymen
             "pay_group":null,
             "message":"Successfully updated payment."
         } */
-    return [undefined, result as TalenoxUploadAdHocPaymentsResult]
+
+    if (isTalenoxUploadAdHocPaymentsResult(result)) { return [undefined, result] }
+    return [new Error(`${response.status}: ${response.statusText} ${JSON.stringify(result)}`), undefined]
 }

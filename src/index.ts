@@ -30,7 +30,7 @@ import { StaffInfo } from "./IStaffInfo.js"
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { createAdHocPayments, firstDay, getTalenoxEmployees } from "./talenox_functions.js"
 import {
-  CommComponents, TCommMap, TServiceCommMap, TStaffID, TStaffName
+  CommComponents, TServiceCommMap, TStaffID, TStaffName
 } from "./types.js"
 import { isContractor, isPayViaTalenox, readExcelFile } from "./utility_functions.js"
 //import { initDebug, log, warn, error } from "./debug_functions.js"
@@ -55,7 +55,7 @@ export const SERVICE_TYPE_INDEX = 2
 /* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
-export const commMap: TCommMap = new Map<TStaffID, CommComponents>()
+export const commMap = new Map<TStaffID, CommComponents>()
 // const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
 export const serviceCommMap: TServiceCommMap = new Map<TStaffName, GeneralServiceComm>()
 export const emptyServComm: GeneralServiceComm = {

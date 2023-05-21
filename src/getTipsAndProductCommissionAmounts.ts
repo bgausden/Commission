@@ -4,7 +4,7 @@ import { isNumber } from "./utility_functions.js";
 
 export function getTipsOrProductCommissionAmounts(currentRow: unknown[], payComponent: string, commComponents: CommComponents) {
     const maxRowIndex = currentRow.length - 1; // row is zero indexed
-    let value = currentRow[maxRowIndex]
+    const value = currentRow[maxRowIndex]
     if (!isNumber(value)) { return commComponents }
     if (payComponent === TIPS_FOR) {
         commComponents.tips = value;

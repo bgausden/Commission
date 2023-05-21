@@ -1,9 +1,9 @@
-import { TTalenoxPaymentType } from "./talenox_types"
+import { TalenoxPaymentType } from "./talenox_types"
 
-/* eslint-disable */
-export interface ITalenoxAdhocPayItems {
-    employee_id?: string | null
-    item_type: TTalenoxPaymentType
+export interface TalenoxAdhocPayItems {
+    // employee_id?: string | null
+    employee_id?: string // trying to make employee_id mandatory
+    item_type: TalenoxPaymentType
     remarks?: string
     amount: number
 }

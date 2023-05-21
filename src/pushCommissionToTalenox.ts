@@ -3,7 +3,7 @@ import { TTalenoxInfoStaffMap } from "./types.js";
 import { createPayroll, uploadAdHocPayments } from "./talenox_functions.js";
 import { errorLogger, debugLogger } from "./logging_functions.js";
 
-export async function pushCommissionToTalenox(talenoxStaff: TTalenoxInfoStaffMap, payments: import("d:/git/Commission/src/ITalenoxPayment").ITalenoxPayment[]) {
+export async function pushCommissionToTalenox(talenoxStaff: TTalenoxInfoStaffMap, payments: import("./TalenoxPayment").TalenoxPayment[]) {
     debugLogger.debug(`Requesting new payroll payment creation from Talenox`);
     const createPayrollResult = await createPayroll(talenoxStaff);
     debugLogger.debug(`New payroll payment is created in Talenox.`);

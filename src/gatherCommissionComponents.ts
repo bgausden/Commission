@@ -11,7 +11,7 @@ export function gatherCommissionComponents(wsaa: unknown[][], rowIndex: number, 
     const revCol = findRevenueCol(wsaa);
     for (let j = 3; j >= 0; j--) {
         let payComponent = wsaa[rowIndex - j][0];
-        let value = 0;
+        // let value = 0;
         const currentRowNumber = rowIndex - j;
         const currentRow = wsaa[currentRowNumber];
 
@@ -97,11 +97,11 @@ export function gatherCommissionComponents(wsaa: unknown[][], rowIndex: number, 
 
 
 
-        value = 0;
+        // value = 0;
 
         if (j === 0) { // last row in the block "Total for <staff name>"
             if (!staffID) {
-                throw new Error(`Fatal: Missing staffID for staff: ${staffName ? staffName : "<Staff Name>"}`);
+                throw new Error(`Fatal: Missing staffID for staff: ${staffName ? staffName : "<Staff Name Unknown>"}`)
             }
             commMap.set(staffID, commComponents);
             logCommission(staffID, commComponents);

@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/member-delimiter-style */
 /* eslint-disable camelcase */
 
 import { ITalenoxJob } from "./ITalenoxJob";
 
-/* eslint-disable @typescript-eslint/interface-name-prefix */
 export interface ITalenoxStaffInfo {
     id: string
     employee_id: string

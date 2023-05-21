@@ -1,10 +1,10 @@
 import { TStaffID } from "./types"
-import { TTalenoxPaymentType } from "./talenox_types";
+import { TalenoxPaymentType } from "./talenox_types";
 
-export interface ITalenoxPayment {
+export interface TalenoxPayment {
     staffID: TStaffID
     staffName: string
-    type: TTalenoxPaymentType
+    type: TalenoxPaymentType
     amount: number
     remarks: string
 }

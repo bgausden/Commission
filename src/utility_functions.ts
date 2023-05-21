@@ -1,7 +1,9 @@
+import { Appender, FileAppender } from "log4js"
 import { config, Config } from "node-config-ts"
 import XLSX from "xlsx"
 import { REV_PER_SESS } from "./constants.js"
 import { defaultStaffID } from "./index.js"
+import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.js"
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { PayRate, TStaffHurdles, TStaffID } from "./types.js"
 
@@ -101,4 +103,26 @@ export function isNumber(data: unknown): data is number {
 
 export function isUndefined(data: unknown): data is undefined {
   return typeof data === "undefined"
+}
+
+export function isObject(data:unknown): data is object {
+  return typeof data === "object" && data !== null
+}
+
+export function isTalenoxUploadAdHocPaymentsResult (arg: unknown): arg is TalenoxUploadAdHocPaymentsResult  {
+  if (!isObject(arg)) return false
+  return 'payment_id' in arg && 'month' in arg && 'year' in arg && 'period' in arg && 'pay_group' in arg && 'message' in arg 
+}
+
+/**
+ * @function isFileAppender()
+ * @param appender 
+ * @returns assert appender is FileAppender
+ * 
+ * @summary type guard to assert that an appender is a FileAppender
+ * @description some Appenders are FileAppenders. The "file" property identifies an Appender as a FileAppender
+ * @see https://log4js-node.github.io/log4js-node/interfaces/fileappender.html
+ */
+export function isFileAppender(appender: Appender): appender is FileAppender {
+  return appender.type === 'file'
 }
