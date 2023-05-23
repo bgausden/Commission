@@ -7,7 +7,7 @@ import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
 import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
-import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
+import { TalenoxUploadAdHocPaymentsResult } from "./UploadAdHocPaymentsResult"
 import { TalenoxPayment } from "./TalenoxPayment"
 import { TALENOX_ADHOC_PAYMENT_ENDPOINT, TALENOX_API_TOKEN, TALENOX_COMMISSION_IRREGULAR, TALENOX_EMPLOYEE_ENDPOINT, TALENOX_PAYROLL_PAYMENT_ENDPOINT, TALENOX_TIPS, TALENOX_WHOLE_MONTH } from "./talenox_constants.js"
 import {

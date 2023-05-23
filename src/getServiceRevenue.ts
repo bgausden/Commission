@@ -2,11 +2,10 @@
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import {
     TStaffID, TStaffHurdles,
-    TCustomRateEntry,
-    ServiceRevenue,
-    TServiceName, PayRate
+    CustomRateEntry,
+    BrokenOutServiceRevenue,
+    TServiceName, PayRate, CustomPayRate
 } from "./types.js";
-import { CustomPayRate } from "./IStaffHurdle";
 import { stripToNumeric } from "./utility_functions.js";
 import { warnLogger, errorLogger, debugLogger } from "./logging_functions.js";
 import { defaultStaffID, SERVICE_ROW_REGEX, SERVICE_TYPE_INDEX } from "./index.js";
@@ -15,7 +14,7 @@ import { isString, isNumber } from "./utility_functions.js"
 export const GENERAL_SERV_REVENUE = "General Services"
 
 /**
- * @function getServicesRevenue - buckets revenue by custom pay-rate. One bucket is a catch-all
+ * @function getServiceRevenue - buckets revenue by custom pay-rate. One bucket is a catch-all "general service revenue"
  * @param {unknown[][]} wsArray - array representing the worksheet
  * @param {number} currentTotalRow - row number for last found "Total for" row in the worksheet
  * @param {number} currentStaffIDRow - row number for the last found "Staff ID" row in the worksheet
@@ -29,7 +28,7 @@ export function getServiceRevenue(
     currentStaffIDRow: number,
     // tslint:disable-next-line: no-shadowed-variable
     revCol: number,
-    staffID: TStaffID): ServiceRevenue {
+    staffID: TStaffID): BrokenOutServiceRevenue {
     /*
       Starting on the staff member's first row, sum all the numeric values in the revenue column
       down as far as the staff member's totals row + 1. Use this as the service revenue so we can ignore
@@ -39,7 +38,7 @@ export function getServiceRevenue(
       */
     const numSearchRows = currentTotalRow - currentStaffIDRow - 1;
     const revColumn = revCol;
-    const servRevenueMap: ServiceRevenue = new Map<TServiceName, TCustomRateEntry>();
+    const servRevenueMap: BrokenOutServiceRevenue = new Map<TServiceName, CustomRateEntry>();
     let serviceRevenue = 0;
     let customRate = undefined;
     let sh = undefined;
@@ -58,7 +57,7 @@ export function getServiceRevenue(
     const customPayRates = sh ? sh.customPayRates : [];
     // const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
     //const customPayRates = sh.customPayRates ?? []
-    let serviceName: TServiceName = GENERAL_SERV_REVENUE;
+    let serviceName: TServiceName = ""
     for (let i = numSearchRows; i >= 1; i--) {
         const currentRow = currentTotalRow - i;
         /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
@@ -71,33 +70,23 @@ export function getServiceRevenue(
         const match = (possibleServiceDescription).match(SERVICE_ROW_REGEX); // regex is something like /(.*) Pay Rate: (.*) \((.*)%\)/i
 
 
-
-
-
-
-
-
-
-
-
-
         /*
-            Found a row that looks similar to:
-            Hair Pay rate: Ladies Cut and Blow Dry (55%)
-            where match[0] = Hair, match[1]=Ladies Cut and Blow Dry and match[2]=55
-            e.g. below - first line is the info on the service, then a column header row, then the rows for each provided service
-            Hair Pay rate: K18 Treatment (50%)
-            Appointment Date	Appt. Time	    Client Name	Series Used		          Revenue		Rev. per Session	Earnings
-            Saturday, 18 March 2023	10:00 am	M. Williams	Add on- K18 Treatment		880		    880	              440
-            Monday, 27 March 2023	2:00 pm	    Z. Pearson	Add on- K18 Treatment		800		    800	              400
-                                                                                                                              840
-     
-            */
+        Found a row that looks similar to:
+        Hair Pay rate: Ladies Cut and Blow Dry (55%)
+        where match[0] = Hair, match[1]=Ladies Cut and Blow Dry and match[2]=55
+        e.g. below - first line is the info on the service, then a column header row, then the rows for each provided service
+
+        Hair Pay rate: K18 Treatment (50%)
+        Appointment Date	    Appt. Time	    Client Name	Series Used		          Revenue		Rev. per Session	Earnings
+        Saturday, 18 March 2023	10:00 am	    M. Williams	Add on- K18 Treatment		  880		             880	     440
+        Monday, 27 March 2023	2:00 pm	        Z. Pearson	Add on- K18 Treatment		  800		             800	     400
+                                                                                                                             840    
+        */
         if (match) {
             // Have a section header for a block of services
             serviceName = match[SERVICE_TYPE_INDEX];
             // check if we have special rates for this servType
-            customRate = getCustomPayRate();
+            customRate = getCustomPayRate(serviceName, customPayRates);
             if (!customRate) {
                 serviceName = GENERAL_SERV_REVENUE; // catch-all servType for everything without a custom pay-rate
             }
@@ -137,11 +126,15 @@ export function getServiceRevenue(
     }
     return servRevenueMap;
 
-    function getCustomPayRate(): PayRate | undefined {
+    /**
+     * 
+     * @returns 
+     */
+    function getCustomPayRate(serviceName: TServiceName, customPayRates: CustomPayRate[] | undefined): PayRate | undefined {
         customRate = undefined;
         if (!customPayRates) { return customRate; }
         for (const customPayRate of customPayRates) {
-            customRate = findCustomRateInServices(serviceName, customPayRate);
+            customRate = findServiceInCustomRates(serviceName, customPayRate);
             if (customRate) {
                 return customRate;
             }
@@ -160,13 +153,14 @@ export function getServiceRevenue(
      *    "Gents Cut": 0.5
      * }
      */
-    function findCustomRateInServices(servName: string, customPayRate: CustomPayRate): PayRate | undefined {
+    function findServiceInCustomRates(serviceName: string, customPayRate: CustomPayRate): PayRate | undefined {
         // we generally don't have multiple services defined in the customPayRate object but we might in future, so we can just iterate through the keys
-        if (!(servName in customPayRate)) { return undefined; }
-        if (process.env.DEBUG) { 
-            const rate = customPayRate[servName] ? JSON.stringify(customPayRate[servName]) : "undefinedPayRate"
-            debugLogger.debug(`Found custom pay rate for ${servName}. Rate is ${rate}`) }
-        return customPayRate[servName];
+        if (!(serviceName in customPayRate)) { return undefined; }
+        if (process.env.DEBUG) {
+            const rate = customPayRate[serviceName] ? JSON.stringify(customPayRate[serviceName]) : "undefinedPayRate"
+            debugLogger.debug(`Found custom pay rate for ${serviceName}. Rate is ${rate}`)
+        }
+        return customPayRate[serviceName];
         /*     for (const serviceWithCustomPayRate in customPayRate) {
               //if (Object.prototype.hasOwnProperty.call(customPayRate, serviceWithCustomPayRate) && servName === serviceWithCustomPayRate) {
               if (serviceWithCustomPayRate === servName) {

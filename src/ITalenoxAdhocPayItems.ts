@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { TalenoxPaymentType } from "./talenox_types"
 
 export interface TalenoxAdhocPayItems {

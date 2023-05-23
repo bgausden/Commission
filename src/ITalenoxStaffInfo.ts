@@ -33,7 +33,7 @@ export interface ITalenoxStaffInfo {
     cost_centre: string
     current_job: string
     jobs: ITalenoxJob[]
-    next_of_kins: ITalenoxNextOfKin[]
+    next_of_kins: TalenoxNextOfKin[]
     bank_account: BankAccount
 }
 

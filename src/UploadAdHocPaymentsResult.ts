@@ -1,4 +1,4 @@
-export interface TalenoxUploadAdHocPaymentsResult {
+export type TalenoxUploadAdHocPaymentsResult = {
     payment_id: number
     month: string
     year: number

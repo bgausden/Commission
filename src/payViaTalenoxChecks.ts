@@ -1,10 +1,10 @@
 import { config } from "node-config-ts";
+import { Status, STATUS_ERROR, STATUS_OK, STATUS_WARN } from "./constants.js";
+import { errorLogger, warnLogger } from "./logging_functions.js";
 import { TTalenoxInfoStaffMap } from "./types.js";
-import { isPayViaTalenox, isContractor } from "./utility_functions.js";
-import { warnLogger, errorLogger } from "./logging_functions.js";
-import { STATUS, STATUS_OK, STATUS_ERROR, STATUS_WARN } from "./constants.js";
+import { isContractor, isPayViaTalenox } from "./utility_functions.js";
 
-export function payViaTalenoxChecks(staffID: string, rowIndex: number, staffName: string, talenoxStaff: TTalenoxInfoStaffMap): { status: STATUS; message: string } {
+export function payViaTalenoxChecks(staffID: string, rowIndex: number, staffName: string, talenoxStaff: TTalenoxInfoStaffMap): { status: Status; message: string } {
     let text: string;
     const inTalenox = (talenoxStaff.get(staffID) !== undefined);
     if (isPayViaTalenox(staffID) && !inTalenox) {

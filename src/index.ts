@@ -30,7 +30,7 @@ import { StaffInfo } from "./IStaffInfo.js"
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
 import { createAdHocPayments, firstDay, getTalenoxEmployees } from "./talenox_functions.js"
 import {
-  CommComponents, TServiceCommMap, TStaffID, TStaffName
+  CommComponents, ServiceCommMap, TStaffID, StaffName
 } from "./types.js"
 import { isContractor, isPayViaTalenox, readExcelFile } from "./utility_functions.js"
 //import { initDebug, log, warn, error } from "./debug_functions.js"
@@ -57,7 +57,7 @@ const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
 export const commMap = new Map<TStaffID, CommComponents>()
 // const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
-export const serviceCommMap: TServiceCommMap = new Map<TStaffName, GeneralServiceComm>()
+export const serviceCommMap: ServiceCommMap = new Map<StaffName, GeneralServiceComm>()
 export const emptyServComm: GeneralServiceComm = {
   staffName: "",
   base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
@@ -104,7 +104,7 @@ async function main() {
   })
   const maxRows = wsaa.length
   let staffID: TStaffID | undefined
-  let staffName: TStaffName | undefined
+  let staffName: StaffName | undefined
   let currentStaffIDRow = -1
   let currentTotalForRow = 0
   let wsStaffInfo: StaffInfo | undefined = undefined

@@ -33,19 +33,14 @@
             {
                 "selector": "property",
                 "format": [
-                    "strictCamelCase"
+                    "strictCamelCase",
+                    "snake_case"
                 ],
                 "filter": {
                     // you can expand this regex to add more allowed names
-                    "regex": "^(|Authorization|Content-Type|staffID)$",
+                    "regex": "^(Authorization|Content-Type|staffID)$",
                     "match": false
                 }
-            },
-            {
-                "selector": "typeLike",
-                "format": [
-                    "StrictPascalCase"
-                ]
             }
         ],
         "@typescript-eslint/restrict-template-expressions": "warn",
@@ -56,7 +51,10 @@
                     "delimiter": "none"
                 }
             }
-        ]
+        ],
+        // Note: you must disable the base rule as it can report incorrect errors
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": "warn"
     },
     "ignorePatterns": [
         "node_modules",

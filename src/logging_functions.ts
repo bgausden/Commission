@@ -1,5 +1,5 @@
 import l4js from 'log4js'
-const {configure, getLogger, shutdown, levels} = l4js // l4js doesn't export these functions, so we have to destructure them from the default export
+const { configure, getLogger, shutdown, levels } = l4js // l4js doesn't export these functions, so we have to destructure them from the default export
 import { basename, extname } from 'path'
 import log4jsConfig from './log4js.json' assert { type: "json" }
 import { validateLog4jsConfig } from './log4jsConfigSchema.js'
@@ -43,7 +43,6 @@ commissionLogger.level = levels.INFO
 
 export const contractorLogger = getLogger('contractor')
 contractorLogger.level = levels.INFO
-
 
 export const debugLogger = getLogger('debug')
 debugLogger.level = levels.DEBUG

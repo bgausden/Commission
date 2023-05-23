@@ -1,29 +1,34 @@
-import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { GeneralServiceComm } from "./GeneralServiceComm";
-import { StaffCommConfig } from "./IStaffCommConfig";
-import {
-    TStaffID, TServiceRevenue, TStaffHurdles,
-    TTalenoxInfoStaffMap
-} from "./types.js";
-import { StaffHurdle } from "./IStaffHurdle"
-import { checkRate, stripToNumeric } from "./utility_functions.js";
-import { errorLogger } from "./logging_functions.js";
-import { defaultStaffID, emptyServComm, serviceCommMap } from "./index.js";
 import { BASE_RATE, HURDLE_1_LEVEL, HURDLE_2_LEVEL, HURDLE_3_LEVEL } from "./constants.js";
+import { GeneralServiceComm } from "./GeneralServiceComm";
+import { defaultStaffID, emptyServComm, serviceCommMap } from "./index.js";
+import { StaffCommConfig } from "./IStaffCommConfig";
+import { IndividualStaffHurdle } from "./IStaffHurdle";
+import { errorLogger } from "./logging_functions.js";
+import staffHurdle from "./staffHurdle.json" assert { type: "json" };
+import { TStaffHurdles, TStaffID, TTalenoxInfoStaffMap } from "./types.js";
+import { checkRate, stripToNumeric } from "./utility_functions.js";
 
+/**
+ * 
+ * @param staffID 
+ * @param staffMap 
+ * @param generalServiceRevenue 
+ * @returns number
+ * @description Calculate the general service commission for a staff member from base rate and hurdles
+ */
 export function calcGeneralServiceCommission(
     staffID: TStaffID,
     staffMap: TTalenoxInfoStaffMap,
-    serviceRev: TServiceRevenue): number {
+    generalServiceRevenue: number): number {
     /* iterate through commissionComponents
       for each entry, locate corresponding hurdles and then calculate amounts payable for base rate (0 for most staff) and then from each hurdle to the next store the amounts payable in a new Map where the key is the staff name and the value is an array containing
       [baseCommission, hurdle1Commission, hurdle2Commission]
-      Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool (TODO) */
+      Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool */
     let totalServiceComm: number;
     const sh = staffHurdle as TStaffHurdles; // get an iterable version of the staffHurdle import
 
     // TODO review if we really need shm or could simply use the import staffHurdle directly
-    const shm = new Map<TStaffID, StaffHurdle>();
+    const shm = new Map<TStaffID, IndividualStaffHurdle>();
     // TODO Do we really need to build a new map from the entirety of the staff hurdle object? Surely need only this staff member
     // Object.keys(sh).forEach((k) => shm.set(k, sh[k])) // iterate through staffHurdle and build a Map
     if (sh[staffID]) {
@@ -65,7 +70,7 @@ export function calcGeneralServiceCommission(
         let hurdle3Level = 0;
         let hurdle3Rate = 0;
 
-        if (Object.prototype.hasOwnProperty.call(staffCommConfig, BASE_RATE)) {
+        if (BASE_RATE in staffCommConfig) {
             // if (staffCommConfig.hasOwnProperty(BASE_RATE)) {
             baseRate = stripToNumeric(staffCommConfig.baseRate);
             if (!checkRate(baseRate)) {
@@ -102,7 +107,7 @@ export function calcGeneralServiceCommission(
         // TODO get rid of this nesting logic
         if (hurdle1Level <= 0) {
             // no hurdle. All servicesRev pays comm at baseRate
-            baseRevenue = serviceRev;
+            baseRevenue = generalServiceRevenue;
             /* remove?
                       hurdle1Revenue = 0;
                       hurdle1Level = 0;
@@ -110,35 +115,35 @@ export function calcGeneralServiceCommission(
                       hurdle2Level = 0; */
         } else {
             // there is a hurdle1
-            baseRevenue = Math.round(Math.max(serviceRev - hurdle1Level, 0) * 100) / 100;
-            if (serviceRev > hurdle1Level) {
+            baseRevenue = Math.round(Math.max(generalServiceRevenue - hurdle1Level, 0) * 100) / 100;
+            if (generalServiceRevenue > hurdle1Level) {
                 if (hurdle2Level > 0) {
                     // service revenue  that falls between hurdle1 and hurdle2 generate comm at the hurdle1 Rate
-                    hurdle1Revenue = Math.round(Math.min(serviceRev - hurdle1Level, hurdle2Level - hurdle1Level) * 100) / 100;
-                    if (serviceRev > hurdle2Level) {
+                    hurdle1Revenue = Math.round(Math.min(generalServiceRevenue - hurdle1Level, hurdle2Level - hurdle1Level) * 100) / 100;
+                    if (generalServiceRevenue > hurdle2Level) {
                         if (hurdle3Level > 0) {
                             // have  a hurdle3
                             /* revenue applicable to hurdle2 is either the amount of service revenue above
                                               hurdle2 or if the revenue exceeds hurdle3, the amount of revenue equal to
                                               the difference between hurdle3 and hurdle2 */
-                            hurdle2Revenue = Math.round(Math.min(serviceRev - hurdle2Level, hurdle3Level - hurdle2Level) * 100) / 100;
-                            if (serviceRev > hurdle3Level) {
-                                hurdle3Revenue = Math.round((serviceRev - hurdle3Level) * 100) / 100;
+                            hurdle2Revenue = Math.round(Math.min(generalServiceRevenue - hurdle2Level, hurdle3Level - hurdle2Level) * 100) / 100;
+                            if (generalServiceRevenue > hurdle3Level) {
+                                hurdle3Revenue = Math.round((generalServiceRevenue - hurdle3Level) * 100) / 100;
                             } else {
                                 // service revenue doesn't exceed hurdle3. All rev above hurdle 2 is hurdle2Revenue
-                                hurdle2Revenue = Math.round((serviceRev - hurdle2Level) * 100) / 100;
+                                hurdle2Revenue = Math.round((generalServiceRevenue - hurdle2Level) * 100) / 100;
                             }
                         } else {
                             // no hurdle3level so all revenue above hurdle2 generates comm at the hurdle2 rate
-                            hurdle2Revenue = Math.round((serviceRev - hurdle2Level) * 100) / 100;
+                            hurdle2Revenue = Math.round((generalServiceRevenue - hurdle2Level) * 100) / 100;
                         }
                     } else {
                         // service revenue doesn't exceed hurdle2
-                        hurdle1Revenue = Math.round((serviceRev - hurdle1Level) * 100) / 100;
+                        hurdle1Revenue = Math.round((generalServiceRevenue - hurdle1Level) * 100) / 100;
                     }
                 } else {
                     // no hurdle2 so all revenue above hurdle1 generates comm at the hurdle1 rate
-                    hurdle1Revenue = Math.round(((serviceRev - hurdle1Level) * 100) / 100);
+                    hurdle1Revenue = Math.round(((generalServiceRevenue - hurdle1Level) * 100) / 100);
                 }
             } else {
                 hurdle1Revenue = 0;
@@ -168,7 +173,7 @@ export function calcGeneralServiceCommission(
         const staffName = staffMap.get(staffID);
 
         tempServComm.staffName = `${staffName?.last_name ?? "<Last Name>"} ${staffName?.first_name ?? "<First Name>"}`;
-        tempServComm.generalServiceRevenue = serviceRev;
+        tempServComm.generalServiceRevenue = generalServiceRevenue;
 
         tempServComm.base.baseCommRevenue = baseRevenue;
         tempServComm.base.baseCommRate = baseRate;

@@ -10,8 +10,8 @@ export const HURDLE_1_LEVEL = "hurdle1Level";
 export const HURDLE_2_LEVEL = "hurdle2Level";
 export const HURDLE_3_LEVEL = "hurdle3Level";
 
-export const STATUS_OK = "OK"
-export const STATUS_ERROR = "ERROR"
-export const STATUS_UNKNOWN = "UNKNOWN"
+export const STATUS_OK = "OK" 
+export const STATUS_ERROR = "ERROR" 
+export const STATUS_UNKNOWN = "UNKNOWN" 
 export const STATUS_WARN = "WARNING"
-export type STATUS = typeof STATUS_OK | typeof STATUS_ERROR | typeof STATUS_UNKNOWN | typeof STATUS_WARN
+export type Status = typeof STATUS_OK | typeof STATUS_ERROR | typeof STATUS_UNKNOWN | typeof STATUS_WARN

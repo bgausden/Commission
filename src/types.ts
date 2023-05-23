@@ -1,26 +1,21 @@
 import { GeneralServiceComm } from "./GeneralServiceComm"
-import { IStaffNames } from "./IStaffNames"
-import { StaffHurdle } from "./IStaffHurdle"
+import { IndividualStaffHurdle } from "./IStaffHurdle"
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
 
-export type TStaffName = string
-export type TTips = number
-export type TProductCommission = number
-export type TServiceCommission = number
-export type TServiceRevenue = number
-export type TBaseComm = number
-export type THurdle1Comm = number
-export type THurdle2Comm = number
-export type THurdle3Comm = number
+export type StaffName = string
+export type Tips = number
+export type ProductCommission = number
+export type ServiceCommission = number
+export type ServiceRevenue = number
 
-export type TServiceCommMap = Map<TStaffName, GeneralServiceComm>
-type TCommSimpleComponentTips = "tips"
-type TCommSimpleComponentProductCommission = "productCommission"
-type TCommSimpleComponentGeneralServiceCommission = "generalServiceCommisison"
-export type TCommSimpleComponentsKeys = TCommSimpleComponentTips | TCommSimpleComponentProductCommission | TCommSimpleComponentGeneralServiceCommission
-export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission
-export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>
-export type TCustomRateEntry = {
+export type ServiceCommMap = Map<StaffName, GeneralServiceComm>
+type CommSimpleComponentTips = "tips"
+type CommSimpleComponentProductCommission = "productCommission"
+type CommSimpleComponentGeneralServiceCommission = "generalServiceCommisison"
+export type CommSimpleComponentsKeys = CommSimpleComponentTips | CommSimpleComponentProductCommission | CommSimpleComponentGeneralServiceCommission
+export type CommSimpleComponentsValues = Tips | ProductCommission | ServiceCommission
+export type CommSimpleComponents = Record<CommSimpleComponentsKeys, CommSimpleComponentsValues>
+export type CustomRateEntry = {
    serviceRevenue: number
    customRate: number | undefined
 }
@@ -40,34 +35,41 @@ export type TCommComponentsGeneralServiceCommission = typeof COMM_COMPONENT_GENE
 export type TCommComponentCustomRateCommission = typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION
 export type TCommComponentTotalServiceCommission = typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION
 export type TCommComponentCustomRateCommissions = {
-   [key: string]: TServiceCommission
+   [key: string]: ServiceCommission
 }
 
 // TODO do we have to support both number and array of CustomRates?
 export type CommComponents = {
    [key: string]: number | TCommComponentCustomRateCommissions
-   totalServiceRevenue: TServiceRevenue
-   tips: TTips
-   productCommission: TProductCommission
-   generalServiceCommission: TServiceCommission
-   customRateCommission: TServiceCommission
+   totalServiceRevenue: ServiceRevenue
+   tips: Tips
+   productCommission: ProductCommission
+   generalServiceCommission: ServiceCommission
+   customRateCommission: ServiceCommission
    customRateCommissions: TCommComponentCustomRateCommissions
-   totalServiceCommission: TServiceCommission
+   totalServiceCommission: ServiceCommission
 }
-export type TCommMap = Map<TStaffName, CommComponents>
+export type TCommMap = Map<StaffName, CommComponents>
 export type TStaffID = string
 
 // TODO: make this a singleton
-export type TStaffMap = Map<TStaffID, IStaffNames>
+// Might use this to store merged name data from Talenox and the spreadsheet
+export type TStaffMap = Map<TStaffID, {
+   firstName: string
+   lastName: string
+}>
 export type TTalenoxInfoStaffMap = Map<TStaffID, Partial<ITalenoxStaffInfo>>
 // export type TTalenoxInfoStaffMap<M extends ITalenoxStaffInfo> = Map<TStaffID, M>
 
 export type TStaffHurdles = {
-   [key: string]: StaffHurdle
+   [key: string]: IndividualStaffHurdle
 }
 
 export type TServiceName = string
 export type TServiceCustomRate = number | null
-export type ServiceRevenue = Map<TServiceName, TCustomRateEntry>
+export type BrokenOutServiceRevenue = Map<TServiceName, CustomRateEntry>
 
 export type PayRate = number | undefined
+
+export type CustomPayRate = { [name: string]: PayRate }
+

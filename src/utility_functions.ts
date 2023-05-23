@@ -1,11 +1,12 @@
 import { Appender, FileAppender } from "log4js"
 import { config, Config } from "node-config-ts"
 import XLSX from "xlsx"
+import { z } from "zod"
 import { REV_PER_SESS } from "./constants.js"
 import { defaultStaffID } from "./index.js"
-import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.js"
 import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { PayRate, TStaffHurdles, TStaffID } from "./types.js"
+import { CustomPayRate, PayRate, TStaffHurdles, TStaffID } from "./types.js"
+import { TalenoxUploadAdHocPaymentsResult } from "./UploadAdHocPaymentsResult.js"
 
 
 export function readExcelFile(fileName?: string): XLSX.WorkSheet {
@@ -35,7 +36,7 @@ export function checkRate(rate: unknown): boolean {
   return typeof rate === "number" && rate !== null && !isNaN(rate) && rate >= 0 && rate <= 1
 }
 
-export function stripToNumeric(n: unknown): number {
+/* export function stripToNumeric(n: unknown): number {
   // strip out everything except 0-9, "." and "-"
   const numericOnly = /[^0-9.-]+/g
 
@@ -50,21 +51,43 @@ export function stripToNumeric(n: unknown): number {
 
   // don't know what n was, so return NaN
   return NaN
+} */
+
+/**
+ * @function stripToNumeric()
+ * @param data 
+ * @returns number | throws Error
+ */
+export function stripToNumeric(data: unknown): number {
+  const numericResult = z.coerce.number().safeParse(data)
+  if (!numericResult.success) {
+    const errorMsg = `Data cannot be coerced to numeric: ${JSON.stringify(numericResult.error.issues)}`
+    console.log(errorMsg)
+    return NaN
+  }
+  return numericResult.data
 }
 
+/**
+ * Checks if the staff member with the given staff ID is paid via Talenox.
+ * @function isPayViaTalenox
+ * @param {TStaffID} staffID - The staff ID of the staff member to check.
+ * @returns {boolean} - Returns true if the staff member is paid via Talenox, false otherwise.
+ * @throws {Error} - Throws an error if the staff member is missing from staffHurdle.json and missingStaffAreFatal is true, or if the staff member has no payViaTalenox property.
+ * @see https://stackoverflow.com/questions/55377365/what-does-keyof-typeof-mean-in-typescript
+ */
 export function isPayViaTalenox(staffID: TStaffID): boolean {
-  if ((staffHurdle as TStaffHurdles)[staffID] === undefined) {
-    if (config.missingStaffAreFatal === true) {
-      throw new Error(`StaffID ${staffID} found in Payroll report but is missing from staffHurdle.json`)
-    } else {
-      console.warn(`Warning: staffID ${staffID} is missing from staffHurdle.json`)
-    }
+  if (!(staffID in staffHurdle) && config.missingStaffAreFatal === true) {
+    throw new Error(`StaffID ${staffID} found in Payroll report but is missing from staffHurdle.json`)
   }
-
-  if (!("payViaTalenox" in (staffHurdle as TStaffHurdles)[staffID])) {
+  if (!(staffID in staffHurdle) && config.missingStaffAreFatal === false) {
+    console.warn(`Warning: staffID ${staffID} is missing from staffHurdle.json`)
+    return false
+  }
+  if (!("payViaTalenox" in (staffHurdle[staffID as keyof typeof staffHurdle]))) {
     throw new Error(`${staffID} has no payViaTalenox property.`)
   }
-  return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false
+  return "payViaTalenox" in staffHurdle[staffID as keyof typeof staffHurdle]
 }
 
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
@@ -105,13 +128,20 @@ export function isUndefined(data: unknown): data is undefined {
   return typeof data === "undefined"
 }
 
-export function isObject(data:unknown): data is object {
+export function isObject(data: unknown): data is object {
   return typeof data === "object" && data !== null
 }
 
-export function isTalenoxUploadAdHocPaymentsResult (arg: unknown): arg is TalenoxUploadAdHocPaymentsResult  {
-  if (!isObject(arg)) return false
-  return 'payment_id' in arg && 'month' in arg && 'year' in arg && 'period' in arg && 'pay_group' in arg && 'message' in arg 
+export function isTalenoxUploadAdHocPaymentsResult(data: unknown): data is TalenoxUploadAdHocPaymentsResult {
+  const paymentSchema = z.object({
+    payment_id: z.number(),
+    month: z.string(),
+    year: z.number(),
+    period: z.string(),
+    pay_group: z.string(),
+    message: z.string()
+  }).strict()
+  return paymentSchema.safeParse(data).success
 }
 
 /**
@@ -125,4 +155,18 @@ export function isTalenoxUploadAdHocPaymentsResult (arg: unknown): arg is Taleno
  */
 export function isFileAppender(appender: Appender): appender is FileAppender {
   return appender.type === 'file'
+}
+
+/**
+ * @function isCustomPayRate()
+ * @param obj 
+ * @returns assert obj is CustomPayRate
+ * 
+ * @summary type guard to assert that an object is a CustomPayRate
+ * @description a CustomPayRate is an object with string keys (service names) and rate values between 0 and 1 (% payrate)
+ * @see https://github.com/vriad/zod/blob/main/examples/record.ts
+ */
+export function isCustomPayRate(obj: object): obj is CustomPayRate {
+  const customPayRateSchema = z.record(z.string(), z.number().min(0).max(1))
+  return customPayRateSchema.safeParse(obj).success
 }
