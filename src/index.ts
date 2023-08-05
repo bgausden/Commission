@@ -622,6 +622,7 @@ async function main(): Promise<void> {
   let currentStaffIDRow = -1
   let currentTotalForRow = 0
   let staffInfo: StaffInfo | null = null
+  let servicesRevenues: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>
   // start building commission components working through the rows of the spreadsheet (array of arrays)
   // ignore the first row which contains the date range for the report
   for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
@@ -721,10 +722,14 @@ async function main(): Promise<void> {
           text += ` [CONTRACTOR]`
           contractorLogger.info('')
           contractorLogger.info(text)
+          contractorLogger.info('')
         } else {
           commissionLogger.info('')
           commissionLogger.info(text)
-        } for (let j = 3; j >= 0; j--) {
+          commissionLogger.info('')
+        }
+
+        for (let j = 3; j >= 0; j--) {
           let payComponent: string = wsaa[rowIndex - j][0] as string
           if (payComponent !== undefined) {
             let value = 0
@@ -760,7 +765,7 @@ async function main(): Promise<void> {
                                     ) */
 
                   // New way - some revenues from "general services", some revenues from custom pay rates
-                  const servicesRevenues = getServiceRevenues(
+                  servicesRevenues = getServiceRevenues(
                     wsaa,
                     currentTotalForRow,
                     currentStaffIDRow,
@@ -825,21 +830,31 @@ async function main(): Promise<void> {
               } else {
                 commMap.set(staffID, commComponents)
                 //log(prettyjson.render(commComponents))
-
-                if (!isContractor(staffID)) {
-                  commissionLogger.info(fws32Left("General Service Commission:"), fws12RightHKD(commComponents.generalServiceCommission))
-                  commissionLogger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
-                  commissionLogger.info(fws32Left("Product Commission:"), fws12RightHKD(commComponents.productCommission))
-                  commissionLogger.info(fws32Left(`Tips:`), fws12RightHKD(commComponents.tips))
-                  commissionLogger.info(fws32Left(''), fws12Right('------------'))
-                  commissionLogger.info(
+                const logger = isContractor(staffID) ? contractorLogger : commissionLogger
+                //if (!isContractor(staffID)) {
+                  logger.info(fws32Left("General Services Revenue:"), fws12RightHKD(servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0))
+                  servicesRevenues.forEach((customRateEntry, serviceName) => {
+                    if (serviceName !== GENERAL_SERV_REVENUE) {
+                      const serviceRevenue = customRateEntry.serviceRevenue
+                      logger.info(fws32Left(`${serviceName} Revenue:`), fws12RightHKD(serviceRevenue))
+                    }
+                  })
+                  logger.info('')
+                  logger.info(fws32Left("General Service Commission:"), fws12RightHKD(commComponents.generalServiceCommission))
+                  logger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
+                  logger.info(fws32Left("Product Commission:"), fws12RightHKD(commComponents.productCommission))
+                  logger.info(fws32Left(`Tips:`), fws12RightHKD(commComponents.tips))
+                  logger.info(fws32Left(''), fws12Right('------------'))
+                  logger.info(
                     fws32Left(`Total Payable`),
                     fws12RightHKD(commComponents.customRateCommission +
                       commComponents.generalServiceCommission +
                       commComponents.productCommission +
                       commComponents.tips)
                   )
-                } else {
+                  logger.info('')
+                //} 
+                /* else {
                   contractorLogger.info(fws32Left("General Service Commission:"), fws12RightHKD(commComponents.generalServiceCommission))
                   contractorLogger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
                   contractorLogger.info(fws32Left("Product Commission:"), fws12RightHKD(commComponents.productCommission))
@@ -852,9 +867,8 @@ async function main(): Promise<void> {
                       commComponents.productCommission +
                       commComponents.tips)
                   )
-                }
+                } */
               }
-              //log("==========")
             }
           }
         }
