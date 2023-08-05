@@ -47,7 +47,7 @@ import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPay
 import { checkRate, stripToNumeric, isPayViaTalenox, eqSet, isContractor } from "./utility_functions.js"
 //import { initDebug, log, warn, error } from "./debug_functions.js"
 import { contractorLogger, commissionLogger, warnLogger, errorLogger, debugLogger, shutdownLogging } from "./logging_functions.js"
-import { fws32Left, fws12RightHKD, fws12Right } from "./string_functions.js"
+import { fws32Left, fws12RightHKD, fws14RightHKD, fws14Right } from "./string_functions.js"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -832,22 +832,22 @@ async function main(): Promise<void> {
                 //log(prettyjson.render(commComponents))
                 const logger = isContractor(staffID) ? contractorLogger : commissionLogger
                 //if (!isContractor(staffID)) {
-                  logger.info(fws32Left("General Services Revenue:"), fws12RightHKD(servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0))
+                  logger.info(fws32Left("General Services Revenue:"), fws14RightHKD(servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0))
                   servicesRevenues.forEach((customRateEntry, serviceName) => {
                     if (serviceName !== GENERAL_SERV_REVENUE) {
                       const serviceRevenue = customRateEntry.serviceRevenue
-                      logger.info(fws32Left(`${serviceName} Revenue:`), fws12RightHKD(serviceRevenue))
+                      logger.info(fws32Left(`${serviceName} Revenue:`), fws14RightHKD(serviceRevenue))
                     }
                   })
                   logger.info('')
-                  logger.info(fws32Left("General Service Commission:"), fws12RightHKD(commComponents.generalServiceCommission))
-                  logger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
-                  logger.info(fws32Left("Product Commission:"), fws12RightHKD(commComponents.productCommission))
-                  logger.info(fws32Left(`Tips:`), fws12RightHKD(commComponents.tips))
-                  logger.info(fws32Left(''), fws12Right('------------'))
+                  logger.info(fws32Left("General Service Commission:"), fws14RightHKD(commComponents.generalServiceCommission))
+                  logger.info(fws32Left("Custom Rate Service Commission:"), fws14RightHKD(commComponents.customRateCommission))
+                  logger.info(fws32Left("Product Commission:"), fws14RightHKD(commComponents.productCommission))
+                  logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips))
+                  logger.info(fws32Left(''), fws14Right('------------'))
                   logger.info(
                     fws32Left(`Total Payable`),
-                    fws12RightHKD(commComponents.customRateCommission +
+                    fws14RightHKD(commComponents.customRateCommission +
                       commComponents.generalServiceCommission +
                       commComponents.productCommission +
                       commComponents.tips)
