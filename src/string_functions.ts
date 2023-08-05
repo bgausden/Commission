@@ -8,7 +8,17 @@ export function fws12Right(s: string | number): string {
 
 export function fws12RightHKD(n: number): string {
     if (typeof n !== "number") { n = 0 }
-    return fws(new Intl.NumberFormat('en-HK',{style:'currency',currency:'HKD'}).format(n),12,{align:'right'})
+    return fws(new Intl.NumberFormat('en-HK', { style: 'currency', currency: 'HKD' }).format(n), 12, { align: 'right' })
+}
+
+export function fws14Right(s: string | number): string {
+    if (typeof s === "number") { s = s.toString() }
+    return fws(s, 14, { align: 'right' })
+}
+
+export function fws14RightHKD(n: number): string {
+    if (typeof n !== "number") { n = 0 }
+    return fws(new Intl.NumberFormat('en-HK', { style: 'currency', currency: 'HKD' }).format(n), 14, { align: 'right' })
 }
 
 export function fws32Left(s: string | number): string {
