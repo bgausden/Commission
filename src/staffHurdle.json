@@ -757,7 +757,7 @@
     },
     "060": {
         "staffName": "Mils",
-        "baseRate": 0.05,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -928,7 +928,7 @@
     "080": {
         "staffName": "Mildred",
         "mbCommRate": 0.0,
-        "baseRate": 0.05,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -995,7 +995,7 @@
     "085": {
         "staffName": "KaYan",
         "mbCommRate": 0.0,
-        "baseRate": 0.0,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -1073,7 +1073,7 @@
     "094": {
         "staffName": "Vikti",
         "mbCommRate": 0.0,
-        "baseRate": 0.0,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
@@ -1131,7 +1131,7 @@
     "098": {
         "staffName": "Mabel",
         "mbCommRate": 0.0,
-        "baseRate": 0,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0.0,
         "hurdle2Level": 0,
@@ -1146,7 +1146,7 @@
     "100": {
         "staffName": "Louis",
         "mbCommRate": 0.0,
-        "baseRate": 0,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0.0,
         "hurdle2Level": 0,
@@ -1161,7 +1161,7 @@
     "108": {
         "staffName": "Dolma",
         "mbCommRate": 0.0,
-        "baseRate": 0,
+        "baseRate": 0.10,
         "hurdle1Level": 0,
         "hurdle1Rate": 0.0,
         "hurdle2Level": 0,
