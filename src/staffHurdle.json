@@ -395,8 +395,8 @@
     },
     "023": {
         "staffName": "Keith",
-        "mbCommRate": 0.6,
-        "baseRate": 0.6,
+        "mbCommRate": 0.5,
+        "baseRate": 0.5,
         "hurdle1Level": 0,
         "hurdle1Rate": 0.0,
         "hurdle2Level": 0,
