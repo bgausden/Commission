@@ -9,6 +9,11 @@ declare module "node-config-ts" {
     PAYMENTS_WS_NAME: string
     missingStaffAreFatal: boolean
     updateTalenox: boolean
+    DEBUG: string
+    PAYMENTS_DIR: string
+    LOGS_DIR: string
+    DATA_DIR: string
+    log4jsConfigFile: string
   }
   export const config: Config
   export type Config = IConfig

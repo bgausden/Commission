@@ -1,10 +1,11 @@
-import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { TStaffID, TStaffHurdles } from "./types.js"
-import { defaultStaffID } from "./index.js"
-import { config, Config } from "node-config-ts"
+import staffHurdle from './staffHurdle.json' assert { type: 'json' }
+import { TStaffID, TStaffHurdles } from './types.js'
+import { defaultStaffID } from './index.js'
+import { config, Config } from 'node-config-ts'
+import { Configuration } from 'log4js'
 
 export function checkRate(rate: unknown): boolean {
-  if (typeof rate === "number") {
+  if (typeof rate === 'number') {
     if (0 <= rate && rate <= 1) {
       return true
     } else {
@@ -18,14 +19,14 @@ export function checkRate(rate: unknown): boolean {
 export function stripToNumeric(n: unknown): number {
   const numericOnly = /[^0-9.-]+/g
   let x: number
-  if (typeof n === "string") {
+  if (typeof n === 'string') {
     // strip out everything except 0-9, "." and "-"
-    x = parseFloat(n.replace(numericOnly, ""))
+    x = parseFloat(n.replace(numericOnly, ''))
     if (isNaN(x)) {
       x = 0
     }
   }
-  if (typeof n === "number") {
+  if (typeof n === 'number') {
     x = n
   } else {
     x = 0
@@ -42,7 +43,7 @@ export function isPayViaTalenox(staffID: TStaffID): boolean {
     }
   }
 
-  if (!("payViaTalenox" in (staffHurdle as TStaffHurdles)[staffID])) {
+  if (!('payViaTalenox' in (staffHurdle as TStaffHurdles)[staffID])) {
     throw new Error(`${staffID} has no payViaTalenox property.`)
   }
   return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false
@@ -59,7 +60,7 @@ export function isContractor(staffID: TStaffID): boolean {
   if (!(staffHurdle as TStaffHurdles)[staffID]) {
     staffID = defaultStaffID
   }
-  if (Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf("contractor")) {
+  if (Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')) {
     isContractor = (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false
   }
   return isContractor
@@ -68,4 +69,14 @@ export function isContractor(staffID: TStaffID): boolean {
 export function payrollStartDate(config: Config): Date {
   const payrollFirstDay = new Date(Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`))
   return payrollFirstDay
+}
+
+export function isLog4JsConfig(config: unknown): config is Configuration {
+  return (<Configuration>config).appenders !== undefined && (<Configuration>config).categories !== undefined
+}
+
+import * as fs from 'fs'
+
+export function isValidDirectory(dir: string): boolean {
+  return fs.existsSync(dir) && fs.statSync(dir).isDirectory()
 }
