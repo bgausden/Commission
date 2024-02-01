@@ -20,6 +20,8 @@ Extensions - Application:   28152.000000000004
 // TODO remove --experimental-json-modules in favour of approach in logging_functions. ts --> const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
 // TODO move payments xlsx files to new directory "payment sheets" so not in root
 // TODO create debug log (in addition to displaying debug in console)
+// TODO remove ts-ignore from logging_functions.ts
+// TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
 
 import { config } from "node-config-ts"
 // import prettyjson from "prettyjson"
@@ -47,7 +49,7 @@ import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPay
 import { checkRate, stripToNumeric, isPayViaTalenox, eqSet, isContractor } from "./utility_functions.js"
 //import { initDebug, log, warn, error } from "./debug_functions.js"
 import { contractorLogger, commissionLogger, warnLogger, errorLogger, debugLogger, shutdownLogging } from "./logging_functions.js"
-import { fws32Left, fws12RightHKD, fws14RightHKD, fws14Right } from "./string_functions.js"
+import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js"
 
 // const FILE_PATH: string = "Payroll Report.xlsx";
 const FILE_PATH = config.PAYROLL_WB_NAME
@@ -489,7 +491,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
     XLSX.utils.json_to_sheet(payments, { skipHeader: true }),
     config.PAYMENTS_WS_NAME
   )
-  XLSX.writeFile(paymentsWB, config.PAYMENTS_WB_NAME)
+  XLSX.writeFile(paymentsWB, `${config.PAYMENTS_DIR}/${config.PAYMENTS_WB_NAME}`)
 }
 
 function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TTalenoxInfoStaffMap): void {
