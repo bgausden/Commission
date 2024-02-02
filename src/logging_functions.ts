@@ -1,11 +1,13 @@
 import { readFileSync } from 'fs'
-import { configure, getLogger, shutdown } from 'log4js'
+//import { extname } from 'path';
+import l4js from 'log4js' // note the import * as l4js from 'log4js' syntax doesn't work. Be interesting to know.
+const { configure, getLogger, shutdown } = l4js //l4js is a commonJS module so no named exports
 import { Configuration } from 'log4js'
 import { config } from 'node-config-ts'
 import { basename, extname } from 'path'
-import { isLog4JsConfig, isValidDirectory } from './utility_functions'
+import { isLog4JsConfig, isValidDirectory, moveFilesToOldDir } from './utility_functions.js'
 import { z } from 'zod'
-import { DEFAULT_LOGS_DIR } from './constants'
+import { DEFAULT_LOGS_DIR } from './constants.js'
 
 // the template in the root of the project needs to be copied to /src
 // the npm script "build" does this for us (see /scripts)
@@ -93,6 +95,8 @@ log4jsConfig.appenders.contractor.filename = `${logsDir}/${contractorLogFileBase
 
 configure(log4jsConfig)
 
+
+
 export const commissionLogger = getLogger('commission')
 commissionLogger.level = 'info'
 
@@ -111,13 +115,29 @@ warnLogger.level = 'warning'
 export const errorLogger = getLogger('error')
 errorLogger.level = 'error'
 
+moveFilesToOldDir(logsDir)
+
+/**
+ * Sets the directory for storing logs.
+ *
+ * @param path - The path to the logs directory.
+ * @returns The path to the logs directory if it is valid, otherwise the default logs directory.
+ */
 function setLogsDir(path: string) {
-    if (!isValidDirectory(path)) {
-        return DEFAULT_LOGS_DIR
-    }
-    return path
+  if (!isValidDirectory(path)) {
+    return DEFAULT_LOGS_DIR
+  }
+  return path
 }
 
+/**
+ * Loads the log4js configuration from a file and returns it.
+ * Necessary because we want to dynamically name the log files
+ * and so we need a Configuration object we can manipulate
+ * rather than simply passing l4js.configure() the log4js.json
+ * config file
+ * @returns The loaded log4js configuration.
+ */
 function loadlog4jsConfig() {
   const possibleL4jsConfig = JSON.parse(readFileSync(`./${log4jsConfigFile}`, 'utf-8')) as Configuration
   isLog4JsConfig(possibleL4jsConfig) // throws an error if not a valid log4js config
