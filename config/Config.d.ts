@@ -13,7 +13,6 @@ declare module "node-config-ts" {
     LOGS_DIR: string
     DATA_DIR: string
     log4jsConfigFile: string
-    DEBUG: string
   }
   export const config: Config
   export type Config = IConfig

@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/member-delimiter-style */
 /* eslint-disable camelcase */
 
-import { ITalenoxJob } from "./ITalenoxJob";
+import { ITalenoxJob } from "./ITalenoxJob.js"
+import { ITalenoxNextOfKin } from "./ITalenoxNextOfKin.js"
 
 /* eslint-disable @typescript-eslint/interface-name-prefix */
 export interface ITalenoxStaffInfo {

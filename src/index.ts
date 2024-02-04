@@ -22,15 +22,16 @@ Extensions - Application:   28152.000000000004
 // TODO create debug log (in addition to displaying debug in console)
 // TODO remove ts-ignore from logging_functions.ts
 // TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
+// TODO make filename for staffHurdle.json a constant
 
 import { config } from 'node-config-ts'
 // import prettyjson from "prettyjson"
 import XLSX from 'xlsx'
-import { StaffInfo } from './IStaffInfo'
-import staffHurdle from './staffHurdle.json' assert { type: 'json' }
-import { ITalenoxPayment } from './ITalenoxPayment'
-import { GeneralServiceComm } from './IServiceComm'
-import { StaffCommConfig } from './IStaffCommConfig'
+import { StaffInfo } from './IStaffInfo.js'
+//import staffHurdle from './staffHurdle.json' assert { type: 'json' }
+import { ITalenoxPayment } from './ITalenoxPayment.js'
+import { GeneralServiceComm } from './IServiceComm.js'
+import { StaffCommConfig } from './IStaffCommConfig.js'
 import {
   TStaffID,
   TServiceCommMap,
@@ -44,7 +45,7 @@ import {
   TServiceName,
   TTalenoxInfoStaffMap,
 } from './types.js'
-import { StaffHurdle } from './IStaffHurdle'
+import { StaffHurdle } from './IStaffHurdle.js'
 import {
   createAdHocPayments,
   getTalenoxEmployees,
@@ -60,6 +61,7 @@ import {
   isContractor,
   moveFilesToOldDir,
   isValidDirectory,
+  loadJsonFromFile,
 } from './utility_functions.js'
 //import { initDebug, log, warn, error } from "./debug_functions.js"
 import {
@@ -128,8 +130,9 @@ const emptyServComm: GeneralServiceComm = {
 }
 
 export const defaultStaffID = '000'
+export const staffHurdle = loadJsonFromFile('dist/staffHurdle.json')
 
-function readExcelFile(fileName:string): XLSX.WorkSheet {
+function readExcelFile(fileName: string): XLSX.WorkSheet {
   const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
   const WB = XLSX.readFile(fileName, READ_OPTIONS)
   const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]]
@@ -222,8 +225,8 @@ function getServiceRevenues(
   const revColumn = revCol
   const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>()
   let serviceRevenue = 0
-  let customRate = null
-  let sh = undefined
+  let customRate = NaN
+  let sh: StaffHurdle
   if ((staffHurdle as TStaffHurdles)[staffID]) {
     sh = (staffHurdle as TStaffHurdles)[staffID]
   } else {
@@ -256,7 +259,7 @@ function getServiceRevenues(
       // Have a section header for a block of services
       servName = match[SERVICE_TYPE_INDEX]
       // check if we have special rates for this servType
-      customRate = null
+      customRate = NaN
       if (customPayRates) {
         customPayRates.forEach((customPayRate) => {
           for (const serviceWithCustomPayRate in customPayRate) {
@@ -271,7 +274,7 @@ function getServiceRevenues(
       }
       if (!customRate) {
         servName = GENERAL_SERV_REVENUE // catch-all servType for everything without a custom pay-rate
-        customRate = null
+        customRate = NaN
       }
       if (!servRevenueMap.get(servName)) {
         serviceRevenue = 0
@@ -643,13 +646,11 @@ async function main(): Promise<void> {
     errorLogger.error(`Configuration contains invalid or missing data directory: ${config.DATA_DIR}`)
   }
 
-  if (!isValidDirectory(path.join(dataDir,DEFAULT_OLD_DIR))) {
+  if (!isValidDirectory(path.join(dataDir, DEFAULT_OLD_DIR))) {
     warnLogger.warn(`Invalid or missing default old data directory: ${DEFAULT_OLD_DIR}`)
   }
 
-  debugLogger.debug(
-    `Moving (and compressing) files from ${dataDir} to ${path.join(dataDir, DEFAULT_OLD_DIR)}`
-  )
+  debugLogger.debug(`Moving (and compressing) files from ${dataDir} to ${path.join(dataDir, DEFAULT_OLD_DIR)}`)
   moveFilesToOldDir(dataDir, DEFAULT_OLD_DIR, true, 2) // probably not necessary for the destination folder to be configurable
 
   const payrollWorkbookPath = path.join(dataDir, config.PAYROLL_WB_FILENAME)
