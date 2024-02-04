@@ -12,7 +12,7 @@ name:'Kin'
 relationship:'Husband'
 ssn:null */
 
-interface ITalenoxNextOfKin {
+export interface ITalenoxNextOfKin {
     birthdate?: string // null
     citizenship?: string // null
     contact_number?: string // '999999999'
