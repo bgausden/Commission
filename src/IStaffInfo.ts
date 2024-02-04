@@ -1,4 +1,4 @@
-import { TStaffID } from "./types"
+import { TStaffID } from "./types.js"
 
 export interface StaffInfo {
     staffID?: TStaffID

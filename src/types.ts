@@ -1,7 +1,7 @@
-import { GeneralServiceComm } from "./IServiceComm"
-import { IStaffNames } from "./IStaffNames"
-import { StaffHurdle } from "./IStaffHurdle"
-import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
+import { GeneralServiceComm } from "./IServiceComm.js"
+import { IStaffNames } from "./IStaffNames.js"
+import { StaffHurdle } from "./IStaffHurdle.js"
+import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js"
 
 export type TStaffName = string
 export type TTips = number

@@ -22,7 +22,8 @@
             "sourceMaps": true,
             "env": {
                 "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
-                "DEBUG_COLORS": "true"
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
             },
             "console": "integratedTerminal",
         },
@@ -35,9 +36,16 @@
             ],
             "runtimeArgs": [
                 "-r",
-                "ts-node/register"
+                "ts-node/register",
+                "-r",
+                "dotenv/config"
             ],
             "cwd": "${workspaceRoot}",
+            "env": {
+                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
+            },
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]

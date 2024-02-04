@@ -2,12 +2,12 @@ node_modules/
 .DS_Store
 *.xls
 *.xlsx
-data/**
 .fuse_hidden*
 uploads/
-data/
 dist/
 commission.log
 contractors.log
 .env
-logs/*
+logs/
+payments/
+data/

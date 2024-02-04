@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { config } from "node-config-ts"
-import { ITalenoxPayment } from "./ITalenoxPayment"
+import { ITalenoxPayment } from "./ITalenoxPayment.js"
 import {
     TStaffID,
     TCommMap,
@@ -15,15 +15,15 @@ import {
 } from "./types.js"
 import { TALENOX_TIPS, TALENOX_COMMISSION_IRREGULAR, TALENOX_ADHOC_PAYMENT_ENDPOINT, TALENOX_API_TOKEN } from "./talenox_constants.js"
 import { isContractor, payrollStartDate } from "./utility_functions.js"
-import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment"
-import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems"
+import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment.js"
+import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems.js"
 import { TALENOX_WHOLE_MONTH, TALENOX_PAYROLL_PAYMENT_ENDPOINT, TALENOX_EMPLOYEE_ENDPOINT } from "./talenox_constants.js"
-import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment"
-import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult"
-import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult"
+import { ITalenoxPayroll, TalenoxPayrollPayment } from "./ITalenoxPayrollPayment.js"
+import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult.js"
+import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.js"
 import fetch from "node-fetch"
 import { Headers, RequestInit } from "node-fetch"
-import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo"
+import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js"
 import debug from "debug"
 
 const SERVICES_COMM_REMARK = "Services commission"

@@ -20,15 +20,18 @@ Extensions - Application:   28152.000000000004
 // TODO remove --experimental-json-modules in favour of approach in logging_functions. ts --> const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
 // TODO move payments xlsx files to new directory "payment sheets" so not in root
 // TODO create debug log (in addition to displaying debug in console)
+// TODO remove ts-ignore from logging_functions.ts
+// TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
+// TODO make filename for staffHurdle.json a constant
 
-import { config } from "node-config-ts"
+import { config } from 'node-config-ts'
 // import prettyjson from "prettyjson"
-import XLSX from "xlsx"
-import { StaffInfo } from "./IStaffInfo"
-import staffHurdle from "./staffHurdle.json" assert { type: "json" }
-import { ITalenoxPayment } from "./ITalenoxPayment"
-import { GeneralServiceComm } from "./IServiceComm"
-import { StaffCommConfig } from "./IStaffCommConfig"
+import XLSX from 'xlsx'
+import { StaffInfo } from './IStaffInfo.js'
+//import staffHurdle from './staffHurdle.json' assert { type: 'json' }
+import { ITalenoxPayment } from './ITalenoxPayment.js'
+import { GeneralServiceComm } from './IServiceComm.js'
+import { StaffCommConfig } from './IStaffCommConfig.js'
 import {
   TStaffID,
   TServiceCommMap,
@@ -41,16 +44,37 @@ import {
   TServRevenueMap,
   TServiceName,
   TTalenoxInfoStaffMap,
-} from "./types.js"
-import { StaffHurdle } from "./IStaffHurdle"
-import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPayments, firstDay } from "./talenox_functions.js"
-import { checkRate, stripToNumeric, isPayViaTalenox, eqSet, isContractor } from "./utility_functions.js"
+} from './types.js'
+import { StaffHurdle } from './IStaffHurdle.js'
+import {
+  createAdHocPayments,
+  getTalenoxEmployees,
+  createPayroll,
+  uploadAdHocPayments,
+  firstDay,
+} from './talenox_functions.js'
+import {
+  checkRate,
+  stripToNumeric,
+  isPayViaTalenox,
+  eqSet,
+  isContractor,
+  moveFilesToOldDir,
+  isValidDirectory,
+  loadJsonFromFile,
+} from './utility_functions.js'
 //import { initDebug, log, warn, error } from "./debug_functions.js"
-import { contractorLogger, commissionLogger, warnLogger, errorLogger, debugLogger, shutdownLogging } from "./logging_functions.js"
-import { fws32Left, fws12RightHKD, fws14RightHKD, fws14Right } from "./string_functions.js"
-
-// const FILE_PATH: string = "Payroll Report.xlsx";
-const FILE_PATH = config.PAYROLL_WB_NAME
+import {
+  contractorLogger,
+  commissionLogger,
+  warnLogger,
+  errorLogger,
+  debugLogger,
+  shutdownLogging,
+} from './logging_functions.js'
+import { fws32Left, fws14RightHKD, fws14Right } from './string_functions.js'
+import { DEFAULT_DATA_DIR, DEFAULT_OLD_DIR } from './constants.js'
+import path from 'path'
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
@@ -58,19 +82,19 @@ const SERVICE_TYPE_INDEX = 2
 
 const FIRST_SHEET = 0
 
-const STAFF_ID_HASH = "Staff ID #:"
-const TOTAL_FOR = "Total for "
-const TIPS_FOR = "Tips:"
-const COMM_FOR = "Sales Commission:"
-const REV_PER_SESS = "Rev. per Session"
+const STAFF_ID_HASH = 'Staff ID #:'
+const TOTAL_FOR = 'Total for '
+const TIPS_FOR = 'Tips:'
+const COMM_FOR = 'Sales Commission:'
+const REV_PER_SESS = 'Rev. per Session'
 
-const BASE_RATE = "baseRate"
-const HURDLE_1_LEVEL = "hurdle1Level"
-const HURDLE_2_LEVEL = "hurdle2Level"
-const HURDLE_3_LEVEL = "hurdle3Level"
+const BASE_RATE = 'baseRate'
+const HURDLE_1_LEVEL = 'hurdle1Level'
+const HURDLE_2_LEVEL = 'hurdle2Level'
+const HURDLE_3_LEVEL = 'hurdle3Level'
 // const POOLS_WITH = "poolsWith"
 
-const GENERAL_SERV_REVENUE = "General Services"
+const GENERAL_SERV_REVENUE = 'General Services'
 
 /* const REX_WONG_ID = "019" */
 
@@ -81,7 +105,7 @@ const commMap: TCommMap = new Map<TStaffID, TCommComponents>()
 // const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
 const serviceCommMap: TServiceCommMap = new Map<TStaffName, GeneralServiceComm>()
 const emptyServComm: GeneralServiceComm = {
-  staffName: "",
+  staffName: '',
   base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
   hurdle1: {
     hurdle1PayOut: 0,
@@ -105,11 +129,12 @@ const emptyServComm: GeneralServiceComm = {
   generalServiceRevenue: 0,
 }
 
-export const defaultStaffID = "000"
+export const defaultStaffID = '000'
+export const staffHurdle = loadJsonFromFile('dist/staffHurdle.json')
 
-function readExcelFile(fileName?: string): XLSX.WorkSheet {
+function readExcelFile(fileName: string): XLSX.WorkSheet {
   const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
-  const WB = XLSX.readFile(fileName ? fileName : FILE_PATH, READ_OPTIONS)
+  const WB = XLSX.readFile(fileName, READ_OPTIONS)
   const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]]
   return WS
 }
@@ -125,7 +150,7 @@ function revenueCol(wsArray: unknown[][]): number {
       }
     }
   }
-  throw new Error("Cannot find Revenue per session column")
+  throw new Error('Cannot find Revenue per session column')
 }
 
 function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | null {
@@ -142,23 +167,24 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
   // eslint:disable-next-line: no-shadowed-variable
 
   const testString = wsArray[idRow][staffNameIndex]
-  const regex = new RegExp("^.*,.*" + STAFF_ID_HASH)
+  const regex = new RegExp('^.*,.*' + STAFF_ID_HASH)
   if (regex.test(testString as string)) {
     /* Split the name and ID string into an array ["Surname, Firstname", ID] */
     const staffInfo: string[] | undefined =
       testString !== undefined ? (testString as string).split(STAFF_ID_HASH) : undefined
     if (staffInfo !== undefined) {
-      if (staffInfo[staffIDIndex].trim() === "") {
+      if (staffInfo[staffIDIndex].trim() === '') {
         // Missing Staff ID in MB?
         throw new Error(
-          `${staffInfo[staffNameIndex].split(",")[1]} ${staffInfo[staffNameIndex].split(",")[0]
+          `${staffInfo[staffNameIndex].split(',')[1]} ${
+            staffInfo[staffNameIndex].split(',')[0]
           } does not appear to have a Staff ID in MB`
         )
       }
       return {
         /* Everything OK, split the name in staffInfo[0] into Surname and First Name */
-        firstName: staffInfo[staffNameIndex].split(",")[firstNameIndex].trim(),
-        lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
+        firstName: staffInfo[staffNameIndex].split(',')[firstNameIndex].trim(),
+        lastName: staffInfo[staffNameIndex].split(',')[lastNameIndex].trim(),
         staffID: staffInfo[staffIDIndex].trim(),
       }
     } else {
@@ -199,8 +225,8 @@ function getServiceRevenues(
   const revColumn = revCol
   const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>()
   let serviceRevenue = 0
-  let customRate = null
-  let sh = undefined
+  let customRate = NaN
+  let sh: StaffHurdle
   if ((staffHurdle as TStaffHurdles)[staffID]) {
     sh = (staffHurdle as TStaffHurdles)[staffID]
   } else {
@@ -209,8 +235,10 @@ function getServiceRevenues(
   }
   // const sh = (staffHurdle as TStaffHurdles)[staffID] ? (staffHurdle as TStaffHurdles)[staffID] : (staffHurdle as TStaffHurdles)[defaultStaffID]
   if (!sh) {
-    errorLogger.error(`Error: Staff ID ${staffID} is not present and there is no default with ID 000 in staffHurdle.json`)
-    process.exit(1)
+    errorLogger.error(
+      `Error: Staff ID ${staffID} is not present and there is no default with ID 000 in staffHurdle.json`
+    )
+    throw new Error(`Error: Staff ID ${staffID} is not present and there is no default with ID 000 in staffHurdle.json`)
   }
   const customPayRates = sh ? sh.customPayRates : []
   // const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
@@ -220,7 +248,7 @@ function getServiceRevenues(
     /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
           i.e. <revenue category> Pay Rate: <service name> (<commission rate>)
     */
-    const v = wsArray[currentTotalRow - i][0] || ""
+    const v = wsArray[currentTotalRow - i][0] || ''
     const match = (v as string).match(SERVICE_ROW_REGEX) || null // regex is something like /(.*) Pay Rate: (.*) \((.*)%\)/i
     /*
         Found a row that looks similar to:
@@ -231,7 +259,7 @@ function getServiceRevenues(
       // Have a section header for a block of services
       servName = match[SERVICE_TYPE_INDEX]
       // check if we have special rates for this servType
-      customRate = null
+      customRate = NaN
       if (customPayRates) {
         customPayRates.forEach((customPayRate) => {
           for (const serviceWithCustomPayRate in customPayRate) {
@@ -246,7 +274,7 @@ function getServiceRevenues(
       }
       if (!customRate) {
         servName = GENERAL_SERV_REVENUE // catch-all servType for everything without a custom pay-rate
-        customRate = null
+        customRate = NaN
       }
       if (!servRevenueMap.get(servName)) {
         serviceRevenue = 0
@@ -263,7 +291,7 @@ function getServiceRevenues(
                     // all good
                 }
              } */
-      if (typeof revenueCellContents === "number" && revenueCellContents > 0) {
+      if (typeof revenueCellContents === 'number' && revenueCellContents > 0) {
         serviceRevenue = revenueCellContents
         // accumulate the serv revenues for this servType in the map
         const serviceRevenueEntry = servRevenueMap.get(servName)
@@ -341,7 +369,7 @@ function calcGeneralServiceCommission(
       // if (staffCommConfig.hasOwnProperty(BASE_RATE)) {
       baseRate = stripToNumeric(staffCommConfig.baseRate)
       if (!checkRate(baseRate)) {
-        throw new Error("Invalid baseRate")
+        throw new Error('Invalid baseRate')
       }
     }
 
@@ -350,7 +378,7 @@ function calcGeneralServiceCommission(
       hurdle1Rate = stripToNumeric(staffCommConfig.hurdle1Rate)
       if (!checkRate(hurdle1Rate)) {
         errorLogger.error(`Fatal: Error with ${staffID}'s commission config in staffHurdle.json`)
-        throw new Error("Invalid hurdle1Rate")
+        throw new Error('Invalid hurdle1Rate')
       }
     }
 
@@ -359,7 +387,7 @@ function calcGeneralServiceCommission(
       hurdle2Rate = stripToNumeric(staffCommConfig.hurdle2Rate)
       if (!checkRate(hurdle2Rate)) {
         errorLogger.error(`Fatal: Error with ID ${staffID}'s commission config in staffHurdle.json`)
-        throw new Error("Invalid hurdle2Rate")
+        throw new Error('Invalid hurdle2Rate')
       }
     }
 
@@ -368,7 +396,7 @@ function calcGeneralServiceCommission(
       hurdle3Rate = stripToNumeric(staffCommConfig.hurdle3Rate)
       if (!checkRate(hurdle3Rate)) {
         errorLogger.error(`Fatal: Error with ${staffID}'s commission config in staffHurdle.json`)
-        throw new Error("Invalid hurdle3Rate")
+        throw new Error('Invalid hurdle3Rate')
       }
     }
     // TODO get rid of this nesting logic
@@ -442,7 +470,7 @@ function calcGeneralServiceCommission(
 
     const staffName = staffMap.get(staffID)
 
-    tempServComm.staffName = `${staffName?.last_name ?? "<Last Name>"} ${staffName?.first_name ?? "<First Name>"}`
+    tempServComm.staffName = `${staffName?.last_name ?? '<Last Name>'} ${staffName?.first_name ?? '<First Name>'}`
     tempServComm.generalServiceRevenue = serviceRev
 
     tempServComm.base.baseCommRevenue = baseRevenue
@@ -489,7 +517,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
     XLSX.utils.json_to_sheet(payments, { skipHeader: true }),
     config.PAYMENTS_WS_NAME
   )
-  XLSX.writeFile(paymentsWB, config.PAYMENTS_WB_NAME)
+  XLSX.writeFile(paymentsWB, `${config.PAYMENTS_DIR}/${config.PAYMENTS_WB_NAME}`)
 }
 
 function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TTalenoxInfoStaffMap): void {
@@ -549,7 +577,7 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         const commMapElement = commMap.get(poolMember)
         if (commMapElement) {
           const commMapValue = commMapElement[aggregatePropName]
-          if (typeof aggregatePropValue === "number" && typeof commMapValue === "number") {
+          if (typeof aggregatePropValue === 'number' && typeof commMapValue === 'number') {
             aggregateComm[aggregatePropName] = aggregatePropValue + commMapValue
           }
         } else {
@@ -559,28 +587,34 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
     )
     // divide the aggregate values across the pool members by updating their commComponents entries
     // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
-    commissionLogger.info("=======================================")
-    commissionLogger.info("Pooling Calculations")
-    commissionLogger.info("=======================================")
+    commissionLogger.info('=======================================')
+    commissionLogger.info('Pooling Calculations')
+    commissionLogger.info('=======================================')
 
     poolMembers.forEach((poolMember) => {
-      const staffName = `${talenoxStaff.get(poolMember)?.last_name ?? "<Last Name>"}, ${talenoxStaff.get(poolMember)?.first_name ?? "<First Name>"}`
+      const staffName = `${talenoxStaff.get(poolMember)?.last_name ?? '<Last Name>'}, ${
+        talenoxStaff.get(poolMember)?.first_name ?? '<First Name>'
+      }`
       commissionLogger.info(`Pooling for ${poolMember} ${staffName}`)
-      let memberList = ""
-      let comma = ""
+      let memberList = ''
+      let comma = ''
       poolMembers.forEach((member) => {
-        memberList += `${comma}${member} ${talenoxStaff.get(member)?.last_name ?? "<Last Name>"} ${talenoxStaff.get(member)?.first_name ?? "<First Name>"
-          }`
-        comma = ", "
+        memberList += `${comma}${member} ${talenoxStaff.get(member)?.last_name ?? '<Last Name>'} ${
+          talenoxStaff.get(member)?.first_name ?? '<First Name>'
+        }`
+        comma = ', '
       })
       commissionLogger.info(`Pool contains ${poolMembers.length} members: ${memberList}`)
       Object.entries(aggregateComm).forEach((aggregate) => {
         const [aggregatePropName, aggregatePropValue] = aggregate
         const comm = commMap.get(poolMember)
         if (comm) {
-          if (typeof aggregatePropValue === "number") {
+          if (typeof aggregatePropValue === 'number') {
             comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100
-            const aggregateCommString = (typeof comm[aggregatePropName] === "number") ? comm[aggregatePropName].toString() : JSON.stringify(comm[aggregatePropName])
+            const aggregateCommString =
+              typeof comm[aggregatePropName] === 'number'
+                ? comm[aggregatePropName].toString()
+                : JSON.stringify(comm[aggregatePropName])
             commissionLogger.info(
               `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`
             )
@@ -589,11 +623,11 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
           throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`)
         }
       })
-      commissionLogger.info("--------------")
+      commissionLogger.info('--------------')
     })
   }
   commissionLogger.info('')
-  commissionLogger.info("=======================================")
+  commissionLogger.info('=======================================')
   commissionLogger.info('')
   return
 }
@@ -604,10 +638,27 @@ async function main(): Promise<void> {
     commissionLogger.info(`Talenox update is disabled in config.`)
   }
   commissionLogger.info(`Payroll Month is ${config.PAYROLL_MONTH}`)
+
+  let dataDir = DEFAULT_DATA_DIR.toString()
+  if (isValidDirectory(config.DATA_DIR)) {
+    dataDir = config.DATA_DIR
+  } else {
+    errorLogger.error(`Configuration contains invalid or missing data directory: ${config.DATA_DIR}`)
+  }
+
+  if (!isValidDirectory(path.join(dataDir, DEFAULT_OLD_DIR))) {
+    warnLogger.warn(`Invalid or missing default old data directory: ${DEFAULT_OLD_DIR}`)
+  }
+
+  debugLogger.debug(`Moving (and compressing) files from ${dataDir} to ${path.join(dataDir, DEFAULT_OLD_DIR)}`)
+  moveFilesToOldDir(dataDir, DEFAULT_OLD_DIR, true, 2) // probably not necessary for the destination folder to be configurable
+
+  const payrollWorkbookPath = path.join(dataDir, config.PAYROLL_WB_FILENAME)
+
   debugLogger.debug(`Requesting employees from Talenox`)
   const talenoxStaff = await getTalenoxEmployees()
   debugLogger.debug(`Requesting employees complete`)
-  const WS = readExcelFile(config.PAYROLL_WB_NAME)
+  const WS = readExcelFile(payrollWorkbookPath)
   // Using option {header:1} returns an array of arrays
   // Since specifying header results in blank rows in the worksheet being returned, we could force blank rows off
   // wsaa is our worksheet presented as an array of arrays (row major)
@@ -622,7 +673,7 @@ async function main(): Promise<void> {
   let currentStaffIDRow = -1
   let currentTotalForRow = 0
   let staffInfo: StaffInfo | null = null
-  let servicesRevenues: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>
+  let servicesRevenues: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>()
   // start building commission components working through the rows of the spreadsheet (array of arrays)
   // ignore the first row which contains the date range for the report
   for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
@@ -632,10 +683,7 @@ async function main(): Promise<void> {
       // We null out staffID when we've finished processing the previous staffmember's commission.
       // If staffID has a value then were still processing commission for one of the team
       if (staffID === undefined) {
-
         staffInfo = getStaffIDAndName(wsaa, rowIndex) // may return null if we don't find the magic string in the current row
-
-
 
         if (staffInfo) {
           // found staffID so keep a note of which row it's on
@@ -645,7 +693,7 @@ async function main(): Promise<void> {
             const staffMapInfo = talenoxStaff.get(staffID)
             if (staffID && staffMapInfo) {
               // found staffmember in Talenox
-              staffName = `${staffMapInfo.last_name ?? "<Last Name>"} ${staffMapInfo.first_name ?? "<First Name>"}`
+              staffName = `${staffMapInfo.last_name ?? '<Last Name>'} ${staffMapInfo.first_name ?? '<First Name>'}`
               /*               if (!isPayViaTalenox(staffID)) {
                               warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox but is in Talenox.`)
                             } */
@@ -654,19 +702,22 @@ async function main(): Promise<void> {
                 Even if the staffmember doesn't appear in Talenox, we will need
                 a valid staffName. Use the info from the MB Payroll report.
              */
-              staffName = `${staffInfo.lastName ?? "<Last Name>"} ${staffInfo.firstName ?? "<First Name>"}`
+              staffName = `${staffInfo.lastName ?? '<Last Name>'} ${staffInfo.firstName ?? '<First Name>'}`
               if (isPayViaTalenox(staffID)) {
-                const text = `${staffID ? staffID : "null"}${staffInfo.firstName ? " " + staffInfo.firstName : ""}${staffInfo.lastName ? " " + staffInfo.lastName : ""
-                  } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                const text = `${staffID ? staffID : 'null'}${staffInfo.firstName ? ' ' + staffInfo.firstName : ''}${
+                  staffInfo.lastName ? ' ' + staffInfo.lastName : ''
+                } in MB Payroll Report line ${rowIndex} not in Talenox.`
                 if (config.missingStaffAreFatal) {
-                  throw new Error("Fatal: " + text)
+                  throw new Error('Fatal: ' + text)
                 } else {
                   //if (!isContractor(staffID)) {
-                  warnLogger.warn("Warning: " + text)
+                  warnLogger.warn('Warning: ' + text)
                   //}
                 }
               } else {
-                if (!isContractor(staffID)) { warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`) }
+                if (!isContractor(staffID)) {
+                  warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`)
+                }
               }
             }
           }
@@ -678,7 +729,7 @@ async function main(): Promise<void> {
           // Likely a new member of staff in Mindbody has not been assigned a staffID
           // When there's no staffID assigned, the Total row will likely contain the offending person's name.
           const possibleStaffName = (element as string).slice(TOTAL_FOR.length)
-          throw new Error("Reached Totals row with no identified StaffID. Staff name is possibly " + possibleStaffName)
+          throw new Error('Reached Totals row with no identified StaffID. Staff name is possibly ' + possibleStaffName)
         }
         /* Keep track of the last totals row (for the previous employee) because we'll need to search
                     back to this row to locate all of the revenue numbers for the current staff member.
@@ -715,9 +766,11 @@ async function main(): Promise<void> {
                 */
         //contractorLogger.info('')
         if (!isPayViaTalenox(staffID) && !isContractor(staffID)) {
-          commissionLogger.warn(`Note: ${staffID} ${staffName ? staffName : "<Staff Name>"} is configured to NOT pay via Talenox.`)
+          commissionLogger.warn(
+            `Note: ${staffID} ${staffName ? staffName : '<Staff Name>'} is configured to NOT pay via Talenox.`
+          )
         }
-        let text = `Payroll details for ${staffID} ${staffName ? staffName : "<Staff Name>"}`
+        let text = `Payroll details for ${staffID} ${staffName ? staffName : '<Staff Name>'}`
         if (isContractor(staffID)) {
           text += ` [CONTRACTOR]`
           contractorLogger.info('')
@@ -740,12 +793,12 @@ async function main(): Promise<void> {
               if (wsaa[rowIndex - j][maxRowIndex] !== undefined) {
                 value = Number(wsaa[rowIndex - j][maxRowIndex])
                 if (payComponent === TIPS_FOR) {
-                  payComponent = "Tips:"
+                  payComponent = 'Tips:'
                   commComponents.tips = value
                   // log(`${payComponent} ${value}`)
                 }
                 if (payComponent === COMM_FOR) {
-                  payComponent = "Product Commission:"
+                  payComponent = 'Product Commission:'
                   commComponents.productCommission = value
                   // log(`${payComponent} ${value}`)
                 }
@@ -755,7 +808,7 @@ async function main(): Promise<void> {
               if (payComponent.startsWith(TOTAL_FOR)) {
                 // Reached the end of this staff members block in the report. Go back and add all the revenue amounts
 
-                payComponent = "Services Revenue:"
+                payComponent = 'Services Revenue:'
 
                 // Old way - services revenue is a single number
                 if (staffID) {
@@ -765,13 +818,7 @@ async function main(): Promise<void> {
                                     ) */
 
                   // New way - some revenues from "general services", some revenues from custom pay rates
-                  servicesRevenues = getServiceRevenues(
-                    wsaa,
-                    currentTotalForRow,
-                    currentStaffIDRow,
-                    revCol,
-                    staffID
-                  )
+                  servicesRevenues = getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                   // const generalServRevenue= servicesRevenues.get(GENERAL_SERV_REVENUE)
                   // value = generalServRevenue ? generalServRevenue.revenue : 0
                   let totalServiceRevenue = 0
@@ -787,7 +834,7 @@ async function main(): Promise<void> {
 
                   commComponents.totalServiceRevenue = totalServiceRevenue
                   // set services comm to  total revenue for now. Will fill-in later
-                  payComponent = "General Services Commission"
+                  payComponent = 'General Services Commission'
                   // const serviceRevenue = value
 
                   const generalServiceCommission = calcGeneralServiceCommission(
@@ -808,8 +855,7 @@ async function main(): Promise<void> {
                   if (servicesRevenues) {
                     servicesRevenues.forEach((customRateEntry, serviceName) => {
                       if (serviceName !== GENERAL_SERV_REVENUE) {
-                        const customServiceRevenue =
-                          customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
+                        const customServiceRevenue = customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
                         commComponents.customRateCommissions[serviceName] = customServiceRevenue
                         totalCustomServiceCommission += customServiceRevenue
                       }
@@ -826,34 +872,45 @@ async function main(): Promise<void> {
 
             if (j === 0) {
               if (!staffID) {
-                throw new Error(`Fatal: Missing staffID for staff: ${staffName ? staffName : "<Staff Name>"}`)
+                throw new Error(`Fatal: Missing staffID for staff: ${staffName ? staffName : '<Staff Name>'}`)
               } else {
                 commMap.set(staffID, commComponents)
                 //log(prettyjson.render(commComponents))
                 const logger = isContractor(staffID) ? contractorLogger : commissionLogger
                 //if (!isContractor(staffID)) {
-                  logger.info(fws32Left("General Services Revenue:"), fws14RightHKD(servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0))
-                  servicesRevenues.forEach((customRateEntry, serviceName) => {
-                    if (serviceName !== GENERAL_SERV_REVENUE) {
-                      const serviceRevenue = customRateEntry.serviceRevenue
-                      logger.info(fws32Left(`${serviceName} Revenue:`), fws14RightHKD(serviceRevenue))
-                    }
-                  })
-                  logger.info('')
-                  logger.info(fws32Left("General Service Commission:"), fws14RightHKD(commComponents.generalServiceCommission))
-                  logger.info(fws32Left("Custom Rate Service Commission:"), fws14RightHKD(commComponents.customRateCommission))
-                  logger.info(fws32Left("Product Commission:"), fws14RightHKD(commComponents.productCommission))
-                  logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips))
-                  logger.info(fws32Left(''), fws14Right('------------'))
-                  logger.info(
-                    fws32Left(`Total Payable`),
-                    fws14RightHKD(commComponents.customRateCommission +
+                logger.info(
+                  fws32Left('General Services Revenue:'),
+                  fws14RightHKD(servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0)
+                )
+                servicesRevenues.forEach((customRateEntry, serviceName) => {
+                  if (serviceName !== GENERAL_SERV_REVENUE) {
+                    const serviceRevenue = customRateEntry.serviceRevenue
+                    logger.info(fws32Left(`${serviceName} Revenue:`), fws14RightHKD(serviceRevenue))
+                  }
+                })
+                logger.info('')
+                logger.info(
+                  fws32Left('General Service Commission:'),
+                  fws14RightHKD(commComponents.generalServiceCommission)
+                )
+                logger.info(
+                  fws32Left('Custom Rate Service Commission:'),
+                  fws14RightHKD(commComponents.customRateCommission)
+                )
+                logger.info(fws32Left('Product Commission:'), fws14RightHKD(commComponents.productCommission))
+                logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips))
+                logger.info(fws32Left(''), fws14Right('------------'))
+                logger.info(
+                  fws32Left(`Total Payable`),
+                  fws14RightHKD(
+                    commComponents.customRateCommission +
                       commComponents.generalServiceCommission +
                       commComponents.productCommission +
-                      commComponents.tips)
+                      commComponents.tips
                   )
-                  logger.info('')
-                //} 
+                )
+                logger.info('')
+                //}
                 /* else {
                   contractorLogger.info(fws32Left("General Service Commission:"), fws12RightHKD(commComponents.generalServiceCommission))
                   contractorLogger.info(fws32Left("Custom Rate Service Commission:"), fws12RightHKD(commComponents.customRateCommission))
@@ -895,6 +952,7 @@ form the payroll for the month
 */
 
   const payments = createAdHocPayments(commMap, talenoxStaff)
+  moveFilesToOldDir(config.PAYMENTS_DIR, DEFAULT_OLD_DIR, true, 2)
   writePaymentsWorkBook(payments)
 
   /* 
@@ -909,9 +967,13 @@ form the payroll for the month
       debugLogger.debug(`OK: ${createPayrollResult[1].message}`)
     } else {
       if (createPayrollResult[0]) {
-        errorLogger.error(`Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`)
+        errorLogger.error(
+          `Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`
+        )
       } else
-        errorLogger.error(`Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`)
+        errorLogger.error(
+          `Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`
+        )
     }
     debugLogger.debug(`Pushing ad-hoc payments into new payroll`)
     const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments)
@@ -921,7 +983,7 @@ form the payroll for the month
     } else {
       if (uploadAdHocResult[0]) {
         errorLogger.error(`Failed: ${uploadAdHocResult[0].message}`)
-      } else errorLogger.error("Failed: Unknown reason")
+      } else errorLogger.error('Failed: Unknown reason')
     }
   }
 }
@@ -929,7 +991,7 @@ form the payroll for the month
 //initDebug()
 main()
   .then(() => {
-    debugLogger.debug("Done!")
+    debugLogger.debug('Done!')
     shutdownLogging()
   })
   .catch((error) => {
