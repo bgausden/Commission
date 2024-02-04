@@ -1,6 +1,6 @@
-import staffHurdle from './staffHurdle.json' assert { type: 'json' }
+//import staffHurdle from './staffHurdle.json' with { type: 'json' }
 import { TStaffID, TStaffHurdles } from './types.js'
-import { defaultStaffID } from './index.js'
+import { defaultStaffID, staffHurdle } from './index.js'
 import { config, Config } from 'node-config-ts'
 import { Configuration } from 'log4js'
 import * as fs from 'fs'
@@ -134,7 +134,7 @@ export function moveFilesToOldDir(sourceDir: string, destDir = DEFAULT_OLD_DIR, 
   })
 }
 
-function getMostRecentlyModifiedFiles(dir:string, count=3) {
+export function getMostRecentlyModifiedFiles(dir:string, count=3) {
   const files = fs.readdirSync(dir);
   const stats = files.map(file => ({
     file,
@@ -148,3 +148,9 @@ function getMostRecentlyModifiedFiles(dir:string, count=3) {
 
   return sortedFiles.map(({ file }) => file);
 }
+
+export function loadJsonFromFile(filepath: string): any {
+  const fileContent = fs.readFileSync(filepath, 'utf-8');
+  return JSON.parse(fileContent);
+}
+

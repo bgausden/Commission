@@ -8,9 +8,9 @@ dotenv.config() */
 
 import fs from 'fs'
 
-import { DEFAULT_PAYMENTS_DIR, DEFAULT_DATA_DIR, DEFAULT_LOGS_DIR } from './constants'
+import { DEFAULT_PAYMENTS_DIR, DEFAULT_DATA_DIR, DEFAULT_LOGS_DIR } from './constants.js'
 
-import { errorLogger, warnLogger } from './logging_functions'
+import { errorLogger, warnLogger } from './logging_functions.js'
 
 if (process.env.DEFAULT_PAYMENTS_DIR === undefined) {
   process.env.DEFAULT_PAYMENTS_DIR = DEFAULT_PAYMENTS_DIR
