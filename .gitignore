@@ -8,6 +8,11 @@ dist/
 commission.log
 contractors.log
 .env
-logs/
-payments/
-data/
+logs/*
+!logs/old/
+logs/old/*
+payments/*
+!payments/old/
+data/*
+!data/old/
+config/env/production.json
