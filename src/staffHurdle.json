@@ -248,6 +248,21 @@
         "poolsWith": [],
         "customPayRates": []
     },
+    "034": {
+        "staffName": "Henny",
+        "mbCommRate": 0.5,
+        "baseRate": 0.5,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
     "035": {
         "staffName": "ElizabethL",
         "mbCommRate": 1.0,
