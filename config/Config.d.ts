@@ -1,6 +1,4 @@
-/* tslint:disable */
-/* eslint-disable */
-declare module "node-config-ts" {
+declare module 'node-config-ts' {
   interface IConfig {
     PAYROLL_WB_FILENAME: string
     PAYROLL_MONTH: string

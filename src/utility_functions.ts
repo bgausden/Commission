@@ -8,6 +8,7 @@ import { debugLogger, warnLogger } from './logging_functions.js'
 import { DEFAULT_OLD_DIR } from './constants.js'
 import * as zlib from 'zlib'
 import path from 'path'
+import { TalenoxPayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === 'number') {
@@ -77,7 +78,18 @@ export function payrollStartDate(config: Config): Date {
 }
 
 export function isLog4JsConfig(config: unknown): config is Configuration {
-  return (<Configuration>config).appenders !== undefined && (<Configuration>config).categories !== undefined
+  return (config as Configuration).appenders !== undefined && (config as Configuration).categories !== undefined
+}
+
+export function isTalenoxPayrollPaymentResult(result: unknown): result is TalenoxPayrollPaymentResult {
+  return (
+    (result as TalenoxPayrollPaymentResult).payment_id !== undefined &&
+    (result as TalenoxPayrollPaymentResult).month !== undefined &&
+    (result as TalenoxPayrollPaymentResult).year !== undefined &&
+    (result as TalenoxPayrollPaymentResult).period !== undefined &&
+    (result as TalenoxPayrollPaymentResult).pay_group !== undefined &&
+    (result as TalenoxPayrollPaymentResult).message !== undefined
+  )
 }
 
 export function isValidDirectory(dir: string): boolean {
@@ -87,13 +99,18 @@ export function isValidDirectory(dir: string): boolean {
 /**
  * Moves files from a source directory to a destination directory.
  * Optionally compresses the files and retains a specified number of most recently modified files.
- * 
+ *
  * @param sourceDir - The source directory from which to move the files.
  * @param destDir - The destination directory to move the files to. Defaults to DEFAULT_OLD_DIR. Is relative to sourceDir.
  * @param compressFiles - Specifies whether to compress the files before moving them. Defaults to false.
  * @param retainCount - The number of most recently modified files to retain. Defaults to 0.
  */
-export function moveFilesToOldDir(sourceDir: string, destDir = DEFAULT_OLD_DIR, compressFiles = false, retainCount = 0): void {
+export function moveFilesToOldDir(
+  sourceDir: string,
+  destDir = DEFAULT_OLD_DIR,
+  compressFiles = false,
+  retainCount = 0
+): void {
   if (!isValidDirectory(sourceDir)) {
     warnLogger.warn(`Unable to move files. Invalid source directory: ${sourceDir}`)
     return
@@ -110,7 +127,7 @@ export function moveFilesToOldDir(sourceDir: string, destDir = DEFAULT_OLD_DIR, 
 
   let filesToRetain: string[] = []
   if (retainCount > 0) {
-     filesToRetain = getMostRecentlyModifiedFiles(sourceDir, retainCount)
+    filesToRetain = getMostRecentlyModifiedFiles(sourceDir, retainCount)
   }
 
   logFiles.forEach((file) => {
@@ -134,23 +151,22 @@ export function moveFilesToOldDir(sourceDir: string, destDir = DEFAULT_OLD_DIR, 
   })
 }
 
-export function getMostRecentlyModifiedFiles(dir:string, count=3) {
-  const files = fs.readdirSync(dir);
-  const stats = files.map(file => ({
+export function getMostRecentlyModifiedFiles(dir: string, count = 3) {
+  const files = fs.readdirSync(dir)
+  const stats = files.map((file) => ({
     file,
-    stats: fs.statSync(path.join(dir, file))
-  }));
+    stats: fs.statSync(path.join(dir, file)),
+  }))
 
   const sortedFiles = stats
     .filter(({ stats }) => stats.isFile())
     .sort((a, b) => b.stats.mtime.valueOf() - a.stats.mtime.valueOf())
-    .slice(0, count);
+    .slice(0, count)
 
-  return sortedFiles.map(({ file }) => file);
+  return sortedFiles.map(({ file }) => file)
 }
 
-export function loadJsonFromFile(filepath: string): any {
-  const fileContent = fs.readFileSync(filepath, 'utf-8');
-  return JSON.parse(fileContent);
+export function loadJsonFromFile(filepath: string): unknown {
+  const fileContent = fs.readFileSync(filepath, 'utf-8')
+  return JSON.parse(fileContent)
 }
-

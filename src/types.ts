@@ -18,9 +18,10 @@ type TCommSimpleComponentTips = "tips"
 type TCommSimpleComponentProductCommission = "productCommission"
 type TCommSimpleComponentGeneralServiceCommission = "generalServiceCommisison"
 export type TCommSimpleComponentsKeys = TCommSimpleComponentTips | TCommSimpleComponentProductCommission | TCommSimpleComponentGeneralServiceCommission
+// eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
 export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission
 export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>
-export type TCustomRateEntry = {
+export interface TCustomRateEntry {
    serviceRevenue: number
    customRate: number | null
 }
@@ -39,11 +40,12 @@ export type TCommComponentProductCommission = typeof COMM_COMPONENT_PRODUCT_COMM
 export type TCommComponentsGeneralServiceCommission = typeof COMM_COMPONENT_GENERAL_SERVICE_COMMISSION
 export type TCommComponentCustomRateCommission = typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION
 export type TCommComponentTotalServiceCommission = typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION
-export type TCommComponentCustomRateCommissions = {
+export type TCommComponentCustomRateCommissions = Record<string,TServiceCommission> 
+/* was: {
    [key: string]: TServiceCommission
-}
+} */
 
-export type TCommComponents = {
+export interface TCommComponents {
    [key: string]: number | TCommComponentCustomRateCommissions
    totalServiceRevenue: TServiceRevenue
    tips: TTips
@@ -60,9 +62,10 @@ export type TStaffID = string
 export type TStaffMap = Map<TStaffID, IStaffNames>
 export type TTalenoxInfoStaffMap = Map<TStaffID,Partial<ITalenoxStaffInfo>>
 
-export type TStaffHurdles = {
+export type TStaffHurdles = Record<string, StaffHurdle>
+/* // was:{
    [key: string]: StaffHurdle
-}
+} */
 
 export type TServiceName = string
 export type TServiceCustomRate = number | null

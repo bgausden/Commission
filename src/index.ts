@@ -1,8 +1,3 @@
-/* eslint-disable no-var */
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-/* eslint-disable @typescript-eslint/prefer-regexp-exec */
-// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 /* TODO add support for hourly wage staff:
 Gausden, ElizabethStaff ID #: 048 									
@@ -51,7 +46,7 @@ import {
   getTalenoxEmployees,
   createPayroll,
   uploadAdHocPayments,
-  firstDay,
+  payrollFirstDay,
 } from './talenox_functions.js'
 import {
   checkRate,
@@ -75,6 +70,10 @@ import {
 import { fws32Left, fws14RightHKD, fws14Right } from './string_functions.js'
 import { DEFAULT_DATA_DIR, DEFAULT_OLD_DIR } from './constants.js'
 import path from 'path'
+import { ITalenoxStaffInfo } from './ITalenoxStaffInfo.js'
+import * as O from '@effect/data/Option'
+import * as E from '@effect/data/Either'
+import { TalenoxPayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
@@ -130,7 +129,7 @@ const emptyServComm: GeneralServiceComm = {
 }
 
 export const defaultStaffID = '000'
-export const staffHurdle = loadJsonFromFile('dist/staffHurdle.json')
+export const staffHurdle = loadJsonFromFile('dist/staffHurdle.json') as Record<string, StaffHurdle>
 
 function readExcelFile(fileName: string): XLSX.WorkSheet {
   const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
@@ -208,9 +207,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
 function getServiceRevenues(
   wsArray: unknown[][],
   currentTotalRow: number,
-  // tslint:disable-next-line: no-shadowed-variable
   currentStaffIDRow: number,
-  // tslint:disable-next-line: no-shadowed-variable
   revCol: number,
   staffID: TStaffID
 ): TServRevenueMap {
@@ -312,7 +309,7 @@ function getServiceRevenues(
 
 function calcGeneralServiceCommission(
   staffID: TStaffID,
-  staffMap: TTalenoxInfoStaffMap,
+  staffMap: O.Option<TTalenoxInfoStaffMap>,
   serviceRev: TServiceRevenue
 ): number {
   /* iterate through commissionComponents
@@ -468,9 +465,9 @@ function calcGeneralServiceCommission(
     // commComponents is an array containing [tips, productCommission, serviceCommission]
     // commComponents[serviceCommissionIndex] = servicesComm;
 
-    const staffName = staffMap.get(staffID)
+    const staffInfo = O.isSome(staffMap) ? staffMap.value.get(staffID) : undefined
 
-    tempServComm.staffName = `${staffName?.last_name ?? '<Last Name>'} ${staffName?.first_name ?? '<First Name>'}`
+    tempServComm.staffName = `${staffInfo?.last_name ?? '<Last Name>'} ${staffInfo?.first_name ?? '<First Name>'}`
     tempServComm.generalServiceRevenue = serviceRev
 
     tempServComm.base.baseCommRevenue = baseRevenue
@@ -520,7 +517,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
   XLSX.writeFile(paymentsWB, `${config.PAYMENTS_DIR}/${config.PAYMENTS_WB_NAME}`)
 }
 
-function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TTalenoxInfoStaffMap): void {
+function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: O.Option<TTalenoxInfoStaffMap>): void {
   let poolCounter = 0
   const pools = new Map<number, TStaffID[]>()
   Object.entries(staffHurdle).forEach((element) => {
@@ -592,16 +589,20 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
     commissionLogger.info('=======================================')
 
     poolMembers.forEach((poolMember) => {
-      const staffName = `${talenoxStaff.get(poolMember)?.last_name ?? '<Last Name>'}, ${
-        talenoxStaff.get(poolMember)?.first_name ?? '<First Name>'
-      }`
+      const staffName = O.isSome(talenoxStaff)
+        ? `${talenoxStaff.value.get(poolMember)?.last_name ?? '<Last Name>'}, ${
+            talenoxStaff.value.get(poolMember)?.first_name ?? '<First Name>'
+          }`
+        : '<Last Name>, <First Name>'
       commissionLogger.info(`Pooling for ${poolMember} ${staffName}`)
       let memberList = ''
       let comma = ''
       poolMembers.forEach((member) => {
-        memberList += `${comma}${member} ${talenoxStaff.get(member)?.last_name ?? '<Last Name>'} ${
-          talenoxStaff.get(member)?.first_name ?? '<First Name>'
-        }`
+        memberList += O.isSome(talenoxStaff)
+          ? `${comma}${member} ${talenoxStaff.value.get(member)?.last_name ?? '<Last Name>'} ${
+              talenoxStaff.value.get(member)?.first_name ?? '<First Name>'
+            }`
+          : '<Last Name>, <First Name>'
         comma = ', '
       })
       commissionLogger.info(`Pool contains ${poolMembers.length} members: ${memberList}`)
@@ -609,17 +610,21 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         const [aggregatePropName, aggregatePropValue] = aggregate
         const comm = commMap.get(poolMember)
         if (comm) {
+          let aggregateCommString: string
           if (typeof aggregatePropValue === 'number') {
             comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100
-            const aggregateCommString =
-              typeof comm[aggregatePropName] === 'number'
-                ? comm[aggregatePropName].toString()
-                : JSON.stringify(comm[aggregatePropName])
+            const commValue = comm[aggregatePropName]
+            if (typeof commValue === 'number') {
+              aggregateCommString = commValue.toString()
+            } else {
+              aggregateCommString = JSON.stringify(commValue)
+            }
             commissionLogger.info(
               `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`
             )
           }
         } else {
+          errorLogger.error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`)
           throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`)
         }
       })
@@ -633,7 +638,7 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
 }
 
 async function main(): Promise<void> {
-  commissionLogger.info(`Commission run begins ${firstDay.toDateString()}`)
+  commissionLogger.info(`Commission run begins ${payrollFirstDay.toDateString()}`)
   if (config.updateTalenox === false) {
     commissionLogger.info(`Talenox update is disabled in config.`)
   }
@@ -656,7 +661,13 @@ async function main(): Promise<void> {
   const payrollWorkbookPath = path.join(dataDir, config.PAYROLL_WB_FILENAME)
 
   debugLogger.debug(`Requesting employees from Talenox`)
-  const talenoxStaff = await getTalenoxEmployees()
+  let talenoxStaff: O.Option<Map<string, Partial<ITalenoxStaffInfo>>> = O.none
+  try {
+    talenoxStaff = O.some(await getTalenoxEmployees())
+  } catch (error) {
+    errorLogger.error(`${(error as Error).message} - Exiting`)
+    return
+  }
   debugLogger.debug(`Requesting employees complete`)
   const WS = readExcelFile(payrollWorkbookPath)
   // Using option {header:1} returns an array of arrays
@@ -690,7 +701,7 @@ async function main(): Promise<void> {
           currentStaffIDRow = rowIndex
           staffID = staffInfo.staffID
           if (staffID) {
-            const staffMapInfo = talenoxStaff.get(staffID)
+            const staffMapInfo = O.isSome(talenoxStaff) ? talenoxStaff.value.get(staffID) : undefined
             if (staffID && staffMapInfo) {
               // found staffmember in Talenox
               staffName = `${staffMapInfo.last_name ?? '<Last Name>'} ${staffMapInfo.first_name ?? '<First Name>'}`
@@ -938,18 +949,17 @@ async function main(): Promise<void> {
   doPooling(commMap, staffHurdle, talenoxStaff)
 
   /*
- Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
- and populate the commMap service commission map
-*/
+  Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
+  and populate the commMap service commission map
+  */
 
   // Call calcServiceCommission(staffID!, commMap);
   // TODO: loop through commMap and update the service commission for everyone
 
-  /*
-Create a spreadsheet containing one line for each payment to be made for each of the staff.
-This spreadsheet will be copied/pasted into Talenox and together with their salary payments will
-form the payroll for the month 
-*/
+  /* Create a spreadsheet containing one line for each payment to be made for each of the staff.
+  This spreadsheet will be copied/pasted into Talenox and together with their salary payments will
+  form the payroll for the month 
+  */
 
   const payments = createAdHocPayments(commMap, talenoxStaff)
   moveFilesToOldDir(config.PAYMENTS_DIR, DEFAULT_OLD_DIR, true, 2)
@@ -960,31 +970,40 @@ form the payroll for the month
     */
 
   if (config.updateTalenox) {
+    let createPayrollResult: E.Either<Error, TalenoxPayrollPaymentResult>
     debugLogger.debug(`Requesting new payroll payment creation from Talenox`)
-    const createPayrollResult = await createPayroll(talenoxStaff)
-    debugLogger.debug(`New payroll payment is created in Talenox.`)
-    if (createPayrollResult[1]) {
-      debugLogger.debug(`OK: ${createPayrollResult[1].message}`)
+    if (O.isSome(talenoxStaff)) {
+      debugLogger.debug(`Have staff from Talenox so can push payroll to Talenox`)
+      createPayrollResult = await createPayroll(talenoxStaff.value)
     } else {
-      if (createPayrollResult[0]) {
-        errorLogger.error(
-          `Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`
-        )
-      } else
-        errorLogger.error(
-          `Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`
-        )
+      const errorText = 'No staff from Talenox. Cannot push payroll to Talenox'
+      debugLogger.debug(errorText)
+      errorLogger.error(errorText)
+      throw new Error('No staff from Talenox')
     }
+    E.match(
+      (error) => {
+        const errorText = `Failed to create payroll payment for ${config.PAYROLL_MONTH}. Error message: ${
+          (error as Error).message
+        }`
+        errorLogger.error(errorText)
+        throw new Error(errorText)
+      },
+      (result) =>
+        debugLogger.debug(`Talenox payroll payment created: ${(result as TalenoxPayrollPaymentResult).message}`)
+    )(createPayrollResult)
+    E.match({onLeft: (error) => })(createPayrollResult)
+
     debugLogger.debug(`Pushing ad-hoc payments into new payroll`)
-    const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments)
-    debugLogger.debug(`Pushing ad-hoc payments is complete`)
-    if (uploadAdHocResult[1]) {
-      debugLogger.debug(`OK: ${uploadAdHocResult[1].message}`)
-    } else {
-      if (uploadAdHocResult[0]) {
-        errorLogger.error(`Failed: ${uploadAdHocResult[0].message}`)
-      } else errorLogger.error('Failed: Unknown reason')
-    }
+    const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff.value, payments)
+    E.match(
+      (error) => {
+        const errorText = `Failed to push ad-hoc payments into new payroll. Error message: ${(error as Error).message}`
+        errorLogger.error(errorText)
+        throw new Error(errorText)
+      },
+      () => debugLogger.debug(`Pushing ad-hoc payments into new payroll is complete`)
+    )(uploadAdHocResult)
   }
 }
 
