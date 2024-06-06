@@ -17,7 +17,7 @@
             "flags": "w"
         },
         "debug": {
-            "type": "stderr"
+            "type": "stdout"
         },
         "info": {
             "type": "stdout"
