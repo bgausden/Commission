@@ -29,12 +29,15 @@ import {
 import { ITalenoxPayroll, TalenoxPayrollPayment } from './ITalenoxPayrollPayment.js'
 import { TalenoxPayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 import { TalenoxUploadAdHocPaymentsResult } from './IUploadAdHocPaymentsResult.js'
+
+/* Use native Node fetch api instead of node-fetch
 import fetch from 'node-fetch'
-import { Headers, RequestInit } from 'node-fetch'
+import { Headers, RequestInit } from 'node-fetch' */
+
 import { ITalenoxStaffInfo } from './ITalenoxStaffInfo.js'
 import debug from 'debug'
-import * as O from 'fp-ts/lib/Option.js'
-import * as E from 'fp-ts/lib/Either.js'
+import * as O from '@effect/data/Option'
+import * as E from '@effect/data/Either'
 import { errorLogger, infoLogger } from './logging_functions.js'
 
 const SERVICES_COMM_REMARK = 'Services commission'
@@ -141,7 +144,7 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
   const url = TALENOX_EMPLOYEE_ENDPOINT
   const myHeaders = new Headers({
     'Content-Type': 'application/json;charset=utf-8',
-    "Authorization": `Bearer ${TALENOX_API_TOKEN}`
+    Authorization: `Bearer ${TALENOX_API_TOKEN}`,
   })
   //myHeaders.append("Content-Type", "application/json;charset=utf-8")
   const init: RequestInit = {
@@ -246,14 +249,14 @@ export async function createPayroll(
   const result = JSON.parse(await response.text()) as TalenoxPayrollPaymentResult
   const createPayrollDebug = talenoxFunctionsDebug.extend('createPayroll')
   createPayrollDebug.enabled = true
-  createPayrollDebug('Create payroll result is %s',result)
+  createPayrollDebug('Create payroll result is %s', result)
   return E.right(result)
 }
 
 export async function uploadAdHocPayments(
   staffMap: TTalenoxInfoStaffMap,
   payments: ITalenoxPayment[]
-): Promise<E.Either<Error,TalenoxUploadAdHocPaymentsResult>> {
+): Promise<E.Either<Error, TalenoxUploadAdHocPaymentsResult>> {
   const url = TALENOX_ADHOC_PAYMENT_ENDPOINT
 
   /* const myHeaders = new Headers()

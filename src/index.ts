@@ -28,13 +28,7 @@ import { GeneralServiceComm } from './IServiceComm.js'
 import { StaffCommConfig } from './IStaffCommConfig.js'
 import { StaffHurdle } from './IStaffHurdle.js'
 import { ITalenoxPayment } from './ITalenoxPayment.js'
-import {
-  createAdHocPayments,
-  createPayroll,
-  getTalenoxEmployees,
-  payrollFirstDay,
-  uploadAdHocPayments,
-} from './talenox_functions.js'
+import { createAdHocPayments, getTalenoxEmployees, payrollFirstDay } from './talenox_functions.js'
 import {
   TCommComponents,
   TCommMap,
@@ -59,10 +53,8 @@ import {
   stripToNumeric,
 } from './utility_functions.js'
 //import { initDebug, log, warn, error } from "./debug_functions.js"
-import * as E from '@effect/data/Either'
 import * as O from '@effect/data/Option'
 import path from 'path'
-import { TalenoxPayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 import { ITalenoxStaffInfo } from './ITalenoxStaffInfo.js'
 import { DEFAULT_DATA_DIR, DEFAULT_OLD_DIR } from './constants.js'
 import {
@@ -74,6 +66,7 @@ import {
   warnLogger,
 } from './logging_functions.js'
 import { fws14Right, fws14RightHKD, fws32Left } from './string_functions.js'
+import { pushPayrollToTalenox } from './pushPayrollToTalenox.js'
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
@@ -175,7 +168,8 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
       if (staffInfo[staffIDIndex].trim() === '') {
         // Missing Staff ID in MB?
         throw new Error(
-          `${staffInfo[staffNameIndex].split(',')[1]} ${staffInfo[staffNameIndex].split(',')[0]
+          `${staffInfo[staffNameIndex].split(',')[1]} ${
+            staffInfo[staffNameIndex].split(',')[0]
           } does not appear to have a Staff ID in MB`
         )
       }
@@ -589,16 +583,18 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
 
     poolMembers.forEach((poolMember) => {
       const staffName = O.isSome(talenoxStaff)
-        ? `${talenoxStaff.value.get(poolMember)?.last_name ?? '<Last Name>'}, ${talenoxStaff.value.get(poolMember)?.first_name ?? '<First Name>'
-        }`
+        ? `${talenoxStaff.value.get(poolMember)?.last_name ?? '<Last Name>'}, ${
+            talenoxStaff.value.get(poolMember)?.first_name ?? '<First Name>'
+          }`
         : '<Last Name>, <First Name>'
       commissionLogger.info(`Pooling for ${poolMember} ${staffName}`)
       let memberList = ''
       let comma = ''
       poolMembers.forEach((member) => {
         memberList += O.isSome(talenoxStaff)
-          ? `${comma}${member} ${talenoxStaff.value.get(member)?.last_name ?? '<Last Name>'} ${talenoxStaff.value.get(member)?.first_name ?? '<First Name>'
-          }`
+          ? `${comma}${member} ${talenoxStaff.value.get(member)?.last_name ?? '<Last Name>'} ${
+              talenoxStaff.value.get(member)?.first_name ?? '<First Name>'
+            }`
           : '<Last Name>, <First Name>'
         comma = ', '
       })
@@ -713,8 +709,9 @@ async function main(): Promise<void> {
              */
               staffName = `${staffInfo.lastName ?? '<Last Name>'} ${staffInfo.firstName ?? '<First Name>'}`
               if (isPayViaTalenox(staffID)) {
-                const text = `${staffID ? staffID : 'null'}${staffInfo.firstName ? ' ' + staffInfo.firstName : ''}${staffInfo.lastName ? ' ' + staffInfo.lastName : ''
-                  } in MB Payroll Report line ${rowIndex} not in Talenox.`
+                const text = `${staffID ? staffID : 'null'}${staffInfo.firstName ? ' ' + staffInfo.firstName : ''}${
+                  staffInfo.lastName ? ' ' + staffInfo.lastName : ''
+                } in MB Payroll Report line ${rowIndex} not in Talenox.`
                 if (config.missingStaffAreFatal) {
                   throw new Error('Fatal: ' + text)
                 } else {
@@ -912,9 +909,9 @@ async function main(): Promise<void> {
                   fws32Left(`Total Payable`),
                   fws14RightHKD(
                     commComponents.customRateCommission +
-                    commComponents.generalServiceCommission +
-                    commComponents.productCommission +
-                    commComponents.tips
+                      commComponents.generalServiceCommission +
+                      commComponents.productCommission +
+                      commComponents.tips
                   )
                 )
                 logger.info('')
@@ -958,6 +955,13 @@ async function main(): Promise<void> {
   form the payroll for the month 
   */
 
+  /**
+   * @var payments - An array of objects representing the payments to be made to each staff member.
+   * @description -  Create a spreadsheet containing one line for each payment to be made for each of the staff.
+   *                 This spreadsheet can be copied/pasted into Talenox and together with their salary payments will
+   *                 form the payroll for the month
+   *
+   */
   const payments = createAdHocPayments(commMap, talenoxStaff)
   moveFilesToOldDir(config.PAYMENTS_DIR, DEFAULT_OLD_DIR, true, 2)
   writePaymentsWorkBook(payments)
@@ -967,69 +971,7 @@ async function main(): Promise<void> {
     */
 
   if (config.updateTalenox) {
-    debugLogger.debug(`Requesting new payroll payment creation from Talenox`)
-
-    let createPayrollResult: E.Either<Error, TalenoxPayrollPaymentResult>
-    let staffMap: TTalenoxInfoStaffMap
-
-    O.match(talenoxStaff, {
-      onNone: () => {
-        const errorText = 'No staff from Talenox. Cannot push payroll to Talenox'
-        debugLogger.debug(errorText)
-        errorLogger.error(errorText)
-        throw new Error('No staff from Talenox')
-      },
-      onSome: async (staffMap) => {
-        debugLogger.debug(`Have staff from Talenox so can push payroll to Talenox`)
-        createPayrollResult = await createPayroll(staffMap)
-      }
-    })
-
-    /*     if (O.isSome(talenoxStaff)) {
-          debugLogger.debug(`Have staff from Talenox so can push payroll to Talenox`)
-          createPayrollResult = await createPayroll(talenoxStaff.value)
-        } else {
-          const errorText = 'No staff from Talenox. Cannot push payroll to Talenox'
-          debugLogger.debug(errorText)
-          errorLogger.error(errorText)
-          throw new Error('No staff from Talenox')
-        } */
-    /*     E.match(
-          (error) => {
-            const errorText = `Failed to create payroll payment for ${config.PAYROLL_MONTH}. Error message: ${
-              (error as Error).message
-            }`
-            errorLogger.error(errorText)
-            throw new Error(errorText)
-          },
-          (result) =>
-            debugLogger.debug(`Talenox payroll payment created: ${(result as TalenoxPayrollPaymentResult).message}`)
-        )(createPayrollResult) */
-
-    E.match(createPayrollResult!,
-      {
-        onLeft: (error) => {
-          const errorText = `Failed to push ad-hoc payments into new payroll. Error message: ${(error as Error).message}`
-          errorLogger.error(errorText)
-          throw new Error(errorText)
-        },
-        onRight: (result) => debugLogger.debug(`Talenox payroll payment created: ${(result as TalenoxPayrollPaymentResult).message}`)
-      }
-    )
-
-    debugLogger.debug(`Pushing ad-hoc payments into new payroll`)
-
-    const uploadAdHocResult = await uploadAdHocPayments(staffMap!, payments)
-    E.match(uploadAdHocResult,
-      {
-        onLeft: (error) => {
-          const errorText = `Failed to push ad-hoc payments into new payroll. Error message: ${(error as Error).message}`
-          errorLogger.error(errorText)
-          throw new Error(errorText)
-        },
-        onRight: () => debugLogger.debug(`Pushing ad-hoc payments into new payroll is complete`)
-      }
-    )
+    void pushPayrollToTalenox(talenoxStaff, payments)
   }
 }
 
