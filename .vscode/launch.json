@@ -11,7 +11,6 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/dist/index.js",
             "runtimeArgs": [
-                // "--experimental-json-modules",
                 // read .env into process.env from the get-go
                 "-r",
                 "dotenv/config"
@@ -25,7 +24,8 @@
                 "DEBUG_COLORS": "true",
                 "NODE_ENV": "production",
             },
-            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "console": "integratedTerminal"
         },
         {
             "name": "Current TS File",
@@ -47,6 +47,28 @@
                 "NODE_ENV": "production",
             },
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Current TS File TSX",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "${relativeFile}"
+            ],
+            "runtimeArgs": [
+                "--import",
+                "tsx/esm",
+                "-r",
+                "dotenv/config"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
+            },
+            "internalConsoleOptions": "openOnSessionStart",
+            "console": "externalTerminal"
         }
     ]
 }
