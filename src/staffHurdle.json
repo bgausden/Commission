@@ -1203,6 +1203,21 @@
         "poolsWith": [],
         "customPayRates": []
     },
+    "109": {
+        "staffName": "Peter Ho",
+        "mbCommRate": 0.0,
+        "baseRate": 0.5,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0.0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0.0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0.0,
+        "contractor": true,
+        "payViaTalenox": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
     "108": {
         "staffName": "Dolma",
         "mbCommRate": 0.0,
