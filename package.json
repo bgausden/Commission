@@ -9,7 +9,8 @@
         "postinstall": "node-config-ts",
         "build": "run-script-os",
         "build:win32": "scripts\\build.cmd",
-        "build:default": "scripts/build.sh"
+        "build:default": "scripts/build.sh",
+        "run:tsx": "npx tsx src/index.ts"
     },
     "repository": {
         "type": "git",
@@ -50,6 +51,6 @@
         "ncp": "^2.0.0",
         "run-script-os": "^1.1.6",
         "ts-jest": "^29.1.2",
-        "ts-node": "^10.9.2"
+        "tsx": "^4.16.0"
     }
 }
