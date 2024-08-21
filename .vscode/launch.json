@@ -31,12 +31,11 @@
             "name": "Current TS File",
             "type": "node",
             "request": "launch",
+            "runtimeExecutable": "tsx",
             "args": [
                 "${relativeFile}"
             ],
             "runtimeArgs": [
-                "-r",
-                "ts-node/register",
                 "-r",
                 "dotenv/config"
             ],
@@ -46,7 +45,12 @@
                 "DEBUG_COLORS": "true",
                 "NODE_ENV": "production",
             },
-            "internalConsoleOptions": "openOnSessionStart"
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**",
+                "${workspaceFolder}/node_modules/**",
+            ]
         }
     ]
 }
