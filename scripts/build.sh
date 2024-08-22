@@ -10,4 +10,4 @@ else
     TSC="tsc"
 fi
 
-cp ./log4js.json ./src/ && $TSC -p tsconfig.json && cp ./src/staffHurdle.json ./src/log4js.json ./dist/
+cp ./log4js.json ./src/ && $TSC --build --verbose && cp ./src/staffHurdle.json ./src/log4js.json ./dist/ && echo "Build complete."
