@@ -121,7 +121,14 @@ export function moveFilesToOldDir(
   const targetDir = path.join(sourceDir, destDir)
 
   if (!isValidDirectory(targetDir)) {
-    warnLogger.warn(`Unable to move files. Invalid target directory: ${targetDir}`)
+    warnLogger.warn(`Missing or invalid directory: ${targetDir}`)
+    try {
+      fs.mkdirSync(targetDir, { recursive: true })
+      debugLogger.debug(`Created target directory: ${targetDir}`)
+    } catch (error) {
+      warnLogger.warn(`Failed to create target directory: ${targetDir}. Error: ${(error as Error).message}. Continuing.`)
+      return
+    }
     return
   }
 
