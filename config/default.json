@@ -1,9 +1,9 @@
 {
-    "PAYROLL_WB_FILENAME": "Payroll Report 5-1-2024 - 5-31-2024.xlsx",
-    "PAYROLL_MONTH": "May",
+    "PAYROLL_WB_FILENAME": "Payroll Report 8-1-2024 - 8-21-2024.xlsx",
+    "PAYROLL_MONTH": "August",
     "PAYROLL_YEAR": "2024",
-    "PAYMENTS_WB_NAME": "Talenox Payments 202405.xlsx",
-    "PAYMENTS_WS_NAME": "Payments May 2024",
+    "PAYMENTS_WB_NAME": "Talenox Payments 202408.xlsx",
+    "PAYMENTS_WS_NAME": "Payments August 2024",
     "missingStaffAreFatal": true,
     "updateTalenox": false,
     "PAYMENTS_DIR": "payments",

@@ -10,7 +10,7 @@ import {
   COMM_COMPONENT_CUSTOM_RATE_COMMISSION,
   COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS,
   COMM_COMPONENT_TOTAL_SERVICE_COMMISSION,
-  TTalenoxInfoStaffMap,
+  TalenoxStaffMap,
 } from './types.js'
 import {
   TALENOX_TIPS,
@@ -36,8 +36,7 @@ import { Headers, RequestInit } from 'node-fetch' */
 
 import { ITalenoxStaffInfo } from './ITalenoxStaffInfo.js'
 import debug from 'debug'
-import * as O from '@effect/data/Option'
-import * as E from '@effect/data/Either'
+import { Option as O, Either as E } from 'effect'
 import { errorLogger, infoLogger } from './logging_functions.js'
 
 const SERVICES_COMM_REMARK = 'Services commission'
@@ -48,7 +47,7 @@ const talenoxFunctionsDebug = debug('talenox_functions')
 
 export const payrollFirstDay = payrollStartDate(config)
 
-export function createAdHocPayments(_commMap: TCommMap, staffMap: O.Option<TTalenoxInfoStaffMap>): ITalenoxPayment[] {
+export function createAdHocPayments(_commMap: TCommMap, staffMap: O.Option<TalenoxStaffMap>): ITalenoxPayment[] {
   const emptyTalenoxPayment: ITalenoxPayment = {
     staffID: '',
     staffName: '',
@@ -139,14 +138,13 @@ export function createAdHocPayments(_commMap: TCommMap, staffMap: O.Option<TTale
   return payments
 }
 
-export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
+export async function getTalenoxEmployees(): Promise<TalenoxStaffMap> {
   const getEmployeesDebug = talenoxFunctionsDebug.extend('getTalenoxEmployees')
   const url = TALENOX_EMPLOYEE_ENDPOINT
   const myHeaders = new Headers({
     'Content-Type': 'application/json;charset=utf-8',
     Authorization: `Bearer ${TALENOX_API_TOKEN}`,
   })
-  //myHeaders.append("Content-Type", "application/json;charset=utf-8")
   const init: RequestInit = {
     headers: myHeaders,
     redirect: 'follow',
@@ -161,11 +159,14 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
     getEmployeesDebug(errorText)
     getEmployeesDebug('init, url: %s %s', JSON.stringify(init), url)
     throw new Error(errorText)
+    // TODO return an Either instead of throwing an error
   }
 
   const result = JSON.parse(await response.text()) as ITalenoxStaffInfo[]
   const staffMap = new Map<TStaffID, Partial<ITalenoxStaffInfo>>()
   result.forEach((staffInfo) => {
+    // check that the staffInfo data matches what we've pulled from Mindbody. Catch same ID but different names.
+
     staffMap.set(staffInfo.employee_id, {
       first_name: staffInfo.first_name,
       last_name: staffInfo.last_name,
@@ -179,9 +180,7 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
 /* export async function createPayroll(
   staffMap: TTalenoxInfoStaffMap
 ): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]>  */
-export async function createPayroll(
-  staffMap: TTalenoxInfoStaffMap
-): Promise<E.Either<Error, TalenoxPayrollPaymentResult>> {
+export async function createPayroll(staffMap: TalenoxStaffMap): Promise<E.Either<TalenoxPayrollPaymentResult, Error>> {
   const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT
 
   /* const myHeaders = new Headers()
@@ -254,9 +253,9 @@ export async function createPayroll(
 }
 
 export async function uploadAdHocPayments(
-  staffMap: TTalenoxInfoStaffMap,
+  staffMap: TalenoxStaffMap,
   payments: ITalenoxPayment[]
-): Promise<E.Either<Error, TalenoxUploadAdHocPaymentsResult>> {
+): Promise<E.Either<TalenoxUploadAdHocPaymentsResult, Error>> {
   const url = TALENOX_ADHOC_PAYMENT_ENDPOINT
 
   /* const myHeaders = new Headers()
@@ -314,11 +313,12 @@ export async function uploadAdHocPayments(
     uploadAdHocPaymentsLogger.enabled = true
     uploadAdHocPaymentsLogger(errorText)
     errorLogger.error(errorText)
-    throw new Error(errorText)
+    return E.left(new Error(errorText))
+    //throw new Error(errorText)
     //return [new Error(`${response.status}: ${response.statusText}`), undefined]
   }
 
-  const result = JSON.parse(await response.text()) as TalenoxUploadAdHocPaymentsResult
+  let result = JSON.parse(await response.text()) as TalenoxUploadAdHocPaymentsResult
   /* Result has form
         {
             "payment_id":790462,

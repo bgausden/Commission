@@ -18,6 +18,7 @@ Extensions - Application:   28152.000000000004
 // TODO remove ts-ignore from logging_functions.ts
 // TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
 // TODO make filename for staffHurdle.json a constant
+// TODO check for presence of data, logs and payments directories and create them if they don't exist
 
 import { config } from 'node-config-ts'
 // import prettyjson from "prettyjson"
@@ -39,8 +40,9 @@ import {
   TServiceRevenue,
   TStaffHurdles,
   TStaffID,
+  StaffNames,
   TStaffName,
-  TTalenoxInfoStaffMap,
+  TalenoxStaffMap,
 } from './types.js'
 import {
   checkRate,
@@ -53,7 +55,7 @@ import {
   stripToNumeric,
 } from './utility_functions.js'
 //import { initDebug, log, warn, error } from "./debug_functions.js"
-import * as O from '@effect/data/Option'
+import { Option as O } from 'effect'
 import path from 'path'
 import { ITalenoxStaffInfo } from './ITalenoxStaffInfo.js'
 import { DEFAULT_DATA_DIR, DEFAULT_OLD_DIR } from './constants.js'
@@ -67,6 +69,10 @@ import {
 } from './logging_functions.js'
 import { fws14Right, fws14RightHKD, fws32Left } from './string_functions.js'
 import { pushPayrollToTalenox } from './pushPayrollToTalenox.js'
+import { isSome } from 'effect/Option'
+import { FirstNameLastName } from './FirstNameLastName.js'
+import { shutdown } from 'log4js'
+import { directoryCreate } from './directoryCreate.js'
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
@@ -94,7 +100,7 @@ const GENERAL_SERV_REVENUE = 'General Services'
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
 const commMap: TCommMap = new Map<TStaffID, TCommComponents>()
-// const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
+const mbStaffMap: StaffNames = new Map<TStaffID, FirstNameLastName>() //no-longer used but might be useful in the future.
 const serviceCommMap: TServiceCommMap = new Map<TStaffName, GeneralServiceComm>()
 const emptyServComm: GeneralServiceComm = {
   staffName: '',
@@ -145,7 +151,7 @@ function revenueCol(wsArray: unknown[][]): number {
   throw new Error('Cannot find Revenue per session column')
 }
 
-function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | null {
+function getStaffIDAndNameFromSheet(wsArray: unknown[][], idRow: number): StaffInfo | null {
   /*     assume the staffID can be found in the STAFF_ID_COL column.
     staffID will begin with "ID#: " the will need to be stored  in the serviceCommMap and
     commComponents maps along with First and Last name.
@@ -302,7 +308,7 @@ function getServiceRevenues(
 
 function calcGeneralServiceCommission(
   staffID: TStaffID,
-  staffMap: O.Option<TTalenoxInfoStaffMap>,
+  staffMap: O.Option<TalenoxStaffMap>,
   serviceRev: TServiceRevenue
 ): number {
   /* iterate through commissionComponents
@@ -458,7 +464,11 @@ function calcGeneralServiceCommission(
     // commComponents is an array containing [tips, productCommission, serviceCommission]
     // commComponents[serviceCommissionIndex] = servicesComm;
 
-    const staffInfo = O.isSome(staffMap) ? staffMap.value.get(staffID) : undefined
+    //const staffInfo = O.isSome(staffMap) ? staffMap.value.get(staffID) : undefined
+    const staffInfo = O.match({
+      onNone: () => undefined,
+      onSome: (staffMap: TalenoxStaffMap) => staffMap.get(staffID),
+    })(staffMap)
 
     tempServComm.staffName = `${staffInfo?.last_name ?? '<Last Name>'} ${staffInfo?.first_name ?? '<First Name>'}`
     tempServComm.generalServiceRevenue = serviceRev
@@ -510,7 +520,7 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
   XLSX.writeFile(paymentsWB, `${config.PAYMENTS_DIR}/${config.PAYMENTS_WB_NAME}`)
 }
 
-function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: O.Option<TTalenoxInfoStaffMap>): void {
+function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: O.Option<TalenoxStaffMap>): void {
   let poolCounter = 0
   const pools = new Map<number, TStaffID[]>()
   Object.entries(staffHurdle).forEach((element) => {
@@ -637,8 +647,10 @@ async function main(): Promise<void> {
   }
   commissionLogger.info(`Payroll Month is ${config.PAYROLL_MONTH}`)
 
-  let dataDir = DEFAULT_DATA_DIR.toString()
-  if (isValidDirectory(config.DATA_DIR)) {
+  directoryCreate()
+
+let dataDir = DEFAULT_DATA_DIR.toString()
+/*     if (isValidDirectory(config.DATA_DIR)) {
     dataDir = config.DATA_DIR
   } else {
     errorLogger.error(`Configuration contains invalid or missing data directory: ${config.DATA_DIR}`)
@@ -646,7 +658,7 @@ async function main(): Promise<void> {
 
   if (!isValidDirectory(path.join(dataDir, DEFAULT_OLD_DIR))) {
     warnLogger.warn(`Invalid or missing default old data directory: ${DEFAULT_OLD_DIR}`)
-  }
+  } */
 
   debugLogger.debug(`Moving (and compressing) files from ${dataDir} to ${path.join(dataDir, DEFAULT_OLD_DIR)}`)
   moveFilesToOldDir(dataDir, DEFAULT_OLD_DIR, true, 2) // probably not necessary for the destination folder to be configurable
@@ -688,17 +700,19 @@ async function main(): Promise<void> {
       // We null out staffID when we've finished processing the previous staffmember's commission.
       // If staffID has a value then were still processing commission for one of the team
       if (staffID === undefined) {
-        staffInfo = getStaffIDAndName(wsaa, rowIndex) // may return null if we don't find the magic string in the current row
+        staffInfo = getStaffIDAndNameFromSheet(wsaa, rowIndex) // may return null if we don't find the magic string in the current row
 
         if (staffInfo) {
           // found staffID so keep a note of which row it's on
           currentStaffIDRow = rowIndex
           staffID = staffInfo.staffID
           if (staffID) {
-            const staffMapInfo = O.isSome(talenoxStaff) ? talenoxStaff.value.get(staffID) : undefined
-            if (staffID && staffMapInfo) {
+            const talenoxStaffInfo = O.isSome(talenoxStaff) ? talenoxStaff.value.get(staffID) : undefined
+            if (staffID && talenoxStaffInfo) {
               // found staffmember in Talenox
-              staffName = `${staffMapInfo.last_name ?? '<Last Name>'} ${staffMapInfo.first_name ?? '<First Name>'}`
+              staffName = `${talenoxStaffInfo.last_name ?? '<Last Name>'} ${
+                talenoxStaffInfo.first_name ?? '<First Name>'
+              }`
               /*               if (!isPayViaTalenox(staffID)) {
                               warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox but is in Talenox.`)
                             } */
@@ -708,6 +722,13 @@ async function main(): Promise<void> {
                 a valid staffName. Use the info from the MB Payroll report.
              */
               staffName = `${staffInfo.lastName ?? '<Last Name>'} ${staffInfo.firstName ?? '<First Name>'}`
+              // make sure the lastName from Talenox and the sheet match
+              if (talenoxStaffInfo && (talenoxStaffInfo.last_name?.toUpperCase() !== staffInfo.lastName?.toUpperCase())) {
+                errorLogger.error(
+                  `Fatal: Last Name for ${staffID} ${staffName} on row ${rowIndex} in MB Payroll Report does not match Last Name in Talenox.`
+                )
+                throw new Error(`Fatal: ${staffID} ${staffName} in MB Payroll Report does not match Talenox.`)
+              }
               if (isPayViaTalenox(staffID)) {
                 const text = `${staffID ? staffID : 'null'}${staffInfo.firstName ? ' ' + staffInfo.firstName : ''}${
                   staffInfo.lastName ? ' ' + staffInfo.lastName : ''
@@ -788,7 +809,7 @@ async function main(): Promise<void> {
         }
 
         for (let j = 3; j >= 0; j--) {
-          let payComponent: string = wsaa[rowIndex - j][0] as string
+          let payComponent = wsaa[rowIndex - j][0] as string
           if (payComponent !== undefined) {
             let value = 0
             if (payComponent === TIPS_FOR || payComponent === COMM_FOR || payComponent.startsWith(TOTAL_FOR)) {
@@ -815,61 +836,58 @@ async function main(): Promise<void> {
 
                 payComponent = 'Services Revenue:'
 
-                // Old way - services revenue is a single number
-                if (staffID) {
-                  // have a guard further up so this check might be superfluous
-                  /* const totalServicesRevenues = sumServiceRevenues(
+                if (!staffID) {
+                  throw new Error(`Somehow don't have a staffID despite guard further up`)
+                }
+                /* const totalServicesRevenues = sumServiceRevenues(
                                         getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
                                     ) */
 
-                  // New way - some revenues from "general services", some revenues from custom pay rates
-                  servicesRevenues = getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
-                  // const generalServRevenue= servicesRevenues.get(GENERAL_SERV_REVENUE)
-                  // value = generalServRevenue ? generalServRevenue.revenue : 0
-                  let totalServiceRevenue = 0
-                  let generalServiceRevenue = 0
-                  if (servicesRevenues) {
-                    servicesRevenues.forEach((element, serviceName) => {
-                      totalServiceRevenue += element.serviceRevenue
-                      if (serviceName === GENERAL_SERV_REVENUE) {
-                        generalServiceRevenue = element.serviceRevenue
-                      }
-                    })
-                  }
+                // New way - some revenues from "general services", some revenues from custom pay rates
+                servicesRevenues = getServiceRevenues(wsaa, currentTotalForRow, currentStaffIDRow, revCol, staffID)
+                // const generalServRevenue= servicesRevenues.get(GENERAL_SERV_REVENUE)
+                // value = generalServRevenue ? generalServRevenue.revenue : 0
+                let totalServiceRevenue = 0
+                let generalServiceRevenue = 0
+                if (servicesRevenues) {
+                  servicesRevenues.forEach((element, serviceName) => {
+                    totalServiceRevenue += element.serviceRevenue
+                    if (serviceName === GENERAL_SERV_REVENUE) {
+                      generalServiceRevenue = element.serviceRevenue
+                    }
+                  })
+                }
 
-                  commComponents.totalServiceRevenue = totalServiceRevenue
-                  // set services comm to  total revenue for now. Will fill-in later
-                  payComponent = 'General Services Commission'
-                  // const serviceRevenue = value
+                commComponents.totalServiceRevenue = totalServiceRevenue
+                // set services comm to  total revenue for now. Will fill-in later
+                payComponent = 'General Services Commission'
+                // const serviceRevenue = value
 
-                  const generalServiceCommission = calcGeneralServiceCommission(
-                    staffID,
-                    talenoxStaff,
-                    generalServiceRevenue // The  value is the the total services revenue calculated above
-                  )
-                  commComponents.generalServiceCommission = generalServiceCommission
-                  commComponents.totalServiceCommission += generalServiceCommission
-                  // log(`${payComponent} ${generalServiceCommission}`)
+                const generalServiceCommission = calcGeneralServiceCommission(
+                  staffID,
+                  talenoxStaff,
+                  generalServiceRevenue // The  value is the the total services revenue calculated above
+                )
+                commComponents.generalServiceCommission = generalServiceCommission
+                commComponents.totalServiceCommission += generalServiceCommission
+                // log(`${payComponent} ${generalServiceCommission}`)
 
-                  /*
+                /*
                   Calculate the commission for each of the custom pay rate services
                   in servicesRevenues and add to commComponents.customRateCommission.
                   While we're here we can also add up the total custom service commission.
                   */
-                  let totalCustomServiceCommission = 0
-                  if (servicesRevenues) {
-                    servicesRevenues.forEach((customRateEntry, serviceName) => {
-                      if (serviceName !== GENERAL_SERV_REVENUE) {
-                        const customServiceRevenue = customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
-                        commComponents.customRateCommissions[serviceName] = customServiceRevenue
-                        totalCustomServiceCommission += customServiceRevenue
-                      }
-                    })
-                    commComponents.customRateCommission = totalCustomServiceCommission
-                    commComponents.totalServiceCommission += totalCustomServiceCommission
-                  }
-                } else {
-                  throw new Error(`Somehow don't have a staffID despite guard further up`)
+                let totalCustomServiceCommission = 0
+                if (servicesRevenues) {
+                  servicesRevenues.forEach((customRateEntry, serviceName) => {
+                    if (serviceName !== GENERAL_SERV_REVENUE) {
+                      const customServiceRevenue = customRateEntry.serviceRevenue * Number(customRateEntry.customRate)
+                      commComponents.customRateCommissions[serviceName] = customServiceRevenue
+                      totalCustomServiceCommission += customServiceRevenue
+                    }
+                  })
+                  commComponents.customRateCommission = totalCustomServiceCommission
+                  commComponents.totalServiceCommission += totalCustomServiceCommission
                 }
               }
               value = 0
@@ -971,7 +989,12 @@ async function main(): Promise<void> {
     */
 
   if (config.updateTalenox) {
-    void pushPayrollToTalenox(talenoxStaff, payments)
+    try {
+      await pushPayrollToTalenox(talenoxStaff, payments)
+    } catch (error) {
+      // Can't handle this error so abort.
+      process.exit(1)
+    }
   }
 }
 
@@ -988,6 +1011,8 @@ main()
       errorLogger.error(`${error.toString()}`)
     } else {
       errorLogger.error(`Cannot log caught error. Unknown error type: ${typeof error}`)
+      shutdownLogging()
+      process.exit(1)
     }
     shutdownLogging()
   })
