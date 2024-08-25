@@ -39,7 +39,6 @@
         "@types/babel__core": "^7.20.5",
         "@types/babel-core": "^6.25.10",
         "@types/eslint__js": "^8.42.3",
-        "@types/jest": "^29.5.12",
         "@types/node": "^20.11.16",
         "@types/prettyjson": "0.0.29",
         "eslint": "^9.4.0",
