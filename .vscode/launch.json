@@ -21,7 +21,7 @@
             ],
             "sourceMaps": true,
             "env": {
-                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
+                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*,-pushPayrollToTalenox",
                 "DEBUG_COLORS": "true",
                 "NODE_ENV": "production",
             },
