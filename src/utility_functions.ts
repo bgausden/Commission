@@ -7,7 +7,7 @@ import * as fs from 'fs'
 import { debugLogger, warnLogger } from './logging_functions.js'
 import { DEFAULT_OLD_DIR } from './constants.js'
 import * as zlib from 'zlib'
-import path from 'path'
+import path, { join } from 'path'
 import { TalenoxCreatePayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 
 export function checkRate(rate: unknown): boolean {
@@ -140,8 +140,10 @@ export function moveFilesToOldDir(
   }
 
   logFiles.forEach((file) => {
-    const filePath = `${sourceDir}/${file}`
-    const newFilePath = `${targetDir}/${file}`
+    //const filePath =   `${sourceDir}/${file}`
+    const filePath = join(sourceDir, file)
+    //const newFilePath = `${targetDir}/${file}`
+    const newFilePath = join(targetDir, file)
     if (file !== destDir && !filesToRetain.includes(file)) {
       if (compressFiles) {
         // Compress the file
@@ -150,7 +152,8 @@ export function moveFilesToOldDir(
         const writeStream = fs.createWriteStream(compressedFilePath)
         const gzip = zlib.createGzip()
         readStream.pipe(gzip).pipe(writeStream)
-        fs.unlinkSync(filePath)
+        writeStream.on('finish', () => {
+        fs.unlinkSync(filePath)})
       } else {
         // Move the file without compression
         fs.renameSync(filePath, newFilePath)
