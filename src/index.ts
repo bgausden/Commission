@@ -90,11 +90,8 @@ const BASE_RATE = 'baseRate'
 const HURDLE_1_LEVEL = 'hurdle1Level'
 const HURDLE_2_LEVEL = 'hurdle2Level'
 const HURDLE_3_LEVEL = 'hurdle3Level'
-// const POOLS_WITH = "poolsWith"
 
 const GENERAL_SERV_REVENUE = 'General Services'
-
-/* const REX_WONG_ID = "019" */
 
 /* const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 }
 const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
@@ -441,22 +438,6 @@ function calcGeneralServiceCommission(
       }
     }
 
-    /*  
-        Note: This special comission structure was removed in the 2021 September payroll
-        
-        Rex 019 has a special legacy arrangement. If he hits 100k in Service Revenue
-        his commission is calculated at hurdle2 rate applied to total Service Revenue 
-        ( not just the revenue between hurdle1 and hurdle2)
-        */
-
-    /*     if (staffID === REX_WONG_ID && serviceRev > hurdle2Level) {
-          const monthlySalary = hurdle1Level * hurdle1Rate // back out salary instead of hard-coding
-          hurdle1Revenue = 0
-          hurdle2Revenue = serviceRev - monthlySalary / hurdle2Rate // monthlySalary / hurdle2Rate will pay out at $monthlySalary
-          hurdle3Revenue = 0
-          commissionLogger.warn("Rex 019 has a special legacy pay scheme. See Sioban")
-        }
-     */
     // no hurdles so work out how much they receive in comm by applying base rate to entire services revenue
 
     // TODO: sum and set servicesComm once we have all the components.
@@ -501,7 +482,6 @@ function calcGeneralServiceCommission(
 
     serviceCommMap.set(staffID, tempServComm)
 
-    // log(prettyjson.render(serviceCommMap.get(staffID)))
   } else {
     throw new Error(`${staffID} doesn't appear in staffHurdle.json (commission setup file)`)
   }
