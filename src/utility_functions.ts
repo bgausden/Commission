@@ -8,7 +8,7 @@ import { debugLogger, warnLogger } from './logging_functions.js'
 import { DEFAULT_OLD_DIR } from './constants.js'
 import * as zlib from 'zlib'
 import path from 'path'
-import { TalenoxPayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
+import { TalenoxCreatePayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === 'number') {
@@ -81,14 +81,14 @@ export function isLog4JsConfig(config: unknown): config is Configuration {
   return (config as Configuration).appenders !== undefined && (config as Configuration).categories !== undefined
 }
 
-export function isTalenoxPayrollPaymentResult(result: unknown): result is TalenoxPayrollPaymentResult {
+export function isTalenoxPayrollPaymentResult(result: unknown): result is TalenoxCreatePayrollPaymentResult {
   return (
-    (result as TalenoxPayrollPaymentResult).payment_id !== undefined &&
-    (result as TalenoxPayrollPaymentResult).month !== undefined &&
-    (result as TalenoxPayrollPaymentResult).year !== undefined &&
-    (result as TalenoxPayrollPaymentResult).period !== undefined &&
-    (result as TalenoxPayrollPaymentResult).pay_group !== undefined &&
-    (result as TalenoxPayrollPaymentResult).message !== undefined
+    (result as TalenoxCreatePayrollPaymentResult).payment_id !== undefined &&
+    (result as TalenoxCreatePayrollPaymentResult).month !== undefined &&
+    (result as TalenoxCreatePayrollPaymentResult).year !== undefined &&
+    (result as TalenoxCreatePayrollPaymentResult).period !== undefined &&
+    (result as TalenoxCreatePayrollPaymentResult).pay_group !== undefined &&
+    (result as TalenoxCreatePayrollPaymentResult).message !== undefined
   )
 }
 
@@ -126,7 +126,9 @@ export function moveFilesToOldDir(
       fs.mkdirSync(targetDir, { recursive: true })
       debugLogger.debug(`Created target directory: ${targetDir}`)
     } catch (error) {
-      warnLogger.warn(`Failed to create target directory: ${targetDir}. Error: ${(error as Error).message}. Continuing.`)
+      warnLogger.warn(
+        `Failed to create target directory: ${targetDir}. Error: ${(error as Error).message}. Continuing.`
+      )
       return
     }
     return

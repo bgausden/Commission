@@ -27,7 +27,7 @@ import {
   TALENOX_EMPLOYEE_ENDPOINT,
 } from './talenox_constants.js'
 import { ITalenoxPayroll, TalenoxPayrollPayment } from './ITalenoxPayrollPayment.js'
-import { TalenoxPayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
+import { TalenoxCreatePayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 import { TalenoxUploadAdHocPaymentsResult } from './IUploadAdHocPaymentsResult.js'
 
 /* Use native Node fetch api instead of node-fetch
@@ -154,15 +154,16 @@ export async function getTalenoxEmployees(): Promise<TalenoxStaffMap> {
   getEmployeesDebug('init: %O', init)
   const response = await fetch(url, init)
   if (!response.ok) {
-    getEmployeesDebug.enabled = true
-    const errorText = `Failed to fetch employees from Talenox. Error: ${response.status} ${response.statusText}`
+    const errorText = `Failed to fetch employees from Talenox. Error: ${response.status} ${
+      response.statusText
+    } ${await response.text()}`
     getEmployeesDebug(errorText)
     getEmployeesDebug('init, url: %s %s', JSON.stringify(init), url)
     throw new Error(errorText)
     // TODO return an Either instead of throwing an error
   }
 
-  const result = JSON.parse(await response.text()) as ITalenoxStaffInfo[]
+  const result: ITalenoxStaffInfo[] = await response.json()
   const staffMap = new Map<TStaffID, Partial<ITalenoxStaffInfo>>()
   result.forEach((staffInfo) => {
     // check that the staffInfo data matches what we've pulled from Mindbody. Catch same ID but different names.
@@ -175,18 +176,18 @@ export async function getTalenoxEmployees(): Promise<TalenoxStaffMap> {
   })
   return staffMap
 }
+export async function createPayroll(
+  staffMap: TalenoxStaffMap
+): Promise<E.Either<TalenoxCreatePayrollPaymentResult, Error>> {
+  const createPayrollDebug = talenoxFunctionsDebug.extend('createPayroll')
+  //createPayrollDebug.enabled = true
 
-// Todo use an Either monad to return error or result
-/* export async function createPayroll(
-  staffMap: TTalenoxInfoStaffMap
-): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]>  */
-export async function createPayroll(staffMap: TalenoxStaffMap): Promise<E.Either<TalenoxPayrollPaymentResult, Error>> {
   const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT
 
   /* const myHeaders = new Headers()
     myHeaders.append("Content-Type", "application/json; charset=utf-8") */
   const myHeaders = new Headers({
-    'Content-Type': 'application/json;charset=utf-8',
+    'Content-Type': 'application/json; charset=utf-8',
     Authorization: `Bearer ${TALENOX_API_TOKEN}`,
   })
 
@@ -213,42 +214,42 @@ export async function createPayroll(staffMap: TalenoxStaffMap): Promise<E.Either
     month: config.PAYROLL_MONTH,
     period: TALENOX_WHOLE_MONTH,
     with_pay_items: true,
-    pay_group: `${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`,
+    pay_group: null,
   }
 
-  const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll)
+  const body = JSON.stringify({ payment, employee_ids })
 
   const init: RequestInit = {
     headers: myHeaders,
     body,
-    redirect: 'follow',
+    redirect: 'follow' as const,
     method: 'POST',
   }
   const response = await fetch(url, init)
   if (!response.ok) {
-    // Something went horribly wrong. Unlikely we can do anything useful with the failure
+    // Something went horribly wrong. Unlikely we can do anything useful with the failur
     const errorText = `Failed to create payroll. Error: ${response.status} ${response.statusText}. Aborting.`
-    talenoxFunctionsDebug.extend('createPayroll').enabled = true
-    talenoxFunctionsDebug.extend('createPayroll')(errorText)
+    createPayrollDebug(errorText)
     errorLogger.error(errorText)
-    throw new Error(errorText)
-    //return [Error(`${response.status}: ${response.statusText}`), undefined]
+    return E.left(new Error(errorText))
   }
 
-  /**
+  /*
          * Sample response.text():
-         *
-         result: { message:"Successfully updated payment.",
-            month:"May"
-            pay_group:null
-            payment_id:793605
-            period:"Whole Month"
-            year:"2020" }
+         
+    {
+      "payment_id": 1332733,
+      "month": "August",
+      "year": "2024",
+      "period": "Whole Month",
+      "pay_group": null,
+      "status": "Draft",
+      "message": "Successfully created payment."
+    }
          */
-  const result = JSON.parse(await response.text()) as TalenoxPayrollPaymentResult
-  const createPayrollDebug = talenoxFunctionsDebug.extend('createPayroll')
-  createPayrollDebug.enabled = true
-  createPayrollDebug('Create payroll result is %s', result)
+
+  const result: TalenoxCreatePayrollPaymentResult = await response.json()
+  createPayrollDebug('Create payroll result is %O', result)
   return E.right(result)
 }
 
