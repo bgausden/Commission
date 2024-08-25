@@ -5,7 +5,7 @@
     "PAYMENTS_WB_NAME": "Talenox Payments 202408.xlsx",
     "PAYMENTS_WS_NAME": "Payments August 2024",
     "missingStaffAreFatal": true,
-    "updateTalenox": false,
+    "updateTalenox": true,
     "PAYMENTS_DIR": "payments",
     "LOGS_DIR": "logs",
     "DATA_DIR": "data",

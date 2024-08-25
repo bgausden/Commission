@@ -4,7 +4,7 @@ import { ITalenoxPayment } from './ITalenoxPayment.js'
 import { TalenoxCreatePayrollPaymentResult } from './ITalenoxPayrollPaymentResult.js'
 import { ITalenoxStaffInfo } from './ITalenoxStaffInfo.js'
 import { TalenoxUploadAdHocPaymentsResult } from './IUploadAdHocPaymentsResult.js'
-import { debugLogger, errorLogger } from './logging_functions.js'
+import { debugLogger, errorLogger, infoLogger } from './logging_functions.js'
 import { createPayroll, uploadAdHocPayments } from './talenox_functions.js'
 import { TalenoxStaffMap } from './types.js'
 import debug from 'debug'
@@ -14,12 +14,14 @@ import debug from 'debug'
  * @param talenoxStaff
  * @param payments
  */
+
 export async function pushPayrollToTalenox(
   talenoxStaff: O.Option<Map<string, Partial<ITalenoxStaffInfo>>>,
   payments: ITalenoxPayment[]
 ): Promise<E.Either<string, Error>> {
   const pushPayrollToTalenoxDebug = debug('pushPayrollToTalenox')
   if (!config.updateTalenox) {
+    pushPayrollToTalenoxDebug(`Talenox update is disabled in config.`)
     return E.right('Talenox update is disabled in config.')
   }
 
@@ -56,7 +58,7 @@ export async function pushPayrollToTalenox(
       errorLogger.error(errorText)
       throw new Error(errorText)
     },
-    onRight: (result) => debugLogger.debug(`Talenox payroll payment created: ${result.message}`),
+    onRight: (result) => infoLogger.info(`Talenox payroll payment created: ${result.message}`),
   })
 
   debugLogger.debug(`Pushing ad-hoc payments into new payroll`)
@@ -74,7 +76,7 @@ export async function pushPayrollToTalenox(
       return E.left(new Error(errorText))
     },
     onRight: (result) => {
-      debugLogger.debug(`Pushing ad-hoc payments into new payroll is complete. Result: ${result.message}`)
+      infoLogger.info(`Pushing ad-hoc payments into new payroll is complete. Result: ${result.message}`)
     },
   })
   return E.right('Payroll pushed to Talenox successfully.')
