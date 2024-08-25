@@ -176,11 +176,11 @@ export async function getTalenoxEmployees(): Promise<TalenoxStaffMap> {
   })
   return staffMap
 }
+
 export async function createPayroll(
   staffMap: TalenoxStaffMap
 ): Promise<E.Either<TalenoxCreatePayrollPaymentResult, Error>> {
   const createPayrollDebug = talenoxFunctionsDebug.extend('createPayroll')
-  //createPayrollDebug.enabled = true
 
   const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT
 
@@ -197,8 +197,6 @@ export async function createPayroll(
       const resignDate = new Date(Date.parse(staffInfo.resign_date))
       if (resignDate < payrollFirstDay) {
         const messageText = `${staffInfo.first_name} ${staffInfo.last_name} resigned prior to this payroll month`
-        const createPayrollDebug = talenoxFunctionsDebug.extend('createPayroll')
-        createPayrollDebug.enabled = true
         createPayrollDebug(messageText)
         infoLogger.info(messageText)
       } else {
