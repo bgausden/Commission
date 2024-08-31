@@ -1277,5 +1277,35 @@
         "payViaTalenox": false,
         "poolsWith": [],
         "customPayRates": []
+    },
+    "113": {
+        "staffName": "Astin",
+        "mbCommRate": 0,
+        "baseRate": 0.5,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "114": {
+        "staffName": "Che",
+        "mbCommRate": 0,
+        "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false,
+        "poolsWith": [],
+        "customPayRates": []
     }
 }
