@@ -15,4 +15,5 @@ payments/*
 !payments/old/
 data/*
 !data/old/
+data/old/*
 config/env/production.json
