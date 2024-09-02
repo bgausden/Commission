@@ -249,7 +249,7 @@
         "customPayRates": []
     },
     "034": {
-        "staffName": "Henny",
+        "staffName": "Susma",
         "mbCommRate": 0.5,
         "baseRate": 0.5,
         "hurdle1Level": 0,
@@ -1312,6 +1312,21 @@
         "staffName": "Che",
         "mbCommRate": 0,
         "baseRate": 0.0,
+        "hurdle1Level": 0,
+        "hurdle1Rate": 0,
+        "hurdle2Level": 0,
+        "hurdle2Rate": 0,
+        "hurdle3Level": 0,
+        "hurdle3Rate": 0,
+        "contractor": true,
+        "payViaTalenox": false,
+        "poolsWith": [],
+        "customPayRates": []
+    },
+    "115": {
+        "staffName": "Henny",
+        "mbCommRate": 0,
+        "baseRate": 0.5,
         "hurdle1Level": 0,
         "hurdle1Rate": 0,
         "hurdle2Level": 0,
