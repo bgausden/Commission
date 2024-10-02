@@ -49,11 +49,11 @@
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
-            "name": "Current TS File TSX",
+            "name": "Module via TSX",
             "type": "node",
             "request": "launch",
             "args": [
-                "${relativeFile}"
+                "src/index.ts"
             ],
             "runtimeArgs": [
                 "--import",
