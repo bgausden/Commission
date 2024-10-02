@@ -18,11 +18,11 @@ Extensions - Application:   28152.000000000004
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
 // TODO place payments spreadsheets into a "payments" folder
 // TODO remove --experimental-json-modules in favour of approach in logging_functions. ts --> const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
-// TODO move payments xlsx files to new directory "payment sheets" so not in root
 // TODO create debug log (in addition to displaying debug in console)
-// TODO remove ts-ignore from logging_functions.ts
+// TODO remove ts-ignore from logging_functions.ts ✓
 // TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
 // TODO make filename for staffHurdle.json a constant
+// TODO remove dependency on ncp for copying files
 
 import { config } from 'node-config-ts'
 // import prettyjson from "prettyjson"
@@ -74,7 +74,7 @@ import {
 } from './logging_functions.js'
 import { fws32Left, fws14RightHKD, fws14Right } from './string_functions.js'
 import { DEFAULT_DATA_DIR, DEFAULT_OLD_DIR } from './constants.js'
-import path from 'path'
+import path from 'node:path'
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
