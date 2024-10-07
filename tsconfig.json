@@ -55,7 +55,7 @@
         // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
         // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
         "resolveJsonModule": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
     },
     "include": [
         "src/**/*.ts",
@@ -65,7 +65,6 @@
         "node_modules",
         "staffHurdle.json",
         "other_source",
-        "dist",
         "scripts",
         "jest.config.js.old",
     ],
