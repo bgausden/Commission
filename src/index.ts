@@ -78,7 +78,7 @@ import {
   DEFAULT_DATA_DIR,
   DEFAULT_OLD_DIR,
   defaultStaffID,
-  staffHurdle,
+  staffHurdles,
 } from './constants.js'
 import path from 'node:path'
 
@@ -241,15 +241,14 @@ function getServiceRevenues(
   let serviceRevenue = 0
   let customRate = NaN
   let sh: StaffHurdle
-  if ((staffHurdle as TStaffHurdles)[staffID]) {
-    sh = (staffHurdle as TStaffHurdles)[staffID]
+  if (staffHurdles[staffID]) {
+    sh = staffHurdles[staffID]
   } else {
     warnLogger.warn(
       `Warning: Staff ID ${staffID} is not present in staffHurdle.json`
     )
-    sh = (staffHurdle as TStaffHurdles)[defaultStaffID]
+    sh = staffHurdles[defaultStaffID]
   }
-  // const sh = (staffHurdle as TStaffHurdles)[staffID] ? (staffHurdle as TStaffHurdles)[staffID] : (staffHurdle as TStaffHurdles)[defaultStaffID]
   if (!sh) {
     errorLogger.error(
       `Error: Staff ID ${staffID} is not present and there is no default with ID 000 in staffHurdle.json`
@@ -345,7 +344,7 @@ function calcGeneralServiceCommission(
     [baseCommission, hurdle1Commission, hurdle2Commission]
     Where staff are pooling their income, these amounts will be their equal share of what has gone into their pool (TODO) */
   let totalServiceComm: number
-  const sh = staffHurdle as TStaffHurdles // get an iterable version of the staffHurdle import
+  const sh = staffHurdles // get an iterable version of the staffHurdle import
   // TODO review if we really need shm or could simply use the import staffHurdle directly
   const shm = new Map<TStaffID, StaffHurdle>()
   // TODO Do we really need to build a new map from the entirety of the staff hurdle object? Surely need only this staff member
@@ -1072,7 +1071,7 @@ async function main() {
     }
   }
 
-  doPooling(commMap, staffHurdle, talenoxStaff)
+  doPooling(commMap, staffHurdles, talenoxStaff)
 
   /*
  Looking at staffHurdle.json work out how much commission is paid at each commission hurdle
