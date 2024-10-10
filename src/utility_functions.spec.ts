@@ -1,11 +1,22 @@
-import * as utility_functions from './utility_functions.js'
+import {
+  getMostRecentlyModifiedFiles,
+  getStaffHurdle,
+} from './utility_functions.js'
 import { afterAll, beforeAll, suite, test, expect, vi } from 'vitest'
-import { fs, vol } from 'memfs'
+import { fs, vol, Volume } from 'memfs'
 import assert from 'node:assert'
 
-const BASEDIR = '/src/__tests__/fixtures'
+const BASEDIR = '/test'
 
-vi.mock('./utility_functions.js')
+vi.mock('node:fs')
+vi.mock('node:fs/promises')
+
+/* vi.mock('utility_functions.js', () => ({
+  default: {},
+  loadJsonFromFile: vi.fn(() => ({
+    bozo: 'the clown',
+  })),
+})) */
 
 function beforeTest() {
   vol.fromJSON(
@@ -64,7 +75,7 @@ suite('getMostRecentlyModifiedFiles', () => {
   test('should return the most recently modified files in the directory', () => {
     const dir = `${BASEDIR}/non_empty_directory`
     const count = 3
-    const result = utility_functions.getMostRecentlyModifiedFiles(dir, count)
+    const result = getMostRecentlyModifiedFiles(dir, count)
     expect(result.sort()).deep.equal(
       ['file2.txt', 'file3.txt', 'file4.txt'],
       'Result should be the ${count} most recently modified files'
@@ -80,13 +91,13 @@ suite('getMostRecentlyModifiedFiles', () => {
   test('should return an empty array if the directory is empty', () => {
     const dir = `${BASEDIR}/empty_directory`
     const count = 3
-    const result = utility_functions.getMostRecentlyModifiedFiles(dir, count)
+    const result = getMostRecentlyModifiedFiles(dir, count)
     assert.deepStrictEqual(result, [], 'Result should be an empty array')
   })
   test('should return an empty array if the count is 0', () => {
     const dir = `${BASEDIR}/non_empty_directory`
     const count = 0
-    const result = utility_functions.getMostRecentlyModifiedFiles(dir, count)
+    const result = getMostRecentlyModifiedFiles(dir, count)
     assert.deepStrictEqual(result, [], 'Result should be 0 if count is 0')
   })
 })

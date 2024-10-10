@@ -1,10 +1,6 @@
 //import staffHurdle from './staffHurdle.json' with { type: 'json' }
-import { TStaffID, TStaffHurdles } from './types.js'
-import { staffHurdle } from './constants.js'
-import { defaultStaffID } from './constants.js'
-import { config, Config } from 'node-config-ts'
 import { Configuration as l4JSConfiguration } from 'log4js'
-//import fs from 'node:fs'
+import { config, Config } from 'node-config-ts'
 import {
   createReadStream,
   createWriteStream,
@@ -15,10 +11,12 @@ import {
   statSync,
   unlinkSync,
 } from 'node:fs'
-import { debugLogger, warnLogger } from './logging_functions.js'
-import { DEFAULT_OLD_DIR } from './constants.js'
-import zlib from 'zlib'
 import path from 'path'
+import zlib from 'zlib'
+import { DEFAULT_OLD_DIR, defaultStaffID, staffHurdles } from './constants.js'
+import { debugLogger, errorLogger, warnLogger } from './logging_functions.js'
+import { TStaffHurdles, TStaffID } from './types.js'
+import assert from 'node:assert'
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === 'number') {
@@ -51,7 +49,9 @@ export function stripToNumeric(n: unknown): number {
 }
 
 export function isPayViaTalenox(staffID: TStaffID): boolean {
-  if ((staffHurdle as TStaffHurdles)[staffID] === undefined) {
+  let sh = staffHurdles[staffID]
+
+  if (sh === undefined) {
     if (config.missingStaffAreFatal === true) {
       throw new Error(
         `StaffID ${staffID} found in Payroll report but is missing from staffHurdle.json`
@@ -63,10 +63,10 @@ export function isPayViaTalenox(staffID: TStaffID): boolean {
     }
   }
 
-  if (!('payViaTalenox' in (staffHurdle as TStaffHurdles)[staffID])) {
+  if (!('payViaTalenox' in sh)) {
     throw new Error(`${staffID} has no payViaTalenox property.`)
   }
-  return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false
+  return sh.payViaTalenox ? true : false
 }
 
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
@@ -76,18 +76,26 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-  let isContractor = false
-  if (!(staffHurdle as TStaffHurdles)[staffID]) {
-    staffID = defaultStaffID
+  if (!staffHurdles[staffID]) {
+    //staffID = defaultStaffID
+    let message = `No hurdle found for staffID ${staffID}. Aborting.`
+    errorLogger.error(message)
+    throw new Error(message)
   }
   if (
-    Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')
+    'contractor' in staffHurdles
+    //Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')
   ) {
-    isContractor = (staffHurdle as TStaffHurdles)[staffID].contractor
-      ? true
-      : false
+    return staffHurdles[staffID].contractor
   }
-  return isContractor
+  let message = `staffHurdle for staffID ${staffID} is missing 'contractor' key. Aborting.`
+  errorLogger.error(message)
+  throw new Error(message)
+}
+
+export function getStaffHurdle(staffID: string) {
+  assert(staffID in staffHurdles)
+  return staffHurdles[staffID]
 }
 
 export function payrollStartDate(config: Config): Date {
@@ -193,7 +201,7 @@ export function getMostRecentlyModifiedFiles(dir: string, count = 3) {
   return sortedFiles.map(({ file }) => file)
 }
 
-export function loadJsonFromFile(filepath: string): any {
+export function loadJsonFromFile<T>(filepath: string): T {
   const fileContent = readFileSync(filepath, 'utf-8')
-  return JSON.parse(fileContent)
+  return JSON.parse(fileContent) as T
 }
