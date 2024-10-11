@@ -163,5 +163,9 @@ function setLogsDir(path: string) {
 }
 
 export function shutdownLogging(): void {
-  shutdown()
+  shutdown((err) => {
+    if (err) {
+      console.error(err)
+    }
+  })
 }

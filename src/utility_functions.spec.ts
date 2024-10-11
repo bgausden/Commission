@@ -1,19 +1,26 @@
-import {
-  getMostRecentlyModifiedFiles,
-  getStaffHurdle,
-} from './utility_functions.js'
+import { getMostRecentlyModifiedFiles } from './utility_functions.js'
 import { afterAll, beforeAll, suite, test, expect, vi } from 'vitest'
-import { fs, vol, Volume } from 'memfs'
+import { fs, vol } from 'memfs'
 import assert from 'node:assert'
 
 const BASEDIR = '/test'
 
+vi.hoisted(() => {
+  import('log4js')
+    .then((log4js) => {
+      log4js.getLogger('log4js').level = 'error'
+    })
+    .catch((err) => {
+      console.error(err)
+    })
+})
+
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
 
-/* vi.mock('utility_functions.js', () => ({
+/* vi.mock('staffHurdles.js', () => ({
   default: {},
-  loadJsonFromFile: vi.fn(() => ({
+  loadStaffHurdles: vi.fn(() => ({
     bozo: 'the clown',
   })),
 })) */
@@ -52,22 +59,30 @@ function beforeTest() {
     now,
     new Date('2022-01-04')
   )
-  //test('non-empty test directory should contain files', () => {
-  let dir1 = `${BASEDIR}/non_empty_directory`
-  let count = 3
-  let result1 = fs.readdirSync(dir1)
-  assert(result1.length > 0, 'Directory should contain files')
-  //})
-  //test('empty test directory should not contain files', () => {
-  let dir2 = `${BASEDIR}/empty_directory`
-  let result2 = fs.readdirSync(dir2)
-  assert.strictEqual(result2.length, 0, 'Directory should be empty')
-  //})
 }
 
 function afterTest() {
   vol.reset()
 }
+
+suite('check setup', () => {
+  beforeAll(beforeTest)
+  afterAll(afterTest)
+  test('non-empty test directory should contain files', () => {
+    let dir1 = `${BASEDIR}/non_empty_directory`
+    let count = 3
+    let result1 = fs.readdirSync(dir1)
+    expect(
+      result1.length,
+      'expect > 0 files in non-empty directory'
+    ).toBeGreaterThan(0)
+  })
+  test('empty test directory should not contain files', () => {
+    let dir2 = `${BASEDIR}/empty_directory`
+    let result2 = fs.readdirSync(dir2)
+    expect(result2.length, 'expect 0 files in empty directory').toBe(0)
+  })
+})
 
 suite('getMostRecentlyModifiedFiles', () => {
   beforeAll(beforeTest)
@@ -76,28 +91,37 @@ suite('getMostRecentlyModifiedFiles', () => {
     const dir = `${BASEDIR}/non_empty_directory`
     const count = 3
     const result = getMostRecentlyModifiedFiles(dir, count)
-    expect(result.sort()).deep.equal(
-      ['file2.txt', 'file3.txt', 'file4.txt'],
-      'Result should be the ${count} most recently modified files'
-    )
-
-    /* assert.deepStrictEqual(result.sort(), [
-      'file2.txt',
-      'file3.txt',
-      'file4.txt',
-    ]) */
+    expect(
+      result.sort(),
+      `Result should be the ${count} most recently modified files`
+    ).deep.equal(['file2.txt', 'file3.txt', 'file4.txt'])
   })
 
   test('should return an empty array if the directory is empty', () => {
     const dir = `${BASEDIR}/empty_directory`
     const count = 3
     const result = getMostRecentlyModifiedFiles(dir, count)
-    assert.deepStrictEqual(result, [], 'Result should be an empty array')
+    expect(
+      result,
+      `expect array of ${count} recently modified files to be empty if directory empty`
+    ).deep.equal([])
   })
   test('should return an empty array if the count is 0', () => {
     const dir = `${BASEDIR}/non_empty_directory`
     const count = 0
     const result = getMostRecentlyModifiedFiles(dir, count)
-    assert.deepStrictEqual(result, [], 'Result should be 0 if count is 0')
+    expect(
+      result,
+      `expect array of ${count} recently modified files to be empty if count is 0`
+    ).deep.equal([])
+  })
+  test('should return available files if count is greater than the number of files', () => {
+    const dir = `${BASEDIR}/non_empty_directory`
+    const count = 5
+    const result = getMostRecentlyModifiedFiles(dir, count)
+    expect(
+      result.sort(),
+      `Result should be all files if count ${count} is greater than the number of files in the directory ${result.length}`
+    ).deep.equal(['file1.txt', 'file2.txt', 'file3.txt', 'file4.txt'])
   })
 })
