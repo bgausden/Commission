@@ -13,10 +13,11 @@ import {
 } from 'node:fs'
 import path from 'path'
 import zlib from 'zlib'
-import { DEFAULT_OLD_DIR, defaultStaffID, staffHurdles } from './constants.js'
+import { DEFAULT_OLD_DIR } from './constants.js'
 import { debugLogger, errorLogger, warnLogger } from './logging_functions.js'
 import { TStaffHurdles, TStaffID } from './types.js'
 import assert from 'node:assert'
+import { loadStaffHurdles } from './staffHurdles.js'
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === 'number') {
@@ -76,17 +77,18 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-  if (!staffHurdles[staffID]) {
+  const sh = staffHurdles[staffID]
+  if (!sh) {
     //staffID = defaultStaffID
     let message = `No hurdle found for staffID ${staffID}. Aborting.`
     errorLogger.error(message)
     throw new Error(message)
   }
   if (
-    'contractor' in staffHurdles
+    'contractor' in sh
     //Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')
   ) {
-    return staffHurdles[staffID].contractor
+    return sh.contractor
   }
   let message = `staffHurdle for staffID ${staffID} is missing 'contractor' key. Aborting.`
   errorLogger.error(message)

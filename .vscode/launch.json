@@ -68,7 +68,7 @@
                 "NODE_ENV": "production",
             },
             "internalConsoleOptions": "openOnSessionStart",
-            "console": "externalTerminal"
+            "console": "integratedTerminal"
         },
         {
             "name": "Current file via TSX",
@@ -86,6 +86,11 @@
                 "--env-file",
                 ".env",
             ],
+            "env": {
+                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
+            },
             /*
              * Open terminal when debugging starts (Optional)
              * Useful to see console.logs
@@ -108,7 +113,6 @@
             "skipFiles": [
                 // Node.js internal core modules
                 "<node_internals>/**",
-        
                 // Ignore all dependencies (optional)
                 "${workspaceFolder}/node_modules/**",
             ],

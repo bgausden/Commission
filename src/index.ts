@@ -77,10 +77,11 @@ import { fws32Left, fws14RightHKD, fws14Right } from './string_functions.js'
 import {
   DEFAULT_DATA_DIR,
   DEFAULT_OLD_DIR,
+  DEFAULT_STAFF_HURDLES_FILE,
   defaultStaffID,
-  staffHurdles,
 } from './constants.js'
 import path from 'node:path'
+import { loadStaffHurdles } from './staffHurdles.js'
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i
 
@@ -734,6 +735,8 @@ async function main() {
   )
   moveFilesToOldDir(dataDir, DEFAULT_OLD_DIR, true, 2) // probably not necessary for the destination folder to be configurable
 
+  loadStaffHurdles(DEFAULT_STAFF_HURDLES_FILE)
+
   const payrollWorkbookPath = path.join(dataDir, config.PAYROLL_WB_FILENAME)
 
   debugLogger.debug(`Requesting employees from Talenox`)
@@ -1095,32 +1098,46 @@ form the payroll for the month
     If configuration permits updating Talenox, create a new payroll and push into it the adhoc payments for service commission, tips and product commission.
     */
 
-  if (config.updateTalenox) {
-    debugLogger.debug(`Requesting new payroll payment creation from Talenox`)
-    const createPayrollResult = await createPayroll(talenoxStaff)
-    debugLogger.debug(`New payroll payment is created in Talenox.`)
-    if (createPayrollResult[1]) {
-      debugLogger.debug(`OK: ${createPayrollResult[1].message}`)
-    } else {
-      if (createPayrollResult[0]) {
-        errorLogger.error(
-          `Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`
-        )
-      } else
-        errorLogger.error(
-          `Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`
-        )
+  if (!config.updateTalenox) {
+    return
+  }
+
+  debugLogger.debug(`Requesting new payroll payment creation from Talenox`)
+  const createPayrollResult = await createPayroll(talenoxStaff)
+  debugLogger.debug(`New payroll payment is created in Talenox.`)
+  if (!createPayrollResult[1]) {
+    if (createPayrollResult[0]) {
+      errorLogger.error(
+        `Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`
+      )
     }
-    debugLogger.debug(`Pushing ad-hoc payments into new payroll`)
-    const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments)
-    debugLogger.debug(`Pushing ad-hoc payments is complete`)
-    if (uploadAdHocResult[1]) {
-      debugLogger.debug(`OK: ${uploadAdHocResult[1].message}`)
-    } else {
-      if (uploadAdHocResult[0]) {
-        errorLogger.error(`Failed: ${uploadAdHocResult[0].message}`)
-      } else errorLogger.error('Failed: Unknown reason')
+    if (!createPayrollResult[0]) {
+      errorLogger.error(
+        `Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`
+      )
     }
+    throw new Error(
+      `Failed to create payroll payment: ${createPayrollResult[0]?.message}`
+    )
+  }
+  debugLogger.debug(`OK: ${createPayrollResult[1].message}`)
+
+  debugLogger.debug(`Pushing ad-hoc payments into new payroll`)
+  const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments)
+  if (!uploadAdHocResult[1]) {
+    if (uploadAdHocResult[0]) {
+      errorLogger.error(`Failed: ${uploadAdHocResult[0].message}`)
+    }
+    if (!uploadAdHocResult[0]) {
+      errorLogger.error('Failed: Unknown reason')
+    }
+    throw new Error(
+      `Failed to upload ad-hoc payments: ${uploadAdHocResult[0]?.message}`
+    )
+  }
+  debugLogger.debug(`Pushing ad-hoc payments is complete`)
+  if (uploadAdHocResult[1]) {
+    debugLogger.debug(`OK: ${uploadAdHocResult[1].message}`)
   }
 }
 
@@ -1133,11 +1150,11 @@ main()
   .catch((error) => {
     if (error instanceof Error) {
       errorLogger.error(`${error.message}`)
-    } else if (error instanceof String) {
+    } else if (typeof error === 'string') {
       errorLogger.error(`${error.toString()}`)
     } else {
       errorLogger.error(
-        `Cannot log caught error. Unknown error type: ${typeof error}`
+        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`
       )
     }
     shutdownLogging()
