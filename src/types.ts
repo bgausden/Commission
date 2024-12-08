@@ -61,7 +61,7 @@ export type TStaffMap = Map<TStaffID, IStaffNames>
 export type TTalenoxInfoStaffMap = Map<TStaffID,Partial<ITalenoxStaffInfo>>
 
 export type TStaffHurdles = {
-   [key: string]: StaffHurdle
+   [staffID: string]: StaffHurdle
 }
 
 export type TServiceName = string

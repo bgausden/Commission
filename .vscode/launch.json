@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            "preLaunchTask": "npm: build",
+            // "preLaunchTask": "npm: build",
             "name": "Launch Program",
             "program": "${workspaceFolder}/dist/index.js",
             "runtimeArgs": [
@@ -28,7 +28,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Current TS File",
+            "name": "Current TS File (TS Node)",
             "type": "node",
             "request": "launch",
             "args": [
@@ -49,7 +49,7 @@
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
-            "name": "Module via TSX",
+            "name": "Main via TSX",
             "type": "node",
             "request": "launch",
             "args": [
@@ -68,7 +68,54 @@
                 "NODE_ENV": "production",
             },
             "internalConsoleOptions": "openOnSessionStart",
-            "console": "externalTerminal"
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Current file via TSX",
+            "type": "node",
+            "request": "launch",
+            // Debug current file in VSCode
+            "cwd": "${workspaceFolder}",
+            "program": "${file}",
+            /*
+             * Path to tsx binary
+             * Assuming locally installed
+             */
+            "runtimeExecutable": "tsx",
+            "runtimeArgs": [
+                "--env-file",
+                ".env",
+            ],
+            "env": {
+                "DEBUG": "*,-talenox_functions:*,-log4js:*,-streamroller:*",
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
+            },
+            /*
+             * Open terminal when debugging starts (Optional)
+             * Useful to see console.logs
+             */
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            // Files to exclude from debugger (e.g. call stack)
+            "skipFiles": [
+                // Node.js internal core modules
+                "<node_internals>/**",
+                // Ignore all dependencies (optional)
+                "${workspaceFolder}/node_modules/**",
+            ],
+        },
+        {
+            "name": "Attach to process",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "skipFiles": [
+                // Node.js internal core modules
+                "<node_internals>/**",
+                // Ignore all dependencies (optional)
+                "${workspaceFolder}/node_modules/**",
+            ],
         }
     ]
 }
