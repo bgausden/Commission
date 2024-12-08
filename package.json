@@ -2,15 +2,17 @@
     "name": "commission",
     "version": "1.0.0",
     "description": "tools to generate commission for Lissome staff",
-    "main": "dist/index.js",
+    "main": "./dist/index.js",
+    "exports": "./dist/index.js",
     "type": "module",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": ".\\node_modules\\.bin\\vitest --run",
         "postinstall": "node-config-ts",
         "build": "run-script-os",
         "build:win32": "scripts\\build.cmd",
         "build:default": "scripts/build.sh",
-        "run:tsx": "npx tsx src/index.ts"
+        "run:tsx": "npx tsx src/index.ts",
+        "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts"
     },
     "repository": {
         "type": "git",
@@ -34,14 +36,15 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
-        "@types/babel__core": "^7.20.5",
-        "@types/babel-core": "^6.25.10",
         "@types/debug": "^4.1.12",
         "@types/node": "^20.16.10",
         "@types/prettyjson": "0.0.29",
+        "expect": "^29.7.0",
+        "memfs": "^4.13.0",
         "ncp": "^2.0.0",
         "run-script-os": "^1.1.6",
         "tsx": "^4.16.0",
-        "typescript": "^5.6.2"
+        "typescript": "^5.6.2",
+        "vitest": "^2.1.2"
     }
 }

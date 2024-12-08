@@ -1,13 +1,23 @@
 //import staffHurdle from './staffHurdle.json' with { type: 'json' }
-import { TStaffID, TStaffHurdles } from './types.js'
-import { defaultStaffID, staffHurdle } from './index.js'
+import { Configuration as l4JSConfiguration } from 'log4js'
 import { config, Config } from 'node-config-ts'
-import { Configuration } from 'log4js'
-import * as fs from 'fs'
-import { debugLogger, warnLogger } from './logging_functions.js'
-import { DEFAULT_OLD_DIR } from './constants.js'
-import * as zlib from 'zlib'
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+} from 'node:fs'
 import path from 'path'
+import zlib from 'zlib'
+import { DEFAULT_OLD_DIR } from './constants.js'
+import { debugLogger, errorLogger, warnLogger } from './logging_functions.js'
+import { TStaffHurdles, TStaffID } from './types.js'
+import assert from 'node:assert'
+import { loadStaffHurdles } from './staffHurdles.js'
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === 'number') {
@@ -40,18 +50,24 @@ export function stripToNumeric(n: unknown): number {
 }
 
 export function isPayViaTalenox(staffID: TStaffID): boolean {
-  if ((staffHurdle as TStaffHurdles)[staffID] === undefined) {
+  let sh = staffHurdles[staffID]
+
+  if (sh === undefined) {
     if (config.missingStaffAreFatal === true) {
-      throw new Error(`StaffID ${staffID} found in Payroll report but is missing from staffHurdle.json`)
+      throw new Error(
+        `StaffID ${staffID} found in Payroll report but is missing from staffHurdle.json`
+      )
     } else {
-      console.warn(`Warning: staffID ${staffID} is missing from staffHurdle.json`)
+      console.warn(
+        `Warning: staffID ${staffID} is missing from staffHurdle.json`
+      )
     }
   }
 
-  if (!('payViaTalenox' in (staffHurdle as TStaffHurdles)[staffID])) {
+  if (!('payViaTalenox' in sh)) {
     throw new Error(`${staffID} has no payViaTalenox property.`)
   }
-  return (staffHurdle as TStaffHurdles)[staffID].payViaTalenox ? true : false
+  return sh.payViaTalenox ? true : false
 }
 
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
@@ -61,27 +77,52 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-  let isContractor = false
-  if (!(staffHurdle as TStaffHurdles)[staffID]) {
-    staffID = defaultStaffID
+  const sh = staffHurdles[staffID]
+  if (!sh) {
+    //staffID = defaultStaffID
+    let message = `No hurdle found for staffID ${staffID}. Aborting.`
+    errorLogger.error(message)
+    throw new Error(message)
   }
-  if (Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')) {
-    isContractor = (staffHurdle as TStaffHurdles)[staffID].contractor ? true : false
+  if (
+    'contractor' in sh
+    //Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')
+  ) {
+    return sh.contractor
   }
-  return isContractor
+  let message = `staffHurdle for staffID ${staffID} is missing 'contractor' key. Aborting.`
+  errorLogger.error(message)
+  throw new Error(message)
+}
+
+export function getStaffHurdle(staffID: string) {
+  assert(staffID in staffHurdles)
+  return staffHurdles[staffID]
 }
 
 export function payrollStartDate(config: Config): Date {
-  const payrollFirstDay = new Date(Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`))
+  const payrollFirstDay = new Date(
+    Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`)
+  )
   return payrollFirstDay
 }
 
-export function isLog4JsConfig(config: unknown): config is Configuration {
-  return (<Configuration>config).appenders !== undefined && (<Configuration>config).categories !== undefined
+export function assertLog4JsConfig(
+  config: unknown
+): asserts config is l4JSConfiguration {
+  if (
+    typeof config === 'object' &&
+    !!config &&
+    ('appenders' in config || 'categories' in config)
+  ) {
+    return
+  } else {
+    throw new Error('Failed to validate provided log4JSConfig')
+  }
 }
 
 export function isValidDirectory(dir: string): boolean {
-  return fs.existsSync(dir) && fs.statSync(dir).isDirectory()
+  return existsSync(dir) && statSync(dir).isDirectory()
 }
 
 /**
@@ -100,16 +141,20 @@ export function moveFilesToOldDir(
   retainCount = 0
 ): void {
   if (!isValidDirectory(sourceDir)) {
-    warnLogger.warn(`Unable to move files. Invalid source directory: ${sourceDir}`)
+    warnLogger.warn(
+      `Unable to move files. Invalid source directory: ${sourceDir}`
+    )
     return
   }
 
-  const logFiles = fs.readdirSync(sourceDir)
+  const logFiles = readdirSync(sourceDir)
 
   const targetDir = path.join(sourceDir, destDir)
 
   if (!isValidDirectory(targetDir)) {
-    warnLogger.warn(`Unable to move files. Invalid target directory: ${targetDir}`)
+    warnLogger.warn(
+      `Unable to move files. Invalid target directory: ${targetDir}`
+    )
     return
   }
 
@@ -125,10 +170,10 @@ export function moveFilesToOldDir(
       if (compressFiles) {
         // Compress the file
         const compressedFilePath = `${newFilePath}.gz`
-        const readStream = fs.createReadStream(filePath)
-        const writeStream = fs.createWriteStream(compressedFilePath)
+        const readStream = createReadStream(filePath)
+        const writeStream = createWriteStream(compressedFilePath)
         writeStream.on('finish', () => {
-          fs.unlinkSync(filePath)
+          unlinkSync(filePath)
           writeStream.close()
         })
         const gzip = zlib.createGzip()
@@ -136,7 +181,7 @@ export function moveFilesToOldDir(
         // Clean-up and closing stream handled by writeStream.on('finish')
       } else {
         // Move the file without compression
-        fs.renameSync(filePath, newFilePath)
+        renameSync(filePath, newFilePath)
         debugLogger.debug(`Moved ${filePath} to ${newFilePath}`)
       }
     }
@@ -144,10 +189,10 @@ export function moveFilesToOldDir(
 }
 
 export function getMostRecentlyModifiedFiles(dir: string, count = 3) {
-  const files = fs.readdirSync(dir)
+  const files = readdirSync(dir)
   const stats = files.map((file) => ({
     file,
-    stats: fs.statSync(path.join(dir, file)),
+    stats: statSync(path.join(dir, file)),
   }))
 
   const sortedFiles = stats
@@ -158,7 +203,7 @@ export function getMostRecentlyModifiedFiles(dir: string, count = 3) {
   return sortedFiles.map(({ file }) => file)
 }
 
-export function loadJsonFromFile(filepath: string): any {
-  const fileContent = fs.readFileSync(filepath, 'utf-8')
-  return JSON.parse(fileContent)
+export function loadJsonFromFile<T>(filepath: string): T {
+  const fileContent = readFileSync(filepath, 'utf-8')
+  return JSON.parse(fileContent) as T
 }
