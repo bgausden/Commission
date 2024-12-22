@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/interface-name-prefix */
-import { TStaffID } from "./types.js"
+import { TStaffID } from "./types.js";
 import { TTalenoxPaymentType } from "./talenox_types.js";
 
 export interface ITalenoxPayment {
-    staffID: TStaffID
-    staffName: string
-    type: TTalenoxPaymentType
-    amount: number
-    remarks: string
+  staffID: TStaffID;
+  staffName: string;
+  type: TTalenoxPaymentType;
+  amount: number;
+  remarks: string;
 }
