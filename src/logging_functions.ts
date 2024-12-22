@@ -1,20 +1,20 @@
-import { readFileSync } from 'node:fs'
-import log4js from 'log4js'
-const { configure, getLogger, shutdown } = log4js
-import { config } from 'node-config-ts'
-import { basename, extname, join } from 'node:path'
+import { readFileSync } from "node:fs";
+import log4js from "log4js";
+const { configure, getLogger, shutdown } = log4js;
+import { config } from "node-config-ts";
+import { basename, extname } from "node:path";
 import {
   assertLog4JsConfig,
   isValidDirectory,
   moveFilesToOldDir,
-} from './utility_functions.js'
-import { z } from 'zod'
+} from "./utility_functions.js";
+import { z } from "zod";
 import {
   DEFAULT_COMMISSION_LOGFILE,
   DEFAULT_CONTRACTOR_LOGFILE,
   DEFAULT_LOGS_DIR,
   defaultLog4jsConfigFile,
-} from './constants.js'
+} from "./constants.js";
 
 export function initLogs() {
   /**
@@ -34,16 +34,16 @@ export function initLogs() {
     return possibleL4jsConfig
   } */
 
-  const log4jsConfigFile = config.log4jsConfigFile ?? defaultLog4jsConfigFile
+  const log4jsConfigFile = config.log4jsConfigFile ?? defaultLog4jsConfigFile;
 
-  const logsDir = setLogsDir(config.LOGS_DIR)
-  moveFilesToOldDir(logsDir)
+  const logsDir = setLogsDir(config.LOGS_DIR);
+  moveFilesToOldDir(logsDir);
 
   //const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
   const possibleL4jsConfig = JSON.parse(
-    readFileSync(`./${log4jsConfigFile}`, 'utf-8')
-  )
-  assertLog4JsConfig(possibleL4jsConfig)
+    readFileSync(`./${log4jsConfigFile}`, "utf-8"),
+  );
+  assertLog4JsConfig(possibleL4jsConfig);
 
   const l4jsConfigSchema = z.object({
     appenders: z.object({
@@ -104,50 +104,50 @@ export function initLogs() {
         level: z.string(),
       }),
     }),
-  })
+  });
 
-  const log4jsConfig = l4jsConfigSchema.parse(possibleL4jsConfig)
+  const log4jsConfig = l4jsConfigSchema.parse(possibleL4jsConfig);
 
   const initialCommissionLogFileName =
-    log4jsConfig.appenders.commission.filename
-  const commissionLogFileExt = extname(initialCommissionLogFileName)
+    log4jsConfig.appenders.commission.filename;
+  const commissionLogFileExt = extname(initialCommissionLogFileName);
   const commissionLogFileBaseName = basename(
     initialCommissionLogFileName,
-    commissionLogFileExt
-  )
-  let date = new Date().toISOString().replace(new RegExp(':', 'g'), '')
-  log4jsConfig.appenders.commission.filename = `${logsDir}/${commissionLogFileBaseName}-${date}${commissionLogFileExt}`
+    commissionLogFileExt,
+  );
+  let date = new Date().toISOString().replace(new RegExp(":", "g"), "");
+  log4jsConfig.appenders.commission.filename = `${logsDir}/${commissionLogFileBaseName}-${date}${commissionLogFileExt}`;
 
   const initialContractorLogFileName =
-    log4jsConfig.appenders.contractor.filename
-  const contractorLogFileExt = extname(initialContractorLogFileName)
+    log4jsConfig.appenders.contractor.filename;
+  const contractorLogFileExt = extname(initialContractorLogFileName);
   const contractorLogFileBaseName = basename(
     initialContractorLogFileName,
-    contractorLogFileExt
-  )
-  date = new Date().toISOString().replace(new RegExp(':', 'g'), '')
-  log4jsConfig.appenders.contractor.filename = `${logsDir}/${contractorLogFileBaseName}-${date}${contractorLogFileExt}`
+    contractorLogFileExt,
+  );
+  date = new Date().toISOString().replace(new RegExp(":", "g"), "");
+  log4jsConfig.appenders.contractor.filename = `${logsDir}/${contractorLogFileBaseName}-${date}${contractorLogFileExt}`;
 
-  configure(log4jsConfig)
+  configure(log4jsConfig);
 }
 
-export const commissionLogger = getLogger('commission')
-commissionLogger.level = 'info'
+export const commissionLogger = getLogger("commission");
+commissionLogger.level = "info";
 
-export const contractorLogger = getLogger('contractor')
-contractorLogger.level = 'info'
+export const contractorLogger = getLogger("contractor");
+contractorLogger.level = "info";
 
-export const debugLogger = getLogger('debug')
-debugLogger.level = 'debug'
+export const debugLogger = getLogger("debug");
+debugLogger.level = "debug";
 
-export const infoLogger = getLogger('info')
-infoLogger.level = 'info'
+export const infoLogger = getLogger("info");
+infoLogger.level = "info";
 
-export const warnLogger = getLogger('warn')
-warnLogger.level = 'warning'
+export const warnLogger = getLogger("warn");
+warnLogger.level = "warning";
 
-export const errorLogger = getLogger('error')
-errorLogger.level = 'error'
+export const errorLogger = getLogger("error");
+errorLogger.level = "error";
 
 /**
  * Sets the directory for storing logs.
@@ -157,15 +157,15 @@ errorLogger.level = 'error'
  */
 function setLogsDir(path: string) {
   if (!isValidDirectory(path)) {
-    return DEFAULT_LOGS_DIR
+    return DEFAULT_LOGS_DIR;
   }
-  return path
+  return path;
 }
 
 export function shutdownLogging(): void {
   shutdown((err) => {
     if (err) {
-      console.error(err)
+      console.error(err);
     }
-  })
+  });
 }
