@@ -1,6 +1,6 @@
 // globals.d.ts
-import { TStaffHurdles } from './types.js'
+import { TStaffHurdles } from "./types.js";
 
 declare global {
-  var staffHurdles: TStaffHurdles
+  var staffHurdles: TStaffHurdles;
 }

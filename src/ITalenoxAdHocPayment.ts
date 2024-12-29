@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/interface-name-prefix */
 /*
 Parameters
 id
@@ -30,9 +29,9 @@ Remark of the payment Example: September+allowance.
 String
 */
 export interface ITalenoxAdHocPayment {
-    id?: number | null
-    year: string
-    month: string
-    period: string // One of Whole Month, 1st Half of Month, 2nd Half of Month
-    pay_group?: string | null // "Role: contractor" or "Cost Centre: FTE"
+  id?: number | null;
+  year: string;
+  month: string;
+  period: string; // One of Whole Month, 1st Half of Month, 2nd Half of Month
+  pay_group?: string | null; // "Role: contractor" or "Cost Centre: FTE"
 }
