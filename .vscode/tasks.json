@@ -21,7 +21,7 @@
             },
             "problemMatcher": [],
             "label": "npm: build",
-            "detail": "run-script-os"
+            "detail": "build via run-script-os",
         },
         {
             "type": "npm",

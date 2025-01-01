@@ -44,7 +44,12 @@ export default [
             prettier: prettierPlugin,
         },
         rules: {
-            "prettier/prettier": "error",
+            "prettier/prettier": [
+                "error",
+                {
+                    "endOfLine": "auto"
+                }
+            ],
             "@typescript-eslint/no-unused-vars": ["error", {argsIgnorePattern: "^_"}],
             "@typescript-eslint/explicit-function-return-type": "off",
             "@typescript-eslint/no-explicit-any": "warn",
