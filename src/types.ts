@@ -2,6 +2,7 @@ import { GeneralServiceComm } from "./IServiceComm.js";
 import { IStaffNames } from "./IStaffNames.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js";
+import { monthNames } from "./constants.js";
 
 export type TStaffName = string;
 export type TTips = number;
@@ -82,3 +83,5 @@ export type TStaffHurdles = {
 export type TServiceName = string;
 export type TServiceCustomRate = number | null;
 export type TServRevenueMap = Map<TServiceName, TCustomRateEntry>;
+
+export type monthName = (typeof monthNames)[number];

@@ -2,19 +2,18 @@ import { readFileSync } from "node:fs";
 import log4js from "log4js";
 const { configure, getLogger, shutdown } = log4js;
 import { config } from "node-config-ts";
-import { basename, extname } from "node:path";
+import path, { basename, extname } from "node:path";
 import {
   assertLog4JsConfig,
-  isValidDirectory,
-  moveFilesToOldDir,
+  moveFilesToOldSubDir,
 } from "./utility_functions.js";
 import { z } from "zod";
 import {
   DEFAULT_COMMISSION_LOGFILE,
   DEFAULT_CONTRACTOR_LOGFILE,
-  DEFAULT_LOGS_DIR,
   defaultLog4jsConfigFile,
 } from "./constants.js";
+import { processEnv } from "./env_functions.js";
 
 export function initLogs() {
   /**
@@ -36,8 +35,10 @@ export function initLogs() {
 
   const log4jsConfigFile = config.log4jsConfigFile ?? defaultLog4jsConfigFile;
 
-  const logsDir = setLogsDir(config.LOGS_DIR);
-  moveFilesToOldDir(logsDir);
+  // We need to invoke processEnv() here because we init logs before processEnv() is called in index.ts:main()
+  const LOGS_DIR = processEnv().LOGS_DIR;
+
+  moveFilesToOldSubDir(LOGS_DIR);
 
   //const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
   const possibleL4jsConfig = JSON.parse(
@@ -116,7 +117,10 @@ export function initLogs() {
     commissionLogFileExt,
   );
   let date = new Date().toISOString().replace(new RegExp(":", "g"), "");
-  log4jsConfig.appenders.commission.filename = `${logsDir}/${commissionLogFileBaseName}-${date}${commissionLogFileExt}`;
+  log4jsConfig.appenders.commission.filename = path.join(
+    LOGS_DIR,
+    `${commissionLogFileBaseName}-${date}${commissionLogFileExt}`,
+  );
 
   const initialContractorLogFileName =
     log4jsConfig.appenders.contractor.filename;
@@ -126,7 +130,10 @@ export function initLogs() {
     contractorLogFileExt,
   );
   date = new Date().toISOString().replace(new RegExp(":", "g"), "");
-  log4jsConfig.appenders.contractor.filename = `${logsDir}/${contractorLogFileBaseName}-${date}${contractorLogFileExt}`;
+  log4jsConfig.appenders.contractor.filename = path.join(
+    LOGS_DIR,
+    `${contractorLogFileBaseName}-${date}${contractorLogFileExt}`,
+  );
 
   configure(log4jsConfig);
 }
@@ -148,19 +155,6 @@ warnLogger.level = "warning";
 
 export const errorLogger = getLogger("error");
 errorLogger.level = "error";
-
-/**
- * Sets the directory for storing logs.
- *
- * @param path - The path to the logs directory.
- * @returns The path to the logs directory if it is valid, otherwise the default logs directory.
- */
-function setLogsDir(path: string) {
-  if (!isValidDirectory(path)) {
-    return DEFAULT_LOGS_DIR;
-  }
-  return path;
-}
 
 export function shutdownLogging(): void {
   shutdown((err) => {

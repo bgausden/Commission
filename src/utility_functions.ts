@@ -1,11 +1,12 @@
 /* global staffHurdles */
 
 import { Configuration as l4JSConfiguration } from "log4js";
-import { config, Config } from "node-config-ts";
+import { config } from "node-config-ts";
 import {
   createReadStream,
   createWriteStream,
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   renameSync,
@@ -14,10 +15,10 @@ import {
 } from "node:fs";
 import path from "path";
 import zlib from "zlib";
-import { DEFAULT_OLD_DIR } from "./constants.js";
 import { debugLogger, errorLogger, warnLogger } from "./logging_functions.js";
 import { TStaffID } from "./types.js";
 import assert from "node:assert";
+import { DEFAULT_OLD_DIR } from "./constants.js";
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === "number") {
@@ -100,13 +101,6 @@ export function getStaffHurdle(staffID: string) {
   return staffHurdles[staffID];
 }
 
-export function payrollStartDate(config: Config): Date {
-  const payrollFirstDay = new Date(
-    Date.parse(`01 ${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`),
-  );
-  return payrollFirstDay;
-}
-
 export function assertLog4JsConfig(
   config: unknown,
 ): asserts config is l4JSConfiguration {
@@ -121,6 +115,14 @@ export function assertLog4JsConfig(
   }
 }
 
+/**
+ * Checks if the given directory path is valid.
+ *
+ * This function verifies if the specified path exists and is a directory.
+ *
+ * @param dir - The directory path to validate.
+ * @returns `true` if the path exists and is a directory, otherwise `false`.
+ */
 export function isValidDirectory(dir: string): boolean {
   return existsSync(dir) && statSync(dir).isDirectory();
 }
@@ -134,7 +136,7 @@ export function isValidDirectory(dir: string): boolean {
  * @param compressFiles - Specifies whether to compress the files before moving them. Defaults to false.
  * @param retainCount - The number of most recently modified files to retain. Defaults to 0.
  */
-export function moveFilesToOldDir(
+export function moveFilesToOldSubDir(
   sourceDir: string,
   destDir = DEFAULT_OLD_DIR,
   compressFiles = false,
@@ -147,15 +149,16 @@ export function moveFilesToOldDir(
     return;
   }
 
-  const logFiles = readdirSync(sourceDir);
+  const sourceFiles = readdirSync(sourceDir);
 
   const targetDir = path.join(sourceDir, destDir);
 
   if (!isValidDirectory(targetDir)) {
     warnLogger.warn(
-      `Unable to move files. Invalid target directory: ${targetDir}`,
+      `Target directory: ${targetDir} does not exist. Will create.`,
     );
-    return;
+    mkdirSync(path.join(sourceDir, targetDir), { recursive: false });
+    assert(isValidDirectory(targetDir));
   }
 
   let filesToRetain: string[] = [];
@@ -163,9 +166,9 @@ export function moveFilesToOldDir(
     filesToRetain = getMostRecentlyModifiedFiles(sourceDir, retainCount);
   }
 
-  logFiles.forEach((file) => {
-    const filePath = `${sourceDir}/${file}`;
-    const newFilePath = `${targetDir}/${file}`;
+  sourceFiles.forEach((file) => {
+    const filePath = path.join(sourceDir, file);
+    const newFilePath = path.join(targetDir, file);
     if (file !== destDir && !filesToRetain.includes(file)) {
       if (compressFiles) {
         // Compress the file

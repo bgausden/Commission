@@ -1,4 +1,4 @@
-/* global staffHurdles */
+/* global staffHurdles, PAYMENTS_WS_NAME, PAYMENTS_WB_NAME, PAYMENTS_DIR, firstDay */
 
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
@@ -49,7 +49,6 @@ import {
   getTalenoxEmployees,
   createPayroll,
   uploadAdHocPayments,
-  firstDay,
 } from "./talenox_functions.js";
 import {
   checkRate,
@@ -57,7 +56,7 @@ import {
   isPayViaTalenox,
   eqSet,
   isContractor,
-  moveFilesToOldDir,
+  moveFilesToOldSubDir,
   isValidDirectory,
 } from "./utility_functions.js";
 //import { initDebug, log, warn, error } from "./debug_functions.js"
@@ -72,13 +71,15 @@ import {
 } from "./logging_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
 import {
-  DEFAULT_DATA_DIR,
   DEFAULT_OLD_DIR,
   DEFAULT_STAFF_HURDLES_FILE,
   defaultStaffID,
 } from "./constants.js";
 import path from "node:path";
 import { loadStaffHurdles } from "./staffHurdles.js";
+import parseFilename from "./parseFilename.js";
+import { processEnv } from "./env_functions.js";
+import assert from "node:assert";
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i;
 
@@ -567,12 +568,9 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
   XLSX.utils.book_append_sheet(
     paymentsWB,
     XLSX.utils.json_to_sheet(payments, { skipHeader: true }),
-    config.PAYMENTS_WS_NAME,
+    PAYMENTS_WS_NAME,
   );
-  XLSX.writeFile(
-    paymentsWB,
-    `${config.PAYMENTS_DIR}/${config.PAYMENTS_WB_NAME}`,
-  );
+  XLSX.writeFile(paymentsWB, `${PAYMENTS_DIR}/${PAYMENTS_WB_NAME}`);
 }
 
 function doPooling(
@@ -707,38 +705,47 @@ function doPooling(
 async function main() {
   initLogs();
 
+  const { PAYROLL_MONTH, PAYROLL_YEAR, PAYMENTS_WB_NAME, PAYMENTS_WS_NAME } =
+    parseFilename(config.PAYROLL_WB_FILENAME);
+  global.PAYROLL_MONTH = PAYROLL_MONTH;
+  global.PAYROLL_YEAR = PAYROLL_YEAR;
+  global.PAYMENTS_WB_NAME = PAYMENTS_WB_NAME;
+  global.PAYMENTS_WS_NAME = PAYMENTS_WS_NAME;
+
+  global.firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
+
   commissionLogger.info(`Commission run begins ${firstDay.toDateString()}`);
   if (config.updateTalenox === false) {
     commissionLogger.info(`Talenox update is disabled in config.`);
   }
-  commissionLogger.info(`Payroll Month is ${config.PAYROLL_MONTH}`);
+  commissionLogger.info(`Payroll Month is ${PAYROLL_MONTH}`);
 
-  let dataDir = DEFAULT_DATA_DIR.toString();
-  if (isValidDirectory(config.DATA_DIR)) {
-    dataDir = config.DATA_DIR;
-  } else {
-    errorLogger.error(
-      `Configuration contains invalid or missing data directory: ${config.DATA_DIR}`,
-    );
-  }
+  const { PAYMENTS_DIR, DATA_DIR, LOGS_DIR } = processEnv();
+  global.LOGS_DIR = LOGS_DIR;
+  global.PAYMENTS_DIR = PAYMENTS_DIR;
 
-  if (!isValidDirectory(path.join(dataDir, DEFAULT_OLD_DIR))) {
+  assert(isValidDirectory(DATA_DIR));
+
+  /* if (!isValidDirectory(DATA_DIR)) {
+    errorLogger.error(`Invalid or missing data directory: ${DATA_DIR}`);
+  } */
+
+  const DATA_OLD_DIR = path.join(DATA_DIR, DEFAULT_OLD_DIR);
+
+  if (!isValidDirectory(DATA_OLD_DIR)) {
     warnLogger.warn(
-      `Invalid or missing default old data directory: ${DEFAULT_OLD_DIR}`,
+      `Invalid or missing default old data directory: ${DATA_OLD_DIR}`,
     );
   }
 
   debugLogger.debug(
-    `Moving (and compressing) files from ${dataDir} to ${path.join(
-      dataDir,
-      DEFAULT_OLD_DIR,
-    )}`,
+    `Moving (and compressing) files from ${DATA_DIR} to ${DATA_OLD_DIR}`,
   );
-  moveFilesToOldDir(dataDir, DEFAULT_OLD_DIR, true, 2); // probably not necessary for the destination folder to be configurable
+  moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2); // probably not necessary for the destination folder to be configurable
+
+  const payrollWorkbookPath = path.join(DATA_DIR, config.PAYROLL_WB_FILENAME);
 
   loadStaffHurdles(DEFAULT_STAFF_HURDLES_FILE);
-
-  const payrollWorkbookPath = path.join(dataDir, config.PAYROLL_WB_FILENAME);
 
   debugLogger.debug(`Requesting employees from Talenox`);
   const talenoxStaff = await getTalenoxEmployees();
@@ -1092,7 +1099,7 @@ form the payroll for the month
 */
 
   const payments = createAdHocPayments(commMap, talenoxStaff);
-  moveFilesToOldDir(config.PAYMENTS_DIR, DEFAULT_OLD_DIR, true, 2);
+  moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
   writePaymentsWorkBook(payments);
 
   /* 
@@ -1109,12 +1116,12 @@ form the payroll for the month
   if (!createPayrollResult[1]) {
     if (createPayrollResult[0]) {
       errorLogger.error(
-        `Failed to create payroll payment for ${config.PAYROLL_MONTH}: ${createPayrollResult[0].message}`,
+        `Failed to create payroll payment for ${PAYROLL_MONTH}: ${createPayrollResult[0].message}`,
       );
     }
     if (!createPayrollResult[0]) {
       errorLogger.error(
-        `Failed to create payroll payment for ${config.PAYROLL_MONTH}: no reason given by Talenox API`,
+        `Failed to create payroll payment for ${PAYROLL_MONTH}: no reason given by Talenox API`,
       );
     }
     throw new Error(
