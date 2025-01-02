@@ -18,6 +18,21 @@ const DEFAULT_LOG4JS_CONFIG_FILE = "log4js.json";
 
 const DEFAULT_STAFF_HURDLES_FILE = "dist/staffHurdle.json";
 
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
 export {
   DEFAULT_DATA_DIR,
   DEFAULT_LOGS_DIR,
@@ -28,4 +43,5 @@ export {
   DEFAULT_COMMISSION_LOGFILE,
   DEFAULT_CONTRACTOR_LOGFILE,
   DEFAULT_STAFF_HURDLES_FILE,
+  monthNames,
 };
