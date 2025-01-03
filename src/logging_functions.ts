@@ -107,6 +107,11 @@ export function initLogs() {
     }),
   });
 
+  const timeStamp = new Date()
+    .toISOString()
+    .replace(/[:-]/g, "")
+    .replace(/\..*$/g, "");
+
   const log4jsConfig = l4jsConfigSchema.parse(possibleL4jsConfig);
 
   const initialCommissionLogFileName =
@@ -116,10 +121,10 @@ export function initLogs() {
     initialCommissionLogFileName,
     commissionLogFileExt,
   );
-  let date = new Date().toISOString().replace(new RegExp(":", "g"), "");
+
   log4jsConfig.appenders.commission.filename = path.join(
     LOGS_DIR,
-    `${commissionLogFileBaseName}-${date}${commissionLogFileExt}`,
+    `${commissionLogFileBaseName}-${timeStamp}${commissionLogFileExt}`,
   );
 
   const initialContractorLogFileName =
@@ -129,10 +134,9 @@ export function initLogs() {
     initialContractorLogFileName,
     contractorLogFileExt,
   );
-  date = new Date().toISOString().replace(new RegExp(":", "g"), "");
   log4jsConfig.appenders.contractor.filename = path.join(
     LOGS_DIR,
-    `${contractorLogFileBaseName}-${date}${contractorLogFileExt}`,
+    `${contractorLogFileBaseName}-${timeStamp}${contractorLogFileExt}`,
   );
 
   configure(log4jsConfig);
