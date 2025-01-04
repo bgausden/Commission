@@ -16,6 +16,14 @@
             },
             "flags": "w"
         },
+        "debugLog": {
+            "type": "file",
+            "filename": "commission.debug",
+            "layout": {
+                "type": "messagePassThrough"
+            },
+            "flags": "w"
+        },
         "debug": {
             "type": "stderr"
         },
@@ -26,6 +34,9 @@
             "type": "stdout"
         },
         "error": {
+            "type": "stderr"
+        },
+        "fatal": {
             "type": "stderr"
         }
     },
@@ -40,33 +51,45 @@
         "contractor": {
             "appenders": [
                 "contractor",
-                "info"
+                "info",
+                "commission"
             ],
             "level": "info"
         },
         "debug": {
             "appenders": [
-                "debug"
+                "debug",
+                "debugLog"
             ],
-            "level": "info"
+            "level": "debug"
         },
         "info": {
             "appenders": [
-                "info"
+                "info",
+                "commission"
             ],
             "level": "info"
         },
         "warn": {
             "appenders": [
-                "warn"
+                "warn",
+                "commission"
             ],
             "level": "warn"
         },
         "error": {
             "appenders": [
-                "error"
+                "error",
+                "commission"
             ],
             "level": "error"
+        },
+        "fatal": {
+            "appenders": [
+                "fatal",
+                "commission"
+            ],
+            "level": "fatal"
         }
     }
 }

@@ -5,7 +5,7 @@ declare global {
   var staffHurdles: TStaffHurdles;
 
   var PAYROLL_MONTH: monthName;
-  var PAYROLL_YEAR: number;
+  var PAYROLL_YEAR: string;
   var PAYMENTS_WB_NAME: string;
   var PAYMENTS_WS_NAME: string;
 

@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "development"
+  ],
+  "connector": {
+    "name": "local"
+  },
+  "formatters": ["stylish"],
+  "rules": {
+    "disallow-inline-styles": "off"
+  }
+}
