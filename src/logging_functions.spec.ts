@@ -5,13 +5,11 @@ import {
   commissionLogger,
   contractorLogger,
   debugLogger,
-  infoLogger,
-  warnLogger,
-  errorLogger,
 } from "./logging_functions.js";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import assert from "node:assert";
+import { PassThrough } from "node:stream";
 
 describe("logging_functions", () => {
   const LOGS_DIR = "./logs";
@@ -50,18 +48,22 @@ describe("logging_functions", () => {
     expect(existsSync(logFilePath)).toBe(true);
   });
 
-  it("should log messages to the debug logger", () => {
-    const originalConsoleError = console.error;
-    let consoleOutput = "";
-    console.error = (message) => {
-      consoleOutput += message;
-    };
-
+  it("only severity debug messages sent to debugLogger should log messages to stderr", () => {
+    let stderrOutput: string[] = [];
+    const outputStream = new PassThrough();
+    outputStream.on("data", (data) => {
+      stderrOutput.push(data.toString());
+    });
+    const originalStderrWrite = process.stderr.write;
+    process.stderr.write = outputStream.write.bind(
+      outputStream,
+    ) as unknown as typeof process.stderr.write;
     debugLogger.debug("Debug log message");
-
-    console.error = originalConsoleError;
-
-    expect(consoleOutput).toContain("Debug log message");
+    outputStream.end();
+    process.stderr.write = originalStderrWrite;
+    expect(
+      stderrOutput.some((output) => output.includes("Debug log message")),
+    ).toBe(true);
   });
 
   /* it("should log messages to the info logger", () => {

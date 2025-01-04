@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Config</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <style>
+        #drop-zone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        #drop-zone:hover {
+            border: 1px solid #000;
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .form-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .form-button {
+            margin-top: 20px;
+        }
+
+        .error-dialog {
+            color: red;
+            margin-top: 20px;
+        }
+
+        .config-display {
+            margin-top: 20px;
+        }
+
+        .config-display h2 {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .config-display h2::before {
+            content: '\25B6';
+            /* Right-pointing triangle */
+            display: inline-block;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+            font-size: 70%;
+        }
+
+        .config-display h2.open::before {
+            transform: rotate(90deg);
+            /* Down-pointing triangle */
+        }
+
+        .config-content {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Update Commission Config</h1>
+    <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none">
+        <div id="drop-zone">
+            Drag and drop payroll workbook here, or click to select file. Only .xlsx files are allowed.
+        </div>
+        <div class="form-group">
+            <label class="form-label">Payroll Workbook (in XLSX format):</label>
+            <span id="payroll-wb-name"></span>
+        </div>
+        <input type="file" id="file-input" name="file" style="display: none;" accept=".xlsx">
+    </form>
+    <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none">
+        <div class="form-group">
+            <label for="missingStaffAreFatal" class="form-label">missingStaffAreFatal:</label>
+            <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
+        </div>
+        <div class="form-group">
+            <label for="updateTalenox" class="form-label">updateTalenox:</label>
+            <input type="checkbox" id="updateTalenox" name="updateTalenox">
+        </div>
+        <button type="submit" class="form-button">Update Config</button>
+    </form>
+    <div id="config-display" class="config-display">
+        <h2 onclick="toggleConfig()">Current Config</h2>
+        <div id="config-content" class="config-content">
+            <pre id="config-json"></pre>
+        </div>
+    </div>
+    <div id="error-dialog" class="error-dialog"></div>
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadForm = document.getElementById('upload-form');
+        const configForm = document.getElementById('config-form');
+        const configJson = document.getElementById('config-json');
+        const payrollWbName = document.getElementById('payroll-wb-name');
+        const errorDialog = document.getElementById('error-dialog');
+        const configContent = document.getElementById('config-content');
+        const configDisplayHeader = document.querySelector('.config-display h2');
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        dropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropZone.style.border = '2px solid #000';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.border = '2px dashed #ccc';
+        });
+
+        dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropZone.style.border = '2px dashed #ccc';
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (fileExtension !== 'xlsx') {
+                    errorDialog.textContent = 'Invalid file type. Only .xlsx files are allowed.';
+                    return;
+                }
+                fileInput.files = files;
+                htmx.trigger(uploadForm, 'submit');
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            const files = fileInput.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (fileExtension !== 'xlsx') {
+                    errorDialog.textContent = 'Invalid file type. Only .xlsx files are allowed.';
+                    return;
+                }
+                htmx.trigger(uploadForm, 'submit');
+            }
+        });
+
+        htmx.on('htmx:beforeRequest', (event) => {
+            if (event.detail.elt.id === 'upload-form') {
+                errorDialog.textContent = '';
+            }
+        });
+
+        htmx.on('htmx:responseError', (event) => {
+            if (event.detail.elt.id === 'upload-form') {
+                errorDialog.textContent = event.detail.xhr.responseText;
+            }
+        });
+
+        htmx.on('htmx:afterRequest', (event) => {
+            if (event.detail.elt.id === 'upload-form' || event.detail.elt.id === 'config-form') {
+                fetchConfig();
+            }
+        });
+
+        function fetchConfig() {
+            fetch('/config')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Fetched config:', data); // Debugging log
+                    configJson.textContent = JSON.stringify(data, null, 4);
+                    payrollWbName.textContent = data.PAYROLL_WB_FILENAME;
+                    document.getElementById('missingStaffAreFatal').checked = data.missingStaffAreFatal;
+                    document.getElementById('updateTalenox').checked = data.updateTalenox;
+                })
+                .catch(error => {
+                    console.error('Error fetching config:', error); // Debugging log
+                });
+        }
+
+        function toggleConfig() {
+            if (configContent.style.display === 'none' || configContent.style.display === '') {
+                configContent.style.display = 'block';
+                configDisplayHeader.classList.add('open');
+            } else {
+                configContent.style.display = 'none';
+                configDisplayHeader.classList.remove('open');
+            }
+        }
+
+        // Fetch and display the current config on load
+        fetchConfig();
+    </script>
+</body>
+
+</html>

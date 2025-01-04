@@ -71,6 +71,26 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Server via TSX",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "src/server.ts"
+            ],
+            "runtimeArgs": [
+                "--import",
+                "tsx/esm",
+                "-r",
+                "dotenv/config"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "DEBUG": "*",
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
+            },
+        },
+        {
             "name": "Current file via TSX",
             "type": "node",
             "request": "launch",

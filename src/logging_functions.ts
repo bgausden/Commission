@@ -1,19 +1,25 @@
 import { readFileSync } from "node:fs";
-import log4js from "log4js";
+import log4js, { FileAppender } from "log4js";
 const { configure, getLogger, shutdown } = log4js;
-import { config } from "node-config-ts";
 import path, { basename, extname } from "node:path";
 import {
   assertLog4JsConfig,
   moveFilesToOldSubDir,
 } from "./utility_functions.js";
-import { z } from "zod";
-import {
-  DEFAULT_COMMISSION_LOGFILE,
-  DEFAULT_CONTRACTOR_LOGFILE,
-  defaultLog4jsConfigFile,
-} from "./constants.js";
+// import { z } from "zod";
 import { processEnv } from "./env_functions.js";
+import assert from "node:assert";
+import { DEFAULT_LOG4JS_CONFIG_FILE } from "./constants.js";
+
+function isFileAppender(appender: unknown): asserts appender is FileAppender {
+  assert(
+    typeof appender === "object" &&
+      appender !== null &&
+      "filename" in appender &&
+      "type" in appender,
+    "Invalid FileAppender",
+  );
+}
 
 export function initLogs() {
   /**
@@ -33,20 +39,26 @@ export function initLogs() {
     return possibleL4jsConfig
   } */
 
-  const log4jsConfigFile = config.log4jsConfigFile ?? defaultLog4jsConfigFile;
-
   // We need to invoke processEnv() here because we init logs before processEnv() is called in index.ts:main()
   const LOGS_DIR = processEnv().LOGS_DIR;
 
   moveFilesToOldSubDir(LOGS_DIR);
 
+  let LOG4JS_CONFIG_FILE = DEFAULT_LOG4JS_CONFIG_FILE as string;
+  if (process.env.LOG4JS_CONFIG_FILE !== undefined) {
+    LOG4JS_CONFIG_FILE = process.env.LOG4JS_CONFIG_FILE;
+    infoLogger.info(
+      `LOG4JS_CONFIG_FILE set in .env, using value ${LOG4JS_CONFIG_FILE}`,
+    );
+  }
+
   //const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
   const possibleL4jsConfig = JSON.parse(
-    readFileSync(`./${log4jsConfigFile}`, "utf-8"),
+    readFileSync(`./${LOG4JS_CONFIG_FILE}`, "utf-8"),
   );
   assertLog4JsConfig(possibleL4jsConfig);
 
-  const l4jsConfigSchema = z.object({
+  /* const l4jsConfigSchema = z.object({
     appenders: z.object({
       commission: z.object({
         type: z.string(),
@@ -105,39 +117,52 @@ export function initLogs() {
         level: z.string(),
       }),
     }),
-  });
+  }); */
 
   const timeStamp = new Date()
     .toISOString()
     .replace(/[:-]/g, "")
     .replace(/\..*$/g, "");
 
-  const log4jsConfig = l4jsConfigSchema.parse(possibleL4jsConfig);
+  // Don't know if it's necessary to parse the log4js config.
+  // For now assume it's in the correct format and contains the config items assumed to exist later in the code.
+  //const log4jsConfig = l4jsConfigSchema.parse(possibleL4jsConfig);
+  const log4jsConfig = possibleL4jsConfig;
 
-  const initialCommissionLogFileName =
-    log4jsConfig.appenders.commission.filename;
+  const commissionAppender = log4jsConfig.appenders.commission;
+  isFileAppender(commissionAppender);
+
+  const contractorAppender = log4jsConfig.appenders.contractor;
+  isFileAppender(contractorAppender);
+
+  const debugLogAppender = log4jsConfig.appenders.debugLog;
+  isFileAppender(debugLogAppender);
+
+  const initialCommissionLogFileName = commissionAppender.filename;
   const commissionLogFileExt = extname(initialCommissionLogFileName);
   const commissionLogFileBaseName = basename(
     initialCommissionLogFileName,
     commissionLogFileExt,
   );
 
-  log4jsConfig.appenders.commission.filename = path.join(
+  commissionAppender.filename = path.join(
     LOGS_DIR,
     `${commissionLogFileBaseName}-${timeStamp}${commissionLogFileExt}`,
   );
 
-  const initialContractorLogFileName =
-    log4jsConfig.appenders.contractor.filename;
+  const initialContractorLogFileName = contractorAppender.filename;
   const contractorLogFileExt = extname(initialContractorLogFileName);
   const contractorLogFileBaseName = basename(
     initialContractorLogFileName,
     contractorLogFileExt,
   );
-  log4jsConfig.appenders.contractor.filename = path.join(
+  contractorAppender.filename = path.join(
     LOGS_DIR,
     `${contractorLogFileBaseName}-${timeStamp}${contractorLogFileExt}`,
   );
+
+  const initialDebugLogFileName = debugLogAppender.filename;
+  debugLogAppender.filename = path.join(LOGS_DIR, initialDebugLogFileName);
 
   configure(log4jsConfig);
 }

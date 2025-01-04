@@ -619,8 +619,7 @@ function doPooling(
   });
   // Now actually allocate revenues across the pools
   for (const pool of pools) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const [poolID, poolMembers] = pool;
+    const [_poolId, poolMembers] = pool;
     const aggregateComm: TCommComponents = {
       totalServiceRevenue: 0,
       totalServiceCommission: 0,

@@ -1,6 +1,5 @@
 {
     "PAYROLL_WB_FILENAME": "Payroll Report 12-1-2024 - 12-31-2024.xlsx",
     "missingStaffAreFatal": true,
-    "updateTalenox": false,
-    "log4jsConfigFile": "log4js.json"
+    "updateTalenox": false
 }
