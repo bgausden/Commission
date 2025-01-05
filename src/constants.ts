@@ -16,7 +16,7 @@ const defaultStaffID = "000";
 
 const DEFAULT_LOG4JS_CONFIG_FILE = "log4js.json";
 
-const DEFAULT_STAFF_HURDLES_FILE = "dist/staffHurdle.json";
+const DEFAULT_STAFF_HURDLES_FILE = "config/staffHurdle.json";
 
 const monthNames = [
   "January",
