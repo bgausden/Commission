@@ -2,11 +2,11 @@
   "extends": [
     "development"
   ],
-  "connector": {
-    "name": "local"
-  },
-  "formatters": ["stylish"],
-  "rules": {
+  "connector": "local",
+  "formatters": [
+    "stylish"
+  ],
+  "hints": {
     "disallow-inline-styles": "off"
   }
 }
