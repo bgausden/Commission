@@ -11,26 +11,129 @@
 
 <body class="bg-gray-100 p-6">
     <h1 class="text-2xl font-bold mb-4">Update Staff Hurdle Config</h1>
+    <input type="text" id="search-box" placeholder="Search..." class="mb-4 p-2 border rounded w-full">
     <form id="staff-hurdle-form" hx-post="/update-staff-hurdle" hx-trigger="submit" hx-swap="none" class="mb-6">
-        <textarea id="staff-hurdle-json" name="staffHurdleJson" class="w-full h-64 p-2 border rounded"></textarea>
-        <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update Config</button>
+        <table id="staff-hurdle-table" class="min-w-full bg-white border border-gray-300">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(10)">Contractor</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(11)">Pay Via Talenox</th>
+                </tr>
+            </thead>
+            <tbody id="staff-hurdle-tbody">
+                <!-- Rows will be dynamically added here -->
+            </tbody>
+        </table>
+        <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
+            Config</button>
     </form>
     <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
     <script>
         const staffHurdleForm = document.getElementById('staff-hurdle-form');
-        const staffHurdleJson = document.getElementById('staff-hurdle-json');
+        const staffHurdleTbody = document.getElementById('staff-hurdle-tbody');
         const errorDialog = document.getElementById('error-dialog');
+        const searchBox = document.getElementById('search-box');
+        let sortOrder = 1; // 1 for ascending, -1 for descending
 
         // Fetch and display the current staff hurdle config on load
         fetch('/staff-hurdle-config')
             .then(response => response.json())
             .then(data => {
-                staffHurdleJson.value = JSON.stringify(data, null, 4);
+                populateTable(data);
             })
             .catch(error => {
                 console.error('Error fetching staff hurdle config:', error);
                 errorDialog.textContent = 'Error fetching staff hurdle config';
             });
+
+        function populateTable(data) {
+            staffHurdleTbody.innerHTML = '';
+            for (const id in data) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2 border">${id}</td>
+                    <td class="px-4 py-2 border"><input type="text" name="staffName-${id}" value="${data[id].staffName}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="mbCommRate-${id}" value="${data[id].mbCommRate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="baseRate-${id}" value="${data[id].baseRate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle1Level-${id}" value="${data[id].hurdle1Level}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle1Rate-${id}" value="${data[id].hurdle1Rate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle2Level-${id}" value="${data[id].hurdle2Level}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle2Rate-${id}" value="${data[id].hurdle2Rate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle3Level-${id}" value="${data[id].hurdle3Level}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle3Rate-${id}" value="${data[id].hurdle3Rate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="checkbox" name="contractor-${id}" ${data[id].contractor ? 'checked' : ''}></td>
+                    <td class="px-4 py-2 border"><input type="checkbox" name="payViaTalenox-${id}" ${data[id].payViaTalenox ? 'checked' : ''}></td>
+                `;
+                staffHurdleTbody.appendChild(row);
+            }
+        }
+
+        function sortTable(columnIndex) {
+            const rows = Array.from(staffHurdleTbody.rows);
+            const sortedRows = rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].querySelector('input, checkbox')?.value || a.cells[columnIndex].innerText.trim();
+                const bText = b.cells[columnIndex].querySelector('input, checkbox')?.value || b.cells[columnIndex].innerText.trim();
+                return aText.localeCompare(bText, undefined, {numeric: true}) * sortOrder;
+            });
+            staffHurdleTbody.innerHTML = '';
+            sortedRows.forEach(row => staffHurdleTbody.appendChild(row));
+            sortOrder *= -1; // Toggle sort order
+        }
+
+        searchBox.addEventListener('input', () => {
+            const searchTerm = searchBox.value.toLowerCase();
+            const rows = Array.from(staffHurdleTbody.rows);
+            rows.forEach(row => {
+                const cells = Array.from(row.cells);
+                const matches = cells.some(cell => cell.innerText.toLowerCase().includes(searchTerm));
+                row.style.display = matches ? '' : 'none';
+            });
+        });
+
+        staffHurdleForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const formData = new FormData(staffHurdleForm);
+            const staffHurdleConfig = {};
+
+            formData.forEach((value, key) => {
+                const [field, id] = key.split('-');
+                if (!staffHurdleConfig[id]) {
+                    staffHurdleConfig[id] = {};
+                }
+                staffHurdleConfig[id][field] = field.includes('Rate') || field.includes('Level') ? parseFloat(value) : value;
+                if (field === 'contractor' || field === 'payViaTalenox') {
+                    staffHurdleConfig[id][field] = value === 'on';
+                }
+            });
+
+            fetch('/update-staff-hurdle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(staffHurdleConfig)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        errorDialog.textContent = data.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating staff hurdle config:', error);
+                    errorDialog.textContent = 'Error updating staff hurdle config';
+                });
+        });
 
         htmx.on('htmx:beforeRequest', (event) => {
             if (event.detail.elt.id === 'staff-hurdle-form') {
