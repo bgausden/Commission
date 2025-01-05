@@ -28,12 +28,6 @@ app.use(express.json());
 app.use(fileUpload());
 app.use(express.static(path.join(__dirname, "../public")));
 
-/* interface Config {
-  PAYROLL_WB_FILENAME: string;
-  missingStaffAreFatal: boolean;
-  updateTalenox: boolean;
-} */
-
 app.get("/config", (_req: Request, res: Response) => {
   const config = loadConfig();
   res.json(config);
@@ -76,7 +70,7 @@ app.post("/update-staff-hurdle", (req: Request, res: Response) => {
   const ajv = new Ajv();
   const schema = JSON.parse(fs.readFileSync(STAFF_HURDLE_SCHEMA_PATH, "utf8"));
   const validate = ajv.compile(schema);
-  const staffHurdleConfig = JSON.parse(req.body.staffHurdleJson);
+  const staffHurdleConfig = req.body;
 
   if (!validate(staffHurdleConfig)) {
     return res.status(400).json({
