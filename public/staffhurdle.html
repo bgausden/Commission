@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Staff Hurdle Config</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 p-6">
+    <h1 class="text-2xl font-bold mb-4">Update Staff Hurdle Config</h1>
+    <form id="staff-hurdle-form" hx-post="/update-staff-hurdle" hx-trigger="submit" hx-swap="none" class="mb-6">
+        <textarea id="staff-hurdle-json" name="staffHurdleJson" class="w-full h-64 p-2 border rounded"></textarea>
+        <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update Config</button>
+    </form>
+    <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
+    <script>
+        const staffHurdleForm = document.getElementById('staff-hurdle-form');
+        const staffHurdleJson = document.getElementById('staff-hurdle-json');
+        const errorDialog = document.getElementById('error-dialog');
+
+        // Fetch and display the current staff hurdle config on load
+        fetch('/staff-hurdle-config')
+            .then(response => response.json())
+            .then(data => {
+                staffHurdleJson.value = JSON.stringify(data, null, 4);
+            })
+            .catch(error => {
+                console.error('Error fetching staff hurdle config:', error);
+                errorDialog.textContent = 'Error fetching staff hurdle config';
+            });
+
+        htmx.on('htmx:beforeRequest', (event) => {
+            if (event.detail.elt.id === 'staff-hurdle-form') {
+                errorDialog.textContent = '';
+            }
+        });
+
+        htmx.on('htmx:responseError', (event) => {
+            if (event.detail.elt.id === 'staff-hurdle-form') {
+                errorDialog.textContent = event.detail.xhr.responseText;
+            }
+        });
+    </script>
+</body>
+
+</html>
