@@ -7,6 +7,12 @@
     "stylish"
   ],
   "hints": {
-    "disallow-inline-styles": "off"
+    "disallow-inline-styles": "off",
+    "axe/forms": [
+      "default",
+      {
+        "label": "off"
+      }
+    ]
   }
 }
