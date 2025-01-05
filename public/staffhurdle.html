@@ -81,8 +81,8 @@
         function sortTable(columnIndex) {
             const rows = Array.from(staffHurdleTbody.rows);
             const sortedRows = rows.sort((a, b) => {
-                const aText = a.cells[columnIndex].querySelector('input, checkbox')?.value || a.cells[columnIndex].innerText.trim();
-                const bText = b.cells[columnIndex].querySelector('input, checkbox')?.value || b.cells[columnIndex].innerText.trim();
+                const aText = a.cells[columnIndex].querySelector('input:not([type="checkbox"]), select, textarea')?.value || a.cells[columnIndex].innerText.trim();
+                const bText = b.cells[columnIndex].querySelector('input:not([type="checkbox"]), select, textarea')?.value || b.cells[columnIndex].innerText.trim();
                 return aText.localeCompare(bText, undefined, {numeric: true}) * sortOrder;
             });
             staffHurdleTbody.innerHTML = '';
@@ -95,7 +95,11 @@
             const rows = Array.from(staffHurdleTbody.rows);
             rows.forEach(row => {
                 const cells = Array.from(row.cells);
-                const matches = cells.some(cell => cell.innerText.toLowerCase().includes(searchTerm));
+                const matches = cells.some(cell => {
+                    const input = cell.querySelector('input:not([type="checkbox"]), select, textarea');
+                    const text = input ? input.value : cell.innerText;
+                    return text.toLowerCase().includes(searchTerm);
+                });
                 row.style.display = matches ? '' : 'none';
             });
         });
