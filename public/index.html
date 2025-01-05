@@ -6,100 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Config</title>
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
-    <style>
-        #drop-zone {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        #drop-zone:hover {
-            border: 1px solid #000;
-        }
-
-        .form-group {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .form-label {
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .form-button {
-            margin-top: 20px;
-        }
-
-        .error-dialog {
-            color: red;
-            margin-top: 20px;
-        }
-
-        .config-display {
-            margin-top: 20px;
-        }
-
-        .config-display h2 {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-        }
-
-        .config-display h2::before {
-            content: '\25B6';
-            /* Right-pointing triangle */
-            display: inline-block;
-            margin-right: 10px;
-            transition: transform 0.3s ease;
-            font-size: 70%;
-        }
-
-        .config-display h2.open::before {
-            transform: rotate(90deg);
-            /* Down-pointing triangle */
-        }
-
-        .config-content {
-            display: none;
-            margin-top: 10px;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 
-<body>
-    <h1>Update Commission Config</h1>
-    <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none">
-        <div id="drop-zone">
+<body class="bg-gray-100 p-6">
+    <h1 class="text-2xl font-bold mb-4">Update Commission Config</h1>
+    <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none" class="mb-6">
+        <div id="drop-zone"
+            class="border-4 border-dashed border-gray-300 p-6 text-center mb-4 cursor-pointer hover:border-blue-500 transition-all duration-300 ease-in-out bg-white rounded-lg shadow-md">
             Drag and drop payroll workbook here, or click to select file. Only .xlsx files are allowed.
         </div>
-        <div class="form-group">
-            <label class="form-label">Payroll Workbook (in XLSX format):</label>
+        <div class="form-group flex items-center mt-2">
+            <label class="form-label font-bold mr-2">Payroll Workbook (in XLSX format):</label>
             <span id="payroll-wb-name"></span>
         </div>
-        <input type="file" id="file-input" name="file" style="display: none;" accept=".xlsx">
+        <input type="file" id="file-input" name="file" class="hidden" accept=".xlsx">
     </form>
-    <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none">
-        <div class="form-group">
-            <label for="missingStaffAreFatal" class="form-label">missingStaffAreFatal:</label>
+    <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none" class="mb-6">
+        <div class="form-group flex items-center mt-2">
+            <label for="missingStaffAreFatal" class="form-label text-lg text-blue-500 mr-2">missingStaffAreFatal:</label>
             <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
         </div>
-        <div class="form-group">
-            <label for="updateTalenox" class="form-label">updateTalenox:</label>
+        <div class="form-group flex items-center mt-2">
+            <label for="updateTalenox" class="form-label text-lg text-blue-500 mr-2">updateTalenox:</label>
             <input type="checkbox" id="updateTalenox" name="updateTalenox">
         </div>
-        <button type="submit" class="form-button">Update Config</button>
+        <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
+            Config</button>
     </form>
-    <div id="config-display" class="config-display">
-        <h2 onclick="toggleConfig()">Current Config</h2>
-        <div id="config-content" class="config-content">
-            <pre id="config-json"></pre>
+    <div id="config-display" class="config-display mt-6">
+        <h2 onclick="toggleConfig()" class="cursor-pointer flex items-center text-xl font-bold">
+            Current Config
+            <span id="toggle-icon" class="ml-2 transform transition-transform">&#9654;</span>
+        </h2>
+        <div id="config-content" class="config-content mt-2 hidden">
+            <pre id="config-json" class="bg-gray-200 p-4 rounded"></pre>
         </div>
     </div>
-    <div id="error-dialog" class="error-dialog"></div>
+    <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -117,16 +61,16 @@
 
         dropZone.addEventListener('dragover', (event) => {
             event.preventDefault();
-            dropZone.style.border = '2px solid #000';
+            dropZone.classList.add('border-blue-500');
         });
 
         dropZone.addEventListener('dragleave', () => {
-            dropZone.style.border = '2px dashed #ccc';
+            dropZone.classList.remove('border-blue-500');
         });
 
         dropZone.addEventListener('drop', (event) => {
             event.preventDefault();
-            dropZone.style.border = '2px dashed #ccc';
+            dropZone.classList.remove('border-blue-500');
 
             const files = event.dataTransfer.files;
             if (files.length > 0) {
@@ -188,12 +132,14 @@
         }
 
         function toggleConfig() {
+            const configContent = document.getElementById('config-content');
+            const toggleIcon = document.getElementById('toggle-icon');
             if (configContent.style.display === 'none' || configContent.style.display === '') {
                 configContent.style.display = 'block';
-                configDisplayHeader.classList.add('open');
+                toggleIcon.style.transform = 'rotate(90deg)';
             } else {
                 configContent.style.display = 'none';
-                configDisplayHeader.classList.remove('open');
+                toggleIcon.style.transform = 'rotate(0deg)';
             }
         }
 
