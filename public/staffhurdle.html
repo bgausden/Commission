@@ -16,18 +16,30 @@
         <table id="staff-hurdle-table" class="min-w-full bg-white border border-gray-300">
             <thead>
                 <tr>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(10)">Contractor</th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(11)">Pay Via Talenox</th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID <span
+                            id="sort-indicator-0"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name <span
+                            id="sort-indicator-1"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate <span
+                            id="sort-indicator-2"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate <span
+                            id="sort-indicator-3"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level <span
+                            id="sort-indicator-4"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate <span
+                            id="sort-indicator-5"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level <span
+                            id="sort-indicator-6"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate <span
+                            id="sort-indicator-7"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level <span
+                            id="sort-indicator-8"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate <span
+                            id="sort-indicator-9"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(10)">Contractor <span
+                            id="sort-indicator-10"></span></th>
+                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(11)">Pay Via Talenox <span
+                            id="sort-indicator-11"></span></th>
                 </tr>
             </thead>
             <tbody id="staff-hurdle-tbody">
@@ -44,6 +56,7 @@
         const errorDialog = document.getElementById('error-dialog');
         const searchBox = document.getElementById('search-box');
         let sortOrder = 1; // 1 for ascending, -1 for descending
+        let currentSortColumn = -1;
 
         // Fetch and display the current staff hurdle config on load
         fetch('/staff-hurdle-config')
@@ -87,7 +100,17 @@
             });
             staffHurdleTbody.innerHTML = '';
             sortedRows.forEach(row => staffHurdleTbody.appendChild(row));
+            updateSortIndicators(columnIndex);
             sortOrder *= -1; // Toggle sort order
+        }
+
+        function updateSortIndicators(columnIndex) {
+            if (currentSortColumn !== -1) {
+                document.getElementById(`sort-indicator-${currentSortColumn}`).innerText = '';
+            }
+            const indicator = document.getElementById(`sort-indicator-${columnIndex}`);
+            indicator.innerText = sortOrder === 1 ? '▲' : '▼';
+            currentSortColumn = columnIndex;
         }
 
         searchBox.addEventListener('input', () => {
