@@ -7,6 +7,21 @@
     <title>Update Staff Hurdle Config</title>
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        th {
+            position: relative;
+        }
+
+        th .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            cursor: col-resize;
+            user-select: none;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-100 p-6">
@@ -17,29 +32,53 @@
             <thead>
                 <tr>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID <span
-                            id="sort-indicator-0"></span></th>
+                            id="sort-indicator-0"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 0)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name <span
-                            id="sort-indicator-1"></span></th>
+                            id="sort-indicator-1"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 1)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate <span
-                            id="sort-indicator-2"></span></th>
+                            id="sort-indicator-2"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 2)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate <span
-                            id="sort-indicator-3"></span></th>
+                            id="sort-indicator-3"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 3)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level <span
-                            id="sort-indicator-4"></span></th>
+                            id="sort-indicator-4"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 4)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate <span
-                            id="sort-indicator-5"></span></th>
+                            id="sort-indicator-5"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 5)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level <span
-                            id="sort-indicator-6"></span></th>
+                            id="sort-indicator-6"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 6)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate <span
-                            id="sort-indicator-7"></span></th>
+                            id="sort-indicator-7"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 7)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level <span
-                            id="sort-indicator-8"></span></th>
+                            id="sort-indicator-8"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 8)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate <span
-                            id="sort-indicator-9"></span></th>
+                            id="sort-indicator-9"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 9)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(10)">Contractor <span
-                            id="sort-indicator-10"></span></th>
+                            id="sort-indicator-10"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 10)"></div>
+                    </th>
                     <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(11)">Pay Via Talenox <span
-                            id="sort-indicator-11"></span></th>
+                            id="sort-indicator-11"></span>
+                        <div class="resize-handle" onmousedown="initResize(event, 11)"></div>
+                    </th>
                 </tr>
             </thead>
             <tbody id="staff-hurdle-tbody">
@@ -57,6 +96,7 @@
         const searchBox = document.getElementById('search-box');
         let sortOrder = 1; // 1 for ascending, -1 for descending
         let currentSortColumn = -1;
+        let startX, startWidth;
 
         // Fetch and display the current staff hurdle config on load
         fetch('/staff-hurdle-config')
@@ -173,6 +213,29 @@
                 errorDialog.textContent = event.detail.xhr.responseText;
             }
         });
+
+        function initResize(event, columnIndex) {
+            event.stopPropagation(); // Prevent sorting when resizing
+            startX = event.clientX;
+            const th = event.target.parentElement;
+            startWidth = th.offsetWidth;
+            document.addEventListener('mousemove', doResize);
+            document.addEventListener('mouseup', stopResize);
+
+            function doResize(e) {
+                const newWidth = startWidth + (e.clientX - startX);
+                th.style.width = `${newWidth}px`;
+                const table = document.getElementById('staff-hurdle-table');
+                table.querySelectorAll(`th:nth-child(${columnIndex + 1}), td:nth-child(${columnIndex + 1})`).forEach(cell => {
+                    cell.style.width = `${newWidth}px`;
+                });
+            }
+
+            function stopResize() {
+                document.removeEventListener('mousemove', doResize);
+                document.removeEventListener('mouseup', stopResize);
+            }
+        }
     </script>
 </body>
 
