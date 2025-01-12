@@ -8,10 +8,46 @@
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        th {
-            position: relative;
+        /* Reset & Base Typography */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #000;
+            background-color: #fff;
         }
 
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Apply min-width to all columns by default */
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 0.75rem;
+            text-align: left;
+            min-width: 8em;
+        }
+
+        /* Columns for checkboxes get a separate class */
+        th.checkbox-col,
+        td.checkbox-col {
+            min-width: auto;
+            /* Override */
+        }
+
+        /* Resize Handle */
         th .resize-handle {
             position: absolute;
             right: 0;
@@ -25,70 +61,73 @@
     </style>
 </head>
 
-<body class="bg-gray-100 p-6">
-    <h1 class="text-2xl font-bold mb-4">Update Staff Hurdle Config</h1>
-    <input type="text" id="search-box" placeholder="Search..." class="mb-4 p-2 border rounded w-full">
-    <form id="staff-hurdle-form" hx-post="/update-staff-hurdle" hx-trigger="submit" hx-swap="none" class="mb-6">
-        <table id="staff-hurdle-table" class="min-w-full bg-white border border-gray-300">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID <span
-                            id="sort-indicator-0"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 0)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name <span
-                            id="sort-indicator-1"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 1)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate <span
-                            id="sort-indicator-2"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 2)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate <span
-                            id="sort-indicator-3"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 3)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level <span
-                            id="sort-indicator-4"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 4)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate <span
-                            id="sort-indicator-5"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 5)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level <span
-                            id="sort-indicator-6"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 6)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate <span
-                            id="sort-indicator-7"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 7)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level <span
-                            id="sort-indicator-8"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 8)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate <span
-                            id="sort-indicator-9"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 9)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(10)">Contractor <span
-                            id="sort-indicator-10"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 10)"></div>
-                    </th>
-                    <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(11)">Pay Via Talenox <span
-                            id="sort-indicator-11"></span>
-                        <div class="resize-handle" onmousedown="initResize(event, 11)"></div>
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="staff-hurdle-tbody">
-                <!-- Rows will be dynamically added here -->
-            </tbody>
-        </table>
-        <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
-            Config</button>
-    </form>
+<body>
+    <div class="container">
+        <h1>Update Staff Hurdle Config</h1>
+        <input type="text" id="search-box" placeholder="Search..." class="mb-4 p-2 border rounded w-full">
+        <form id="staff-hurdle-form" hx-post="/update-staff-hurdle" hx-trigger="submit" hx-swap="none" class="mb-6">
+            <table id="staff-hurdle-table" class="min-w-full bg-white border border-gray-300">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID <span
+                                id="sort-indicator-0"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 0)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name <span
+                                id="sort-indicator-1"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 1)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate <span
+                                id="sort-indicator-2"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 2)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate <span
+                                id="sort-indicator-3"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 3)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level <span
+                                id="sort-indicator-4"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 4)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate <span
+                                id="sort-indicator-5"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 5)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level <span
+                                id="sort-indicator-6"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 6)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate <span
+                                id="sort-indicator-7"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 7)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level <span
+                                id="sort-indicator-8"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 8)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate <span
+                                id="sort-indicator-9"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 9)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer checkbox-col" onclick="sortTable(10)">Contractor
+                            <span id="sort-indicator-10"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 10)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer checkbox-col" onclick="sortTable(11)">Pay Via Talenox
+                            <span id="sort-indicator-11"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 11)"></div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="staff-hurdle-tbody">
+                    <!-- Rows will be dynamically added here -->
+                </tbody>
+            </table>
+            <button type="submit"
+                class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
+                Config</button>
+        </form>
+    </div>
     <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
     <script>
         const staffHurdleForm = document.getElementById('staff-hurdle-form');
@@ -125,8 +164,8 @@
                     <td class="px-4 py-2 border"><input type="number" name="hurdle2Rate-${id}" value="${data[id].hurdle2Rate}" class="w-full"></td>
                     <td class="px-4 py-2 border"><input type="number" name="hurdle3Level-${id}" value="${data[id].hurdle3Level}" class="w-full"></td>
                     <td class="px-4 py-2 border"><input type="number" name="hurdle3Rate-${id}" value="${data[id].hurdle3Rate}" class="w-full"></td>
-                    <td class="px-4 py-2 border"><input type="checkbox" name="contractor-${id}" ${data[id].contractor ? 'checked' : ''}></td>
-                    <td class="px-4 py-2 border"><input type="checkbox" name="payViaTalenox-${id}" ${data[id].payViaTalenox ? 'checked' : ''}></td>
+                    <td class="px-4 py-2 border checkbox-col"><input type="checkbox" name="contractor-${id}" ${data[id].contractor ? 'checked' : ''}></td>
+                    <td class="px-4 py-2 border checkbox-col"><input type="checkbox" name="payViaTalenox-${id}" ${data[id].payViaTalenox ? 'checked' : ''}></td>
                 `;
                 staffHurdleTbody.appendChild(row);
             }
