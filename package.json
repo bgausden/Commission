@@ -6,7 +6,7 @@
     "exports": "./dist/index.js",
     "type": "module",
     "scripts": {
-        "test": ".\\node_modules\\.bin\\vitest --run",
+        "test": "./node_modules/.bin/vitest --run",
         "postinstall": "node-config-ts",
         "build": "run-script-os",
         "build:win32": "scripts\\build.cmd",
