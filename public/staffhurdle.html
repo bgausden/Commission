@@ -128,12 +128,15 @@
                 Config</button>
         </form>
     </div>
+    <div id="confirmation-dialog" class="confirmation-dialog text-green-500 mt-4 hidden">Config updated successfully!
+    </div>
     <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
     <script>
         const staffHurdleForm = document.getElementById('staff-hurdle-form');
         const staffHurdleTbody = document.getElementById('staff-hurdle-tbody');
         const errorDialog = document.getElementById('error-dialog');
         const searchBox = document.getElementById('search-box');
+        const confirmationDialog = document.getElementById('confirmation-dialog');
         let sortOrder = 1; // 1 for ascending, -1 for descending
         let currentSortColumn = -1;
         let startX, startWidth;
@@ -234,6 +237,8 @@
                 .then(data => {
                     if (data.message) {
                         errorDialog.textContent = data.message;
+                    } else {
+                        showConfirmation();
                     }
                 })
                 .catch(error => {
@@ -241,6 +246,13 @@
                     errorDialog.textContent = 'Error updating staff hurdle config';
                 });
         });
+
+        function showConfirmation() {
+            confirmationDialog.classList.remove('hidden');
+            setTimeout(() => {
+                confirmationDialog.classList.add('hidden');
+            }, 3000);
+        }
 
         htmx.on('htmx:beforeRequest', (event) => {
             if (event.detail.elt.id === 'staff-hurdle-form') {

@@ -64,6 +64,14 @@ export default [
             "@typescript-eslint/no-explicit-any": "warn",
             "@typescript-eslint/no-var-requires": "off",
         },
+        overrides: [
+            {
+                files: ['*.ts'],
+                rules: {
+                    'no-undef': 'off'
+                }
+            }
+        ],
     },
     prettierConfig,
 

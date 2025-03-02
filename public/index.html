@@ -24,7 +24,8 @@
     </form>
     <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none" class="mb-6">
         <div class="form-group flex items-center mt-2">
-            <label for="missingStaffAreFatal" class="form-label text-lg text-blue-500 mr-2">missingStaffAreFatal:</label>
+            <label for="missingStaffAreFatal"
+                class="form-label text-lg text-blue-500 mr-2">missingStaffAreFatal:</label>
             <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
         </div>
         <div class="form-group flex items-center mt-2">
@@ -43,6 +44,7 @@
             <pre id="config-json" class="bg-gray-200 p-4 rounded"></pre>
         </div>
     </div>
+    <div id="confirmation-dialog" class="confirmation-dialog text-green-500 mt-4 hidden"></div>
     <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
     <script>
         const dropZone = document.getElementById('drop-zone');
@@ -54,6 +56,7 @@
         const errorDialog = document.getElementById('error-dialog');
         const configContent = document.getElementById('config-content');
         const configDisplayHeader = document.querySelector('.config-display h2');
+        const confirmationDialog = document.getElementById('confirmation-dialog');
 
         dropZone.addEventListener('click', () => {
             fileInput.click();
@@ -113,6 +116,8 @@
         htmx.on('htmx:afterRequest', (event) => {
             if (event.detail.elt.id === 'upload-form' || event.detail.elt.id === 'config-form') {
                 fetchConfig();
+                const response = JSON.parse(event.detail.xhr.responseText);
+                showConfirmation(response.message);
             }
         });
 
@@ -141,6 +146,15 @@
                 configContent.style.display = 'none';
                 toggleIcon.style.transform = 'rotate(0deg)';
             }
+        }
+
+        function showConfirmation(message) {
+            const confirmationDialog = document.getElementById('confirmation-dialog');
+            confirmationDialog.textContent = message;
+            confirmationDialog.classList.remove('hidden');
+            setTimeout(() => {
+                confirmationDialog.classList.add('hidden');
+            }, 3000);
         }
 
         // Fetch and display the current config on load
