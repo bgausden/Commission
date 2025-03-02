@@ -54,8 +54,8 @@ app.post("/upload", (req: Request, res: Response) => {
 
 app.post("/update-config", (req: Request, res: Response) => {
   const config = loadConfig();
-  config.missingStaffAreFatal = req.body.missingStaffAreFatal === "on";
-  config.updateTalenox = req.body.updateTalenox === "on";
+  config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
+  config.updateTalenox = Boolean(req.body.updateTalenox);
   saveConfig(config);
 
   res.status(200).json({ message: "Config updated successfully" });
