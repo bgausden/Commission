@@ -6,7 +6,7 @@
     "exports": "./dist/index.js",
     "type": "module",
     "scripts": {
-        "test": ".\\node_modules\\.bin\\vitest --run",
+        "test": "./node_modules/.bin/vitest --run",
         "postinstall": "node-config-ts",
         "build": "run-script-os",
         "build:win32": "scripts\\build.cmd",
@@ -26,7 +26,9 @@
     "homepage": "https://github.com/bgausden/Commission#readme",
     "dependencies": {
         "debug": "^4.3.1",
-        "dotenv": "^10.0.0",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "express-fileupload": "^1.5.1",
         "fixed-width-string": "^2.0.0",
         "log4js": "^6.3.0",
         "node-config-ts": "^3.3.1",
@@ -37,7 +39,9 @@
     },
     "devDependencies": {
         "@types/debug": "^4.1.12",
-        "@types/node": "^20.16.10",
+        "@types/express": "^4.17.21",
+        "@types/express-fileupload": "^1.5.1",
+        "@types/node": "^20.17.22",
         "@types/prettyjson": "0.0.29",
         "@typescript-eslint/eslint-plugin": "^8.18.1",
         "@typescript-eslint/parser": "^8.18.1",
@@ -49,7 +53,7 @@
         "ncp": "^2.0.0",
         "run-script-os": "^1.1.6",
         "tsx": "^4.16.0",
-        "typescript": "^5.6.2",
+        "typescript": "^5.7.2",
         "vitest": "^2.1.2"
     }
 }

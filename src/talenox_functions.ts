@@ -1,4 +1,4 @@
-import { config } from "node-config-ts";
+/* global PAYROLL_MONTH, PAYROLL_YEAR, firstDay */
 import { ITalenoxPayment } from "./ITalenoxPayment.js";
 import {
   TStaffID,
@@ -18,7 +18,7 @@ import {
   TALENOX_ADHOC_PAYMENT_ENDPOINT,
   TALENOX_API_TOKEN,
 } from "./talenox_constants.js";
-import { isContractor, payrollStartDate } from "./utility_functions.js";
+import { isContractor } from "./utility_functions.js";
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment.js";
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems.js";
 import {
@@ -42,8 +42,6 @@ const TIPS_REMARK = "Tips";
 const PRODUCT_COMM_REMARK = "Product commission";
 
 const talenoxFunctionsDebug = debug("talenox_functions");
-
-export const firstDay = payrollStartDate(config);
 
 export function createAdHocPayments(
   _commMap: TCommMap,
@@ -221,11 +219,11 @@ export async function createPayroll(
   });
 
   const payment: TalenoxPayrollPayment = {
-    year: config.PAYROLL_YEAR,
-    month: config.PAYROLL_MONTH,
+    year: PAYROLL_YEAR.toString(),
+    month: PAYROLL_MONTH,
     period: TALENOX_WHOLE_MONTH,
     with_pay_items: true,
-    pay_group: `${config.PAYROLL_MONTH} ${config.PAYROLL_YEAR}`,
+    pay_group: `${PAYROLL_MONTH} ${PAYROLL_YEAR}`,
   };
 
   const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll);
@@ -277,8 +275,8 @@ export async function uploadAdHocPayments(
 
   const payment: ITalenoxAdHocPayment = {
     // id: 790479,
-    year: config.PAYROLL_YEAR,
-    month: config.PAYROLL_MONTH,
+    year: PAYROLL_YEAR.toString(),
+    month: PAYROLL_MONTH,
     period: TALENOX_WHOLE_MONTH,
   };
 
