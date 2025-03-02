@@ -16,7 +16,22 @@ const defaultStaffID = "000";
 
 const DEFAULT_LOG4JS_CONFIG_FILE = "log4js.json";
 
-const DEFAULT_STAFF_HURDLES_FILE = "dist/staffHurdle.json";
+const DEFAULT_STAFF_HURDLES_FILE = "config/staffHurdle.json";
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
 
 export {
   DEFAULT_DATA_DIR,
@@ -24,8 +39,9 @@ export {
   DEFAULT_PAYMENTS_DIR,
   DEFAULT_OLD_DIR,
   defaultStaffID,
-  DEFAULT_LOG4JS_CONFIG_FILE as defaultLog4jsConfigFile,
+  DEFAULT_LOG4JS_CONFIG_FILE,
   DEFAULT_COMMISSION_LOGFILE,
   DEFAULT_CONTRACTOR_LOGFILE,
   DEFAULT_STAFF_HURDLES_FILE,
+  monthNames,
 };

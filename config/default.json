@@ -1,13 +1,5 @@
 {
-    "PAYROLL_WB_FILENAME": "Payroll Report 12-1-2024 - 12-31-2024.xlsx",
-    "PAYROLL_MONTH": "December",
-    "PAYROLL_YEAR": "2024",
-    "PAYMENTS_WB_NAME": "Talenox Payments 202412.xlsx",
-    "PAYMENTS_WS_NAME": "Payments December 2024",
+    "PAYROLL_WB_FILENAME": "Payroll Report 2-1-2025 - 2-28-2025.xlsx",
     "missingStaffAreFatal": true,
-    "updateTalenox": false,
-    "PAYMENTS_DIR": "payments",
-    "LOGS_DIR": "logs",
-    "DATA_DIR": "data",
-    "log4jsConfigFile": "log4js.json"
+    "updateTalenox": false
 }

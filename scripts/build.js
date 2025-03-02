@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-
 import { promisify } from "util";
 import { exec as noPromiseExec } from "child_process";
 import fs from "fs";
@@ -23,7 +21,7 @@ isExecutable("./node_modules/.bin/tsc").then((executable) => {
       .then((result) => {
         if (result.stdout) console.log(result.stdout);
         if (result.stderr) console.log(result.stderr);
-        ncp("./src/staffHurdle.json", "./dist/", (error) => {
+        ncp("./config/staffHurdle.json", "./dist/", (error) => {
           error ? console.error(error.Message) : console.log(`Copied staffHurdle.json to ${DIST}`);
         });
         ncp("./log4js.json", "./dist/", (error) => {

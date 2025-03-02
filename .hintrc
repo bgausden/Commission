@@ -1,0 +1,18 @@
+{
+  "extends": [
+    "development"
+  ],
+  "connector": "local",
+  "formatters": [
+    "stylish"
+  ],
+  "hints": {
+    "disallow-inline-styles": "off",
+    "axe/forms": [
+      "default",
+      {
+        "label": "off"
+      }
+    ]
+  }
+}

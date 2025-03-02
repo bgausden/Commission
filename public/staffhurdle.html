@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Staff Hurdle Config</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Reset & Base Typography */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #000;
+            background-color: #fff;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Apply min-width to all columns by default */
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 0.75rem;
+            text-align: left;
+            min-width: 8em;
+        }
+
+        /* Columns for checkboxes get a separate class */
+        th.checkbox-col,
+        td.checkbox-col {
+            min-width: auto;
+            /* Override */
+        }
+
+        /* Resize Handle */
+        th .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            cursor: col-resize;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Update Staff Hurdle Config</h1>
+        <input type="text" id="search-box" placeholder="Search..." class="mb-4 p-2 border rounded w-full">
+        <form id="staff-hurdle-form" hx-post="/update-staff-hurdle" hx-trigger="submit" hx-swap="none" class="mb-6">
+            <table id="staff-hurdle-table" class="min-w-full bg-white border border-gray-300">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(0)">ID <span
+                                id="sort-indicator-0"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 0)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(1)">Staff Name <span
+                                id="sort-indicator-1"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 1)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(2)">MB Comm Rate <span
+                                id="sort-indicator-2"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 2)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(3)">Base Rate <span
+                                id="sort-indicator-3"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 3)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(4)">Hurdle 1 Level <span
+                                id="sort-indicator-4"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 4)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(5)">Hurdle 1 Rate <span
+                                id="sort-indicator-5"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 5)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(6)">Hurdle 2 Level <span
+                                id="sort-indicator-6"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 6)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(7)">Hurdle 2 Rate <span
+                                id="sort-indicator-7"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 7)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(8)">Hurdle 3 Level <span
+                                id="sort-indicator-8"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 8)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer" onclick="sortTable(9)">Hurdle 3 Rate <span
+                                id="sort-indicator-9"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 9)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer checkbox-col" onclick="sortTable(10)">Contractor
+                            <span id="sort-indicator-10"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 10)"></div>
+                        </th>
+                        <th class="px-4 py-2 border cursor-pointer checkbox-col" onclick="sortTable(11)">Pay Via Talenox
+                            <span id="sort-indicator-11"></span>
+                            <div class="resize-handle" onmousedown="initResize(event, 11)"></div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="staff-hurdle-tbody">
+                    <!-- Rows will be dynamically added here -->
+                </tbody>
+            </table>
+            <button type="submit"
+                class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
+                Config</button>
+        </form>
+    </div>
+    <div id="confirmation-dialog" class="confirmation-dialog text-green-500 mt-4 hidden">Config updated successfully!
+    </div>
+    <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
+    <script>
+        const staffHurdleForm = document.getElementById('staff-hurdle-form');
+        const staffHurdleTbody = document.getElementById('staff-hurdle-tbody');
+        const errorDialog = document.getElementById('error-dialog');
+        const searchBox = document.getElementById('search-box');
+        const confirmationDialog = document.getElementById('confirmation-dialog');
+        let sortOrder = 1; // 1 for ascending, -1 for descending
+        let currentSortColumn = -1;
+        let startX, startWidth;
+
+        // Fetch and display the current staff hurdle config on load
+        fetch('/staff-hurdle-config')
+            .then(response => response.json())
+            .then(data => {
+                populateTable(data);
+            })
+            .catch(error => {
+                console.error('Error fetching staff hurdle config:', error);
+                errorDialog.textContent = 'Error fetching staff hurdle config';
+            });
+
+        function populateTable(data) {
+            staffHurdleTbody.innerHTML = '';
+            for (const id in data) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2 border">${id}</td>
+                    <td class="px-4 py-2 border"><input type="text" name="staffName-${id}" value="${data[id].staffName}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="mbCommRate-${id}" value="${data[id].mbCommRate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="baseRate-${id}" value="${data[id].baseRate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle1Level-${id}" value="${data[id].hurdle1Level}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle1Rate-${id}" value="${data[id].hurdle1Rate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle2Level-${id}" value="${data[id].hurdle2Level}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle2Rate-${id}" value="${data[id].hurdle2Rate}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle3Level-${id}" value="${data[id].hurdle3Level}" class="w-full"></td>
+                    <td class="px-4 py-2 border"><input type="number" name="hurdle3Rate-${id}" value="${data[id].hurdle3Rate}" class="w-full"></td>
+                    <td class="px-4 py-2 border checkbox-col"><input type="checkbox" name="contractor-${id}" ${data[id].contractor ? 'checked' : ''}></td>
+                    <td class="px-4 py-2 border checkbox-col"><input type="checkbox" name="payViaTalenox-${id}" ${data[id].payViaTalenox ? 'checked' : ''}></td>
+                `;
+                staffHurdleTbody.appendChild(row);
+            }
+        }
+
+        function sortTable(columnIndex) {
+            const rows = Array.from(staffHurdleTbody.rows);
+            const sortedRows = rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].querySelector('input:not([type="checkbox"]), select, textarea')?.value || a.cells[columnIndex].innerText.trim();
+                const bText = b.cells[columnIndex].querySelector('input:not([type="checkbox"]), select, textarea')?.value || b.cells[columnIndex].innerText.trim();
+                return aText.localeCompare(bText, undefined, {numeric: true}) * sortOrder;
+            });
+            staffHurdleTbody.innerHTML = '';
+            sortedRows.forEach(row => staffHurdleTbody.appendChild(row));
+            updateSortIndicators(columnIndex);
+            sortOrder *= -1; // Toggle sort order
+        }
+
+        function updateSortIndicators(columnIndex) {
+            if (currentSortColumn !== -1) {
+                document.getElementById(`sort-indicator-${currentSortColumn}`).innerText = '';
+            }
+            const indicator = document.getElementById(`sort-indicator-${columnIndex}`);
+            indicator.innerText = sortOrder === 1 ? '▲' : '▼';
+            currentSortColumn = columnIndex;
+        }
+
+        searchBox.addEventListener('input', () => {
+            const searchTerm = searchBox.value.toLowerCase();
+            const rows = Array.from(staffHurdleTbody.rows);
+            rows.forEach(row => {
+                const cells = Array.from(row.cells);
+                const matches = cells.some(cell => {
+                    const input = cell.querySelector('input:not([type="checkbox"]), select, textarea');
+                    const text = input ? input.value : cell.innerText;
+                    return text.toLowerCase().includes(searchTerm);
+                });
+                row.style.display = matches ? '' : 'none';
+            });
+        });
+
+        staffHurdleForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const formData = new FormData(staffHurdleForm);
+            const staffHurdleConfig = {};
+
+            formData.forEach((value, key) => {
+                const [field, id] = key.split('-');
+                if (!staffHurdleConfig[id]) {
+                    staffHurdleConfig[id] = {};
+                }
+                staffHurdleConfig[id][field] = field.includes('Rate') || field.includes('Level') ? parseFloat(value) : value;
+                if (field === 'contractor' || field === 'payViaTalenox') {
+                    staffHurdleConfig[id][field] = value === 'on';
+                }
+            });
+
+            fetch('/update-staff-hurdle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(staffHurdleConfig)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        errorDialog.textContent = data.message;
+                    } else {
+                        showConfirmation();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating staff hurdle config:', error);
+                    errorDialog.textContent = 'Error updating staff hurdle config';
+                });
+        });
+
+        function showConfirmation() {
+            confirmationDialog.classList.remove('hidden');
+            setTimeout(() => {
+                confirmationDialog.classList.add('hidden');
+            }, 3000);
+        }
+
+        htmx.on('htmx:beforeRequest', (event) => {
+            if (event.detail.elt.id === 'staff-hurdle-form') {
+                errorDialog.textContent = '';
+            }
+        });
+
+        htmx.on('htmx:responseError', (event) => {
+            if (event.detail.elt.id === 'staff-hurdle-form') {
+                errorDialog.textContent = event.detail.xhr.responseText;
+            }
+        });
+
+        function initResize(event, columnIndex) {
+            event.stopPropagation(); // Prevent sorting when resizing
+            startX = event.clientX;
+            const th = event.target.parentElement;
+            startWidth = th.offsetWidth;
+            document.addEventListener('mousemove', doResize);
+            document.addEventListener('mouseup', stopResize);
+
+            function doResize(e) {
+                const newWidth = startWidth + (e.clientX - startX);
+                th.style.width = `${newWidth}px`;
+                const table = document.getElementById('staff-hurdle-table');
+                table.querySelectorAll(`th:nth-child(${columnIndex + 1}), td:nth-child(${columnIndex + 1})`).forEach(cell => {
+                    cell.style.width = `${newWidth}px`;
+                });
+            }
+
+            function stopResize() {
+                document.removeEventListener('mousemove', doResize);
+                document.removeEventListener('mouseup', stopResize);
+            }
+        }
+    </script>
+</body>
+
+</html>
