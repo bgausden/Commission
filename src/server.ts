@@ -7,6 +7,7 @@ import Ajv from "ajv";
 import { DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import { TStaffHurdles } from "./types.js";
 import { IConfig } from "node-config-ts";
+import { debugLogger } from "./logging_functions.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -53,12 +54,20 @@ app.post("/upload", (req: Request, res: Response) => {
 });
 
 app.post("/update-config", (req: Request, res: Response) => {
-  const config = loadConfig();
-  config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
-  config.updateTalenox = Boolean(req.body.updateTalenox);
-  saveConfig(config);
-
-  res.status(200).json({ message: "Config updated successfully" });
+  try {
+    const config = loadConfig();
+    config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
+    config.updateTalenox = Boolean(req.body.updateTalenox);
+    saveConfig(config);
+    res.status(200).json({ message: "Config updated successfully skipper" });
+  } catch (error) {
+    if (error instanceof Error) {
+      debugLogger.error(`Failed to update config. Error: ${error.message}`);
+      return res.status(500).json({ message: "Failed to update config" });
+    }
+    debugLogger.error(`Failed to update config. Error: ${error}`);
+    return res.status(500).json({ message: "Failed to update config" });
+  }
 });
 
 app.get("/staff-hurdle-config", (_req: Request, res: Response) => {
@@ -84,8 +93,31 @@ app.post("/update-staff-hurdle", (req: Request, res: Response) => {
 });
 
 function loadConfig(): IConfig {
-  const data = fs.readFileSync(CONFIG_FILE_PATH, "utf8");
-  return JSON.parse(data);
+  try {
+    const data = fs.readFileSync(CONFIG_FILE_PATH, "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      debugLogger.debug(
+        `Failed to load config file. Will return default. Error: ${error.message}`,
+      );
+      return {
+        // return some safe default values
+        PAYROLL_WB_FILENAME: "payroll.xlsx",
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+      };
+    }
+    if (error instanceof Error) {
+      debugLogger.error(`Failed to load config file. Error: ${error.message}`);
+      throw error;
+    }
+    debugLogger.error(`Failed to load config file. Error: ${error}`);
+    throw error;
+  }
 }
 
 function saveConfig(config: IConfig): void {
