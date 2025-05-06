@@ -12,6 +12,11 @@
         "build:win32": "scripts\\build.cmd",
         "build:default": "scripts/build.sh",
         "run:tsx": "npx tsx src/index.ts",
+        "server:tsx": "npx tsx src/server.ts",
+        "server:debug:tsx": "npx tsx --inspect-brk src/server.ts",
+        "test:tsx": "npx tsx --test src/**/*.spec.ts",
+        "test:debug:tsx": "npx tsx --inspect-brk --test src/**/*.spec.ts",
+        "test:debug": "npx vitest --inspect-brk",
         "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts"
     },
     "repository": {
