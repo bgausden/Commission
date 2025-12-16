@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
-import Ajv from "ajv";
+import { staffHurdleSchema } from "./staffHurdleSchema.js";
 import { DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import { TStaffHurdles } from "./types.js";
 import { IConfig } from "node-config-ts";
@@ -15,7 +15,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONFIG_FILE_PATH = path.join(__dirname, "../config/default.json");
 const STAFF_HURDLE_FILE_PATH = path.join(__dirname, "..", DEFAULT_STAFF_HURDLES_FILE);
-const STAFF_HURDLE_SCHEMA_PATH = path.join(__dirname, "./staffHurdleSchema.json");
 const DATA_DIR_PATH = path.join(__dirname, "../data");
 
 app.use(express.urlencoded({ extended: true }));
@@ -70,19 +69,16 @@ app.get("/staff-hurdle-config", (_req: Request, res: Response) => {
 });
 
 app.post("/update-staff-hurdle", (req: Request, res: Response) => {
-  const ajv = new Ajv();
-  const schema = JSON.parse(fs.readFileSync(STAFF_HURDLE_SCHEMA_PATH, "utf8"));
-  const validate = ajv.compile(schema);
-  const staffHurdleConfig = req.body;
+  const result = staffHurdleSchema.safeParse(req.body);
 
-  if (!validate(staffHurdleConfig)) {
+  if (!result.success) {
     return res.status(400).json({
       message: "Invalid staff hurdle config",
-      errors: validate.errors,
+      errors: result.error.issues,
     });
   }
 
-  saveStaffHurdles(staffHurdleConfig);
+  saveStaffHurdles(result.data);
   res.status(200).json({ message: "Staff hurdle config updated successfully" });
 });
 
