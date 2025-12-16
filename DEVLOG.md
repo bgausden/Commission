@@ -1,5 +1,215 @@
 # Development Log - Commission Calculator
 
+## 2025-12-16: Web UI Commission Execution Button
+
+### Overview
+
+Added web interface button to trigger commission calculations from the browser, with safety confirmation dialog when Talenox updates are enabled.
+
+**Session highlights**:
+
+- Added "Run Commission Calculation" button to web UI next to "Update Config"
+- Implemented modal confirmation dialog for Talenox update safety
+- Created `/run-commission` POST endpoint that spawns commission script
+- Added `server` npm script to run compiled backend from dist folder
+- Non-blocking execution with proper logging integration
+
+---
+
+### 🔧 Changes Made
+
+#### 1. Frontend: Web UI Button & Confirmation Dialog
+
+**Location**: `public/index.html`
+
+**Added elements**:
+- Green "Run Commission Calculation" button next to "Update Config" button
+- Modal confirmation dialog with Cancel (default focus) and OK buttons
+- JavaScript event handlers for button clicks and modal interactions
+
+**Safety logic**:
+```javascript
+if (updateTalenoxChecked) {
+  // Show modal: "You are about to run... with Talenox updates enabled"
+  modal.show();
+  cancelButton.focus(); // Safer default
+} else {
+  // Run directly without confirmation
+  runCommissionCalculation();
+}
+```
+
+**User experience**:
+- Click button → checks `updateTalenox` checkbox state
+- If checked → shows modal warning about live Talenox updates
+- If unchecked → runs immediately (dry-run mode)
+- Modal defaults to Cancel for safety
+- Success/error messages displayed in UI
+
+#### 2. Backend: Commission Execution Endpoint
+
+**Location**: `src/server.ts`
+
+**Added**:
+- Import `spawn` from `child_process`
+- POST `/run-commission` endpoint
+
+**Implementation**:
+```typescript
+app.post("/run-commission", (_req: Request, res: Response) => {
+  const indexPath = path.join(__dirname, "index.js");
+  
+  // Verify compiled script exists
+  if (!fs.existsSync(indexPath)) {
+    return res.status(500).json({ 
+      success: false, 
+      message: "Commission script not found. Please build the project first." 
+    });
+  }
+
+  // Spawn commission calculation process
+  const child = spawn("node", [indexPath], {
+    cwd: __dirname,
+    env: { ...process.env },
+    stdio: "pipe"
+  });
+
+  // Log stdout/stderr via debugLogger
+  child.stdout.on("data", (data) => debugLogger.debug(`Commission stdout: ${data}`));
+  child.stderr.on("data", (data) => debugLogger.error(`Commission stderr: ${data}`));
+  
+  // Return immediate success (non-blocking)
+  res.status(200).json({ 
+    success: true, 
+    message: "Commission calculation started successfully. Check logs for details." 
+  });
+});
+```
+
+**Key features**:
+- Validates compiled `dist/index.js` exists before execution
+- Spawns child process (non-blocking)
+- Captures stdout/stderr for debugging
+- Returns immediately to client (doesn't wait for completion)
+- All output logged via existing `debugLogger`
+
+#### 3. Package.json: New npm Script
+
+**Location**: `package.json`
+
+**Added**:
+```json
+"server": "node dist/server.js"
+```
+
+**Usage**:
+```bash
+npm run build   # Compile TypeScript
+npm run server  # Run compiled server (production-like)
+```
+
+**Benefits**:
+- Runs from compiled JavaScript (faster startup)
+- Production-ready execution
+- Complements existing `server:tsx` (development with hot reload)
+
+---
+
+### ✅ Testing Results
+
+**Manual testing performed**:
+- ✅ Build completed successfully
+- ✅ Server starts with new endpoint
+- ✅ Button displays correctly in UI
+- ✅ Modal appears when `updateTalenox` is checked
+- ✅ Modal defaults to Cancel button
+- ✅ Commission runs when OK clicked
+- ✅ Commission runs directly when `updateTalenox` unchecked
+- ✅ Error handling for missing compiled script
+
+---
+
+### 🎯 Key Improvements
+
+#### 1. User Experience
+- One-click commission execution from browser
+- Safety confirmation prevents accidental live updates
+- Clear visual feedback (green button, success/error messages)
+- Non-technical users can run calculations
+
+#### 2. Safety
+- Explicit confirmation required for Talenox updates
+- Cancel button has default focus (safer option)
+- Warning text clearly states "live Talenox system" impact
+- Dry-run mode (updateTalenox=false) bypasses confirmation
+
+#### 3. Developer Experience
+- `npm run server` for production-like execution
+- Existing `npm run server:tsx` still available for development
+- All commission output logged via debugLogger
+- Build verification prevents runtime errors
+
+---
+
+### 📊 Implementation Details
+
+#### Confirmation Modal Design
+
+**HTML structure**:
+```html
+<div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+  <div class="bg-white rounded-lg p-6 max-w-md mx-auto shadow-xl">
+    <h3>Confirm Commission Calculation</h3>
+    <p>You are about to run... with Talenox updates enabled...</p>
+    <button id="confirm-cancel">Cancel</button>
+    <button id="confirm-ok">OK</button>
+  </div>
+</div>
+```
+
+**Styling**:
+- Fixed overlay with semi-transparent background
+- Centered white modal card
+- Tailwind CSS for responsive design
+- Cancel: gray (neutral), OK: green (matches button)
+
+#### Process Spawning Pattern
+
+**Why spawn instead of import/execute?**
+- Commission script designed to run standalone (process.exit at end)
+- Spawning isolates execution (separate process)
+- Non-blocking (server remains responsive)
+- Matches existing patterns (script expects to own process lifecycle)
+
+**Alternative considered**: Direct function import
+- Would require refactoring commission script
+- Risk of state pollution between runs
+- Current pattern is safer and simpler
+
+---
+
+### 📝 Session Summary
+
+**Timeline**: Single development session on 2025-12-16
+
+**Major accomplishments**:
+1. ✅ Added web UI button for commission execution
+2. ✅ Implemented safety confirmation modal
+3. ✅ Created `/run-commission` backend endpoint
+4. ✅ Added `server` npm script for compiled execution
+5. ✅ Integrated with existing debugLogger
+
+**Files modified**:
+- `public/index.html` - Added button, modal, and JavaScript handlers
+- `src/server.ts` - Added `/run-commission` endpoint
+- `package.json` - Added `server` script
+
+**Breaking changes**: None  
+**Migration required**: None  
+**Backward compatibility**: Maintained
+
+---
+
 ## 2025-12-16: Async Log Cleanup Enhancement
 
 ### Overview
@@ -48,7 +258,7 @@ export async function moveFilesToOldSubDir(
   retainCount = 0,
 ): Promise<void> {
   const compressionPromises: Promise<void>[] = [];
-  
+
   // Wrap compression in Promise
   const compressionPromise = new Promise<void>((resolve, reject) => {
     writeStream.on("finish", () => {
@@ -59,13 +269,14 @@ export async function moveFilesToOldSubDir(
     // ... error handling
     readStream.pipe(gzip).pipe(writeStream);
   });
-  
+
   // Wait for all compressions
   await Promise.all(compressionPromises);
 }
 ```
 
 **Benefits**:
+
 - Files fully compressed before deletion
 - Concurrent compression of multiple files
 - Proper error handling with Promise rejection
@@ -87,7 +298,7 @@ export async function initLogs() {
 // index.ts - main() awaits all cleanups
 async function main() {
   await initLogs(); // Already awaits internally
-  
+
   await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2);
   await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
 }
@@ -107,6 +318,7 @@ async function main() {
 8. **Edge case**: No compression with retention
 
 **Test patterns**:
+
 - Uses `memfs` for in-memory filesystem (fast, isolated)
 - Mock file modification times with `fs.utimesSync()`
 - Verify compression with `zlib.gunzipSync()`
@@ -117,6 +329,7 @@ async function main() {
 **Location**: `src/logging_functions.spec.ts`
 
 **Before**:
+
 ```typescript
 beforeAll(() => {
   initLogs(); // Not awaiting async function
@@ -124,6 +337,7 @@ beforeAll(() => {
 ```
 
 **After**:
+
 ```typescript
 beforeAll(async () => {
   await initLogs(); // Properly await async initialization
@@ -139,15 +353,15 @@ beforeAll(async () => {
 
 **Total: 79 tests passing** (up from 71 after cleanup tests added)
 
-| Test File                                  | Tests  | Status          |
-| ------------------------------------------ | ------ | --------------- |
-| `src/parseFilename.spec.ts`                | 3      | ✅ All passing  |
-| `src/logging_functions.spec.ts`            | 4      | ✅ All passing  |
+| Test File                                  | Tests  | Status               |
+| ------------------------------------------ | ------ | -------------------- |
+| `src/parseFilename.spec.ts`                | 3      | ✅ All passing       |
+| `src/logging_functions.spec.ts`            | 4      | ✅ All passing       |
 | `src/logging_functions.cleanup.spec.ts`    | 8      | ✅ All passing (NEW) |
-| `src/utility_functions.spec.ts`            | 6      | ✅ All passing  |
-| `src/utility_functions.validation.spec.ts` | 19     | ✅ All passing  |
-| `src/index.spec.ts`                        | 39     | ✅ All passing  |
-| **TOTAL**                                  | **79** | ✅ **100% passing** |
+| `src/utility_functions.spec.ts`            | 6      | ✅ All passing       |
+| `src/utility_functions.validation.spec.ts` | 19     | ✅ All passing       |
+| `src/index.spec.ts`                        | 39     | ✅ All passing       |
+| **TOTAL**                                  | **79** | ✅ **100% passing**  |
 
 ---
 
@@ -181,12 +395,14 @@ beforeAll(async () => {
 #### Compression + Retention Behavior
 
 **Parameters**:
+
 - `sourceDir`: Directory to clean up
 - `destDir`: Relative subdirectory for archived files (default: "old")
 - `compressFiles`: Whether to gzip files (default: false)
 - `retainCount`: Number of recent files to keep in main directory (default: 0)
 
 **Applied settings across project**:
+
 ```typescript
 // Logs: Compress and keep 2 most recent
 await moveFilesToOldSubDir(LOGS_DIR, undefined, true, 2);
@@ -194,11 +410,12 @@ await moveFilesToOldSubDir(LOGS_DIR, undefined, true, 2);
 // Data: Compress and keep 2 most recent
 await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2);
 
-// Payments: Compress and keep 2 most recent  
+// Payments: Compress and keep 2 most recent
 await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
 ```
 
 **Retention logic**:
+
 1. Get all files in source directory
 2. Sort by modification time (newest first)
 3. Keep `retainCount` most recent files
@@ -217,9 +434,9 @@ const compressionPromise = new Promise<void>((resolve, reject) => {
   const gzip = zlib.createGzip();
 
   writeStream.on("finish", () => {
-    unlinkSync(filePath);     // Delete after compression
+    unlinkSync(filePath); // Delete after compression
     writeStream.close();
-    resolve();                 // Signal completion
+    resolve(); // Signal completion
   });
 
   writeStream.on("error", reject);
@@ -232,6 +449,7 @@ compressionPromises.push(compressionPromise);
 ```
 
 **Key points**:
+
 - Delete source only after `finish` event
 - Error handlers for both read and write streams
 - `Promise.all()` waits for all compressions concurrently
@@ -240,19 +458,21 @@ compressionPromises.push(compressionPromise);
 
 ```typescript
 // Create virtual filesystem
-vol.fromJSON({
-  "./file1.log": "content1",
-  "./file2.log": "content2",
-}, LOGS_DIR);
+vol.fromJSON(
+  {
+    "./file1.log": "content1",
+    "./file2.log": "content2",
+  },
+  LOGS_DIR,
+);
 
 // Set modification times
 const now = Date.now();
-fs.utimesSync(path.join(LOGS_DIR, "file1.log"), 
-              new Date(now), 
-              new Date(now - 24 * 3600000)); // 1 day old
+fs.utimesSync(path.join(LOGS_DIR, "file1.log"), new Date(now), new Date(now - 24 * 3600000)); // 1 day old
 ```
 
 **Benefits**:
+
 - No disk I/O (fast tests)
 - Isolated state (no side effects)
 - Full control over modification times

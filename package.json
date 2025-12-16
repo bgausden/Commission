@@ -12,6 +12,7 @@
         "build:win32": "scripts\\build.cmd",
         "build:default": "scripts/build.sh",
         "run:tsx": "npx tsx src/index.ts",
+        "server": "node dist/server.js",
         "server:tsx": "npx tsx src/server.ts",
         "server:debug:tsx": "npx tsx --inspect-brk src/server.ts",
         "test:tsx": "npx tsx --test src/**/*.spec.ts",
