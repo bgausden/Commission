@@ -34,6 +34,9 @@
         </div>
         <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
             Config</button>
+        <button type="button" id="run-commission-btn"
+            class="form-button bg-green-500 text-white px-4 py-2 mt-4 ml-2 rounded hover:bg-green-700">Run Commission
+            Calculation</button>
     </form>
     <div id="config-display" class="config-display mt-6">
         <h2 onclick="toggleConfig()" class="cursor-pointer flex items-center text-xl font-bold">
@@ -46,6 +49,20 @@
     </div>
     <div id="confirmation-dialog" class="confirmation-dialog text-green-500 mt-4 hidden"></div>
     <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-auto shadow-xl">
+            <h3 class="text-lg font-bold mb-4">Confirm Commission Calculation</h3>
+            <p class="mb-6">You are about to run commission calculations with Talenox updates enabled. This will update
+                the live Talenox system. Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-2">
+                <button id="confirm-cancel"
+                    class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
+                <button id="confirm-ok" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700">OK</button>
+            </div>
+        </div>
+    </div>
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -159,6 +176,70 @@
 
         // Fetch and display the current config on load
         fetchConfig();
+
+        // Handle Run Commission Calculation button
+        document.getElementById('run-commission-btn').addEventListener('click', () => {
+            const updateTalenoxChecked = document.getElementById('updateTalenox').checked;
+
+            if (updateTalenoxChecked) {
+                // Show confirmation modal
+                const modal = document.getElementById('confirm-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+
+                // Set default focus on Cancel button
+                document.getElementById('confirm-cancel').focus();
+            } else {
+                // Run directly without confirmation
+                runCommissionCalculation();
+            }
+        });
+
+        // Modal Cancel button
+        document.getElementById('confirm-cancel').addEventListener('click', () => {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+
+        // Modal OK button
+        document.getElementById('confirm-ok').addEventListener('click', () => {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            runCommissionCalculation();
+        });
+
+        // Function to run commission calculation
+        function runCommissionCalculation() {
+            errorDialog.textContent = '';
+            confirmationDialog.textContent = 'Running commission calculation...';
+            confirmationDialog.classList.remove('hidden');
+
+            fetch('/run-commission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        confirmationDialog.textContent = data.message;
+                        confirmationDialog.classList.remove('hidden');
+                        setTimeout(() => {
+                            confirmationDialog.classList.add('hidden');
+                        }, 5000);
+                    } else {
+                        errorDialog.textContent = data.message || 'Commission calculation failed';
+                        confirmationDialog.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    errorDialog.textContent = 'Error running commission calculation: ' + error.message;
+                    confirmationDialog.classList.add('hidden');
+                });
+        }
     </script>
 </body>
 
