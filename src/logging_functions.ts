@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 import log4js, { FileAppender } from "log4js";
 const { configure, getLogger, shutdown } = log4js;
 import path, { basename, extname } from "node:path";
-import {
-  assertLog4JsConfig,
-  moveFilesToOldSubDir,
-} from "./utility_functions.js";
+import { assertLog4JsConfig, moveFilesToOldSubDir } from "./utility_functions.js";
 // import { z } from "zod";
 import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
@@ -13,15 +10,12 @@ import { DEFAULT_LOG4JS_CONFIG_FILE } from "./constants.js";
 
 function isFileAppender(appender: unknown): asserts appender is FileAppender {
   assert(
-    typeof appender === "object" &&
-      appender !== null &&
-      "filename" in appender &&
-      "type" in appender,
+    typeof appender === "object" && appender !== null && "filename" in appender && "type" in appender,
     "Invalid FileAppender",
   );
 }
 
-export function initLogs() {
+export async function initLogs() {
   /**
    * Loads the log4js configuration from a file and returns it.
    * Necessary because we want to dynamically name the log files
@@ -42,20 +36,16 @@ export function initLogs() {
   // We need to invoke processEnv() here because we init logs before processEnv() is called in index.ts:main()
   const LOGS_DIR = processEnv().LOGS_DIR;
 
-  moveFilesToOldSubDir(LOGS_DIR);
+  await moveFilesToOldSubDir(LOGS_DIR, undefined, true, 2);
 
   let LOG4JS_CONFIG_FILE = DEFAULT_LOG4JS_CONFIG_FILE as string;
   if (process.env.LOG4JS_CONFIG_FILE !== undefined) {
     LOG4JS_CONFIG_FILE = process.env.LOG4JS_CONFIG_FILE;
-    infoLogger.info(
-      `LOG4JS_CONFIG_FILE set in .env, using value ${LOG4JS_CONFIG_FILE}`,
-    );
+    infoLogger.info(`LOG4JS_CONFIG_FILE set in .env, using value ${LOG4JS_CONFIG_FILE}`);
   }
 
   //const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
-  const possibleL4jsConfig = JSON.parse(
-    readFileSync(`./${LOG4JS_CONFIG_FILE}`, "utf-8"),
-  );
+  const possibleL4jsConfig = JSON.parse(readFileSync(`./${LOG4JS_CONFIG_FILE}`, "utf-8"));
   assertLog4JsConfig(possibleL4jsConfig);
 
   /* const l4jsConfigSchema = z.object({
@@ -119,10 +109,7 @@ export function initLogs() {
     }),
   }); */
 
-  const timeStamp = new Date()
-    .toISOString()
-    .replace(/[:-]/g, "")
-    .replace(/\..*$/g, "");
+  const timeStamp = new Date().toISOString().replace(/[:-]/g, "").replace(/\..*$/g, "");
 
   // Don't know if it's necessary to parse the log4js config.
   // For now assume it's in the correct format and contains the config items assumed to exist later in the code.
@@ -140,26 +127,14 @@ export function initLogs() {
 
   const initialCommissionLogFileName = commissionAppender.filename;
   const commissionLogFileExt = extname(initialCommissionLogFileName);
-  const commissionLogFileBaseName = basename(
-    initialCommissionLogFileName,
-    commissionLogFileExt,
-  );
+  const commissionLogFileBaseName = basename(initialCommissionLogFileName, commissionLogFileExt);
 
-  commissionAppender.filename = path.join(
-    LOGS_DIR,
-    `${commissionLogFileBaseName}-${timeStamp}${commissionLogFileExt}`,
-  );
+  commissionAppender.filename = path.join(LOGS_DIR, `${commissionLogFileBaseName}-${timeStamp}${commissionLogFileExt}`);
 
   const initialContractorLogFileName = contractorAppender.filename;
   const contractorLogFileExt = extname(initialContractorLogFileName);
-  const contractorLogFileBaseName = basename(
-    initialContractorLogFileName,
-    contractorLogFileExt,
-  );
-  contractorAppender.filename = path.join(
-    LOGS_DIR,
-    `${contractorLogFileBaseName}-${timeStamp}${contractorLogFileExt}`,
-  );
+  const contractorLogFileBaseName = basename(initialContractorLogFileName, contractorLogFileExt);
+  contractorAppender.filename = path.join(LOGS_DIR, `${contractorLogFileBaseName}-${timeStamp}${contractorLogFileExt}`);
 
   const initialDebugLogFileName = debugLogAppender.filename;
   debugLogAppender.filename = path.join(LOGS_DIR, initialDebugLogFileName);

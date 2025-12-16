@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import {
-  initLogs,
-  shutdownLogging,
-  commissionLogger,
-  contractorLogger,
-  debugLogger,
-} from "./logging_functions.js";
+import { initLogs, shutdownLogging, commissionLogger, contractorLogger, debugLogger } from "./logging_functions.js";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import assert from "node:assert";
@@ -14,8 +8,8 @@ import { PassThrough } from "node:stream";
 describe("logging_functions", () => {
   const LOGS_DIR = "./logs";
 
-  beforeAll(() => {
-    initLogs();
+  beforeAll(async () => {
+    await initLogs();
   });
 
   afterAll(() => {
@@ -48,48 +42,22 @@ describe("logging_functions", () => {
     expect(existsSync(logFilePath)).toBe(true);
   });
 
-  it("only severity debug messages sent to debugLogger should log messages to stderr", () => {
+  it("only severity debug messages sent to debugLogger should log messages to stderr", async () => {
     let stderrOutput: string[] = [];
     const outputStream = new PassThrough();
     outputStream.on("data", (data) => {
       stderrOutput.push(data.toString());
     });
     const originalStderrWrite = process.stderr.write;
-    process.stderr.write = outputStream.write.bind(
-      outputStream,
-    ) as unknown as typeof process.stderr.write;
+    process.stderr.write = outputStream.write.bind(outputStream) as unknown as typeof process.stderr.write;
+
     debugLogger.debug("Debug log message");
+
+    // Wait for async logging to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     outputStream.end();
     process.stderr.write = originalStderrWrite;
-    expect(
-      stderrOutput.some((output) => output.includes("Debug log message")),
-    ).toBe(true);
+    expect(stderrOutput.some((output) => output.includes("Debug log message"))).toBe(true);
   });
-
-  /* it("should log messages to the info logger", () => {
-    infoLogger.info("Info log message");
-    const files = readdirSync(LOGS_DIR);
-    const infoLogFile = files.find((file) => file.includes("info"));
-    expect(infoLogFile).toBeDefined();
-    const logFilePath = path.join(LOGS_DIR, infoLogFile);
-    expect(existsSync(logFilePath)).toBe(true);
-  });
-
-  it("should log messages to the warn logger", () => {
-    warnLogger.warn("Warn log message");
-    const files = readdirSync(LOGS_DIR);
-    const warnLogFile = files.find((file) => file.includes("warn"));
-    expect(warnLogFile).toBeDefined();
-    const logFilePath = path.join(LOGS_DIR, warnLogFile);
-    expect(existsSync(logFilePath)).toBe(true);
-  });
-
-  it("should log messages to the error logger", () => {
-    errorLogger.error("Error log message");
-    const files = readdirSync(LOGS_DIR);
-    const errorLogFile = files.find((file) => file.includes("error"));
-    expect(errorLogFile).toBeDefined();
-    const logFilePath = path.join(LOGS_DIR, errorLogFile);
-    expect(existsSync(logFilePath)).toBe(true);
-  }); */
 });

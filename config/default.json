@@ -1,5 +1,5 @@
 {
     "PAYROLL_WB_FILENAME": "Payroll Report 11-1-2025 - 11-30-2025.xlsx",
     "missingStaffAreFatal": true,
-    "updateTalenox": true
+    "updateTalenox": false
 }

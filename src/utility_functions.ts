@@ -148,12 +148,12 @@ export function isValidDirectory(dir: string): boolean {
  * @param compressFiles - Specifies whether to compress the files before moving them. Defaults to false.
  * @param retainCount - The number of most recently modified files to retain. Defaults to 0.
  */
-export function moveFilesToOldSubDir(
+export async function moveFilesToOldSubDir(
   sourceDir: string,
   destDir = DEFAULT_OLD_DIR,
   compressFiles = false,
   retainCount = 0,
-): void {
+): Promise<void> {
   if (!isValidDirectory(sourceDir)) {
     warnLogger.warn(`Unable to move files. Invalid source directory: ${sourceDir}`);
     return;
@@ -174,22 +174,37 @@ export function moveFilesToOldSubDir(
     filesToRetain = getMostRecentlyModifiedFiles(sourceDir, retainCount);
   }
 
+  const compressionPromises: Promise<void>[] = [];
+
   sourceFiles.forEach((file) => {
     const filePath = path.join(sourceDir, file);
     const newFilePath = path.join(targetDir, file);
     if (file !== destDir && !filesToRetain.includes(file)) {
       if (compressFiles) {
-        // Compress the file
-        const compressedFilePath = `${newFilePath}.gz`;
-        const readStream = createReadStream(filePath);
-        const writeStream = createWriteStream(compressedFilePath);
-        writeStream.on("finish", () => {
-          unlinkSync(filePath);
-          writeStream.close();
+        // Compress the file asynchronously
+        const compressionPromise = new Promise<void>((resolve, reject) => {
+          const compressedFilePath = `${newFilePath}.gz`;
+          const readStream = createReadStream(filePath);
+          const writeStream = createWriteStream(compressedFilePath);
+          const gzip = zlib.createGzip();
+
+          writeStream.on("finish", () => {
+            unlinkSync(filePath);
+            writeStream.close();
+            resolve();
+          });
+
+          writeStream.on("error", (err) => {
+            reject(err);
+          });
+
+          readStream.on("error", (err) => {
+            reject(err);
+          });
+
+          readStream.pipe(gzip).pipe(writeStream);
         });
-        const gzip = zlib.createGzip();
-        readStream.pipe(gzip).pipe(writeStream);
-        // Clean-up and closing stream handled by writeStream.on('finish')
+        compressionPromises.push(compressionPromise);
       } else {
         // Move the file without compression
         renameSync(filePath, newFilePath);
@@ -197,6 +212,11 @@ export function moveFilesToOldSubDir(
       }
     }
   });
+
+  // Wait for all compression operations to complete
+  if (compressionPromises.length > 0) {
+    await Promise.all(compressionPromises);
+  }
 }
 
 export function getMostRecentlyModifiedFiles(dir: string, count = 3) {

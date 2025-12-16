@@ -788,7 +788,7 @@ function processPayrollExcelData(
 }
 
 async function main() {
-  initLogs();
+  await initLogs();
 
   const { PAYROLL_MONTH, PAYROLL_YEAR, PAYMENTS_WB_NAME, PAYMENTS_WS_NAME } = parseFilename(config.PAYROLL_WB_FILENAME);
   global.PAYROLL_MONTH = PAYROLL_MONTH;
@@ -821,7 +821,7 @@ async function main() {
   }
 
   debugLogger.debug(`Moving (and compressing) files from ${DATA_DIR} to ${DATA_OLD_DIR}`);
-  moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2); // probably not necessary for the destination folder to be configurable
+  await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2); // probably not necessary for the destination folder to be configurable
 
   const payrollWorkbookPath = path.join(DATA_DIR, config.PAYROLL_WB_FILENAME);
 
@@ -848,7 +848,7 @@ async function main() {
 
   // Create payment spreadsheet and upload to Talenox
   const payments = createAdHocPayments(commMap, talenoxStaff);
-  moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
+  await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
   writePaymentsWorkBook(payments);
 
   /* 

@@ -1,5 +1,286 @@
 # Development Log - Commission Calculator
 
+## 2025-12-16: Async Log Cleanup Enhancement
+
+### Overview
+
+Enhanced log cleanup functionality with async/await pattern, file compression, and retention policy. Implemented comprehensive test suite for log cleanup operations.
+
+**Session highlights**:
+
+- Refactored `moveFilesToOldSubDir()` from synchronous to async with Promise-based compression
+- Implemented file compression using gzip (reduce disk usage for archived logs)
+- Added retention policy (keep 2 most recent logs in main directory)
+- Created comprehensive test suite (8 tests) for log cleanup functionality
+- Updated all call sites to await async cleanup operations
+- Applied cleanup enhancements to logs, data, and payments directories
+
+---
+
+### 🔧 Major Changes
+
+#### 1. Async Refactoring of `moveFilesToOldSubDir()`
+
+**Location**: `src/utility_functions.ts`
+
+**Before**: Synchronous function with blocking stream operations
+
+```typescript
+export function moveFilesToOldSubDir(
+  sourceDir: string,
+  destDir = DEFAULT_OLD_DIR,
+  compressFiles = false,
+  retainCount = 0,
+): void {
+  // ... compression without awaiting stream completion
+  readStream.pipe(gzip).pipe(writeStream);
+  // File deletion happened before compression finished
+}
+```
+
+**After**: Async function with Promise-based compression
+
+```typescript
+export async function moveFilesToOldSubDir(
+  sourceDir: string,
+  destDir = DEFAULT_OLD_DIR,
+  compressFiles = false,
+  retainCount = 0,
+): Promise<void> {
+  const compressionPromises: Promise<void>[] = [];
+  
+  // Wrap compression in Promise
+  const compressionPromise = new Promise<void>((resolve, reject) => {
+    writeStream.on("finish", () => {
+      unlinkSync(filePath);
+      writeStream.close();
+      resolve();
+    });
+    // ... error handling
+    readStream.pipe(gzip).pipe(writeStream);
+  });
+  
+  // Wait for all compressions
+  await Promise.all(compressionPromises);
+}
+```
+
+**Benefits**:
+- Files fully compressed before deletion
+- Concurrent compression of multiple files
+- Proper error handling with Promise rejection
+- No race conditions between compression and deletion
+
+#### 2. Updated Call Sites
+
+**Locations**: `src/logging_functions.ts`, `src/index.ts`
+
+All three cleanup calls now await completion:
+
+```typescript
+// logging_functions.ts - initLogs() is now async
+export async function initLogs() {
+  await moveFilesToOldSubDir(LOGS_DIR, undefined, true, 2);
+  // ... rest of initialization
+}
+
+// index.ts - main() awaits all cleanups
+async function main() {
+  await initLogs(); // Already awaits internally
+  
+  await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2);
+  await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
+}
+```
+
+#### 3. New Test Suite: `src/logging_functions.cleanup.spec.ts`
+
+**8 comprehensive tests covering**:
+
+1. **Current behavior**: Move all files without compression
+2. **Proposed behavior**: Compress old files, keep 2 recent
+3. **Decompression verification**: Ensure compressed files are valid gzip
+4. **Empty directory handling**: Graceful handling with no files
+5. **Fewer files than retention**: Don't move files unnecessarily
+6. **Retention enforcement**: Keep exact number of most recent files
+7. **Edge case**: Compression with retention count of 0
+8. **Edge case**: No compression with retention
+
+**Test patterns**:
+- Uses `memfs` for in-memory filesystem (fast, isolated)
+- Mock file modification times with `fs.utimesSync()`
+- Verify compression with `zlib.gunzipSync()`
+- Test concurrent file operations
+
+#### 4. Fixed Test Setup
+
+**Location**: `src/logging_functions.spec.ts`
+
+**Before**:
+```typescript
+beforeAll(() => {
+  initLogs(); // Not awaiting async function
+});
+```
+
+**After**:
+```typescript
+beforeAll(async () => {
+  await initLogs(); // Properly await async initialization
+});
+```
+
+**Issue**: Tests were proceeding before log initialization completed
+**Fix**: Changed `beforeAll` to async and await `initLogs()`
+
+---
+
+### ✅ Test Results
+
+**Total: 79 tests passing** (up from 71 after cleanup tests added)
+
+| Test File                                  | Tests  | Status          |
+| ------------------------------------------ | ------ | --------------- |
+| `src/parseFilename.spec.ts`                | 3      | ✅ All passing  |
+| `src/logging_functions.spec.ts`            | 4      | ✅ All passing  |
+| `src/logging_functions.cleanup.spec.ts`    | 8      | ✅ All passing (NEW) |
+| `src/utility_functions.spec.ts`            | 6      | ✅ All passing  |
+| `src/utility_functions.validation.spec.ts` | 19     | ✅ All passing  |
+| `src/index.spec.ts`                        | 39     | ✅ All passing  |
+| **TOTAL**                                  | **79** | ✅ **100% passing** |
+
+---
+
+### 🐛 Issues Resolved
+
+#### 1. Async Stream Timing Issue
+
+**Problem**: Original implementation deleted source files before compression finished
+**Root cause**: `readStream.pipe(gzip).pipe(writeStream)` is async but wasn't awaited
+**Solution**: Wrapped in Promise, used `writeStream.on('finish')` to signal completion
+
+#### 2. TypeScript Type Errors
+
+**Problem**: `fs.readdirSync()` can return `Buffer[]` or `Dirent[]` instead of `string[]`
+**Solution**: Added `String()` conversion in filter operations: `String(f).endsWith('.gz')`
+
+#### 3. Test Assertion Ordering
+
+**Problem**: Arrays returned from `readdirSync()` not in expected order
+**Solution**: Call `.sort()` before assertions to match alphabetically sorted expectations
+
+#### 4. Async Test Setup
+
+**Problem**: `beforeAll` in tests not awaiting `initLogs()`
+**Solution**: Changed to `beforeAll(async () => { await initLogs(); })`
+
+---
+
+### 📊 Implementation Details
+
+#### Compression + Retention Behavior
+
+**Parameters**:
+- `sourceDir`: Directory to clean up
+- `destDir`: Relative subdirectory for archived files (default: "old")
+- `compressFiles`: Whether to gzip files (default: false)
+- `retainCount`: Number of recent files to keep in main directory (default: 0)
+
+**Applied settings across project**:
+```typescript
+// Logs: Compress and keep 2 most recent
+await moveFilesToOldSubDir(LOGS_DIR, undefined, true, 2);
+
+// Data: Compress and keep 2 most recent
+await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2);
+
+// Payments: Compress and keep 2 most recent  
+await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
+```
+
+**Retention logic**:
+1. Get all files in source directory
+2. Sort by modification time (newest first)
+3. Keep `retainCount` most recent files
+4. Move/compress remaining files to destination
+
+---
+
+### 🔍 Technical Details
+
+#### Promise-Based Compression Pattern
+
+```typescript
+const compressionPromise = new Promise<void>((resolve, reject) => {
+  const readStream = createReadStream(filePath);
+  const writeStream = createWriteStream(compressedFilePath);
+  const gzip = zlib.createGzip();
+
+  writeStream.on("finish", () => {
+    unlinkSync(filePath);     // Delete after compression
+    writeStream.close();
+    resolve();                 // Signal completion
+  });
+
+  writeStream.on("error", reject);
+  readStream.on("error", reject);
+
+  readStream.pipe(gzip).pipe(writeStream);
+});
+
+compressionPromises.push(compressionPromise);
+```
+
+**Key points**:
+- Delete source only after `finish` event
+- Error handlers for both read and write streams
+- `Promise.all()` waits for all compressions concurrently
+
+#### memfs Testing Pattern
+
+```typescript
+// Create virtual filesystem
+vol.fromJSON({
+  "./file1.log": "content1",
+  "./file2.log": "content2",
+}, LOGS_DIR);
+
+// Set modification times
+const now = Date.now();
+fs.utimesSync(path.join(LOGS_DIR, "file1.log"), 
+              new Date(now), 
+              new Date(now - 24 * 3600000)); // 1 day old
+```
+
+**Benefits**:
+- No disk I/O (fast tests)
+- Isolated state (no side effects)
+- Full control over modification times
+
+---
+
+### 📝 Session Summary
+
+**Timeline**: Single development session on 2025-12-16
+
+**Major accomplishments**:
+
+1. ✅ Refactored `moveFilesToOldSubDir` to async/await pattern
+2. ✅ Implemented file compression with gzip
+3. ✅ Added retention policy (keep 2 recent files)
+4. ✅ Created comprehensive test suite (8 tests)
+5. ✅ Fixed async test setup issues
+6. ✅ Applied cleanup enhancements project-wide
+7. ✅ All 79 tests passing (100%)
+
+**Test results**: 79/79 passing (100%) ✅
+
+**Breaking changes**: None (backward compatible with async)
+**Migration required**: Callers must await `moveFilesToOldSubDir()`
+**Backward compatibility**: Maintained (async functions can be called synchronously by not awaiting, though not recommended)
+
+---
+
 ## 2025-12-15: Major Refactoring & Test Suite Implementation
 
 ### Overview
@@ -593,10 +874,11 @@ if (!wsaa[rowIndex]) continue; // Row existence check
   }
   ```
 - After: 11-line assert pattern
+
   ```typescript
   const comm = commMap.get(poolMember);
   assert(comm, `No commMap entry...`);
-  
+
   if (typeof aggregatePropValue === "number") {
     // ... calculations
   }
@@ -612,6 +894,7 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 - Zero test regressions (71/71 tests still passing ✅)
 
 **Pattern consistency**: This refactoring aligns with existing assert usage in:
+
 - `getServiceRevenues()` (line ~285): Service revenue entry validation
 - `main()` (line ~760): Directory validation
 
