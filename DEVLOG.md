@@ -16,6 +16,8 @@ Significant refactoring of `src/index.ts` to improve testability, maintainabilit
 - Generated comprehensive AI agent documentation (300+ lines)
 - Modernized code with `Object.hasOwn()` refactoring (4 occurrences)
 - Modernized `doPooling()` with for...of loops and map/join pattern (4 forEach conversions)
+- Modernized `getServiceRevenues()` with ES2022+ patterns (for...of, optional chaining, .has())
+- Refactored `doPooling()` with assert pattern for clearer invariant checking
 
 ---
 
@@ -518,15 +520,12 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 1. **Converted nested forEach to for...of loops** (2 locations)
    - Before: `poolMembers.forEach(poolMember => Object.entries(aggregateComm).forEach(...))`
    - After: `for (const poolMember of poolMembers) { for (const [prop, value] of Object.entries(aggregateComm)) {...} }`
-   
 2. **Modernized member list building with map/join**
    - Before: Manual string concatenation with comma tracking (`let comma = ""; memberList += ...`)
    - After: Declarative array method (`poolMembers.map(...).join(", ")`)
-   
 3. **Converted outer poolMembers iteration to for...of**
    - Before: `poolMembers.forEach((poolMember) => {...})`
    - After: `for (const poolMember of poolMembers) {...}`
-   
 4. **Converted aggregate distribution loop to for...of**
    - Before: `Object.entries(aggregateComm).forEach((aggregate) => {...})`
    - After: `for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {...}`
@@ -547,14 +546,17 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 **Changes applied**:
 
 1. **Removed redundant variable**
+
    - Before: `const revColumn = revCol; ... wsArray[...][revColumn]`
    - After: Direct use of `revCol` parameter
 
 2. **Applied optional chaining**
+
    - Before: `const customPayRates = sh ? sh.customPayRates : [];`
    - After: `const customPayRates = sh?.customPayRates ?? [];`
 
 3. **Modernized custom rate lookup**
+
    - Before: Nested `forEach` with `for...in` and `Object.hasOwn()` checks
    - After: `for...of` with `Object.entries()` (cleaner destructuring)
 
@@ -570,6 +572,48 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 - Cleaner destructuring with Object.entries (removes need for Object.hasOwn)
 - Removed unnecessary variable assignment
 - Zero test regressions (71/71 tests still passing ✅)
+
+#### 6. doPooling() Assert Pattern Refactoring ✅
+
+**Implemented**: Replaced if/else throw pattern with assert for clearer invariant checking
+
+**Location**: doPooling() function, lines ~532-545
+
+**Changes applied**:
+
+- Before: 14-line if/else throw pattern
+  ```typescript
+  const comm = commMap.get(poolMember);
+  if (comm) {
+    if (typeof aggregatePropValue === "number") {
+      // ... calculations
+    }
+  } else {
+    throw new Error(`No commMap entry...`);
+  }
+  ```
+- After: 11-line assert pattern
+  ```typescript
+  const comm = commMap.get(poolMember);
+  assert(comm, `No commMap entry...`);
+  
+  if (typeof aggregatePropValue === "number") {
+    // ... calculations
+  }
+  ```
+
+**Benefits achieved**:
+
+- Clearer intent: assert explicitly communicates "this should never happen"
+- Reduced nesting depth (eliminated unnecessary else branch)
+- Consistent with getServiceRevenues assert pattern (line ~285)
+- More maintainable: easier to scan for invariants vs error handling
+- Code reduction: 14 lines → 11 lines
+- Zero test regressions (71/71 tests still passing ✅)
+
+**Pattern consistency**: This refactoring aligns with existing assert usage in:
+- `getServiceRevenues()` (line ~285): Service revenue entry validation
+- `main()` (line ~760): Directory validation
 
 ---
 
@@ -610,7 +654,10 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 5. ✅ Eliminated code duplication using export/import pattern
 6. ✅ Fixed production bug discovered during refactoring
 7. ✅ Modernized code with `Object.hasOwn()` refactoring
-8. ✅ Modernized `doPooling()` with ES2022+ iteration patterns- ✅ Modernized `getServiceRevenues()` with ES2022+ patterns (for...of, optional chaining, .has())9. ✅ Documented all changes in development log
+8. ✅ Modernized `doPooling()` with ES2022+ iteration patterns
+9. ✅ Modernized `getServiceRevenues()` with ES2022+ patterns (for...of, optional chaining, .has())
+10. ✅ Refactored `doPooling()` with assert pattern for clearer invariant checking
+11. ✅ Documented all changes in development log
 
 **Test results**: 71/71 passing (100%) ✅
 
@@ -678,6 +725,15 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 - Replaced `.get()` with `.has()` for map existence checks
 - Removed unnecessary `Object.hasOwn()` check (Object.entries handles prototype chain)
 - Verified all 71 tests still passing after modernization
+
+**Phase 10**: doPooling assert refactoring
+
+- Replaced if/else throw pattern with assert for invariant checking
+- Improved code clarity: assert communicates "this should never happen" intent
+- Reduced nesting depth (eliminated unnecessary else branch)
+- Consistent with getServiceRevenues assert pattern (line ~285)
+- Code reduction: 14 lines → 11 lines
+- Verified all 71 tests still passing after refactoring ✅
 
 **Total code changes**:
 
