@@ -15,6 +15,7 @@ Significant refactoring of `src/index.ts` to improve testability, maintainabilit
 - Fixed production bug (missing bounds checking) discovered during test implementation
 - Generated comprehensive AI agent documentation (300+ lines)
 - Modernized code with `Object.hasOwn()` refactoring (4 occurrences)
+- Modernized `doPooling()` with for...of loops and map/join pattern (4 forEach conversions)
 
 ---
 
@@ -508,6 +509,37 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 
 **Note**: Commented-out occurrence on line 228 intentionally left unchanged
 
+#### 4. doPooling() Function Modernization ✅
+
+**Implemented**: Modernized iteration patterns with ES2022+ features
+
+**Changes applied**:
+
+1. **Converted nested forEach to for...of loops** (2 locations)
+   - Before: `poolMembers.forEach(poolMember => Object.entries(aggregateComm).forEach(...))`
+   - After: `for (const poolMember of poolMembers) { for (const [prop, value] of Object.entries(aggregateComm)) {...} }`
+   
+2. **Modernized member list building with map/join**
+   - Before: Manual string concatenation with comma tracking (`let comma = ""; memberList += ...`)
+   - After: Declarative array method (`poolMembers.map(...).join(", ")`)
+   
+3. **Converted outer poolMembers iteration to for...of**
+   - Before: `poolMembers.forEach((poolMember) => {...})`
+   - After: `for (const poolMember of poolMembers) {...}`
+   
+4. **Converted aggregate distribution loop to for...of**
+   - Before: `Object.entries(aggregateComm).forEach((aggregate) => {...})`
+   - After: `for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {...}`
+
+**Benefits achieved**:
+
+- More readable (reduced callback nesting)
+- Consistent with existing `for...of` loop already in function
+- More conventional iteration style for modern JavaScript
+- Eliminates mutable state (`memberList`, `comma` variables)
+- More declarative and functional (map/join pattern)
+- Zero test regressions (71/71 tests still passing ✅)
+
 ---
 
 ### 🚀 Optional Future Enhancements
@@ -547,7 +579,8 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 5. ✅ Eliminated code duplication using export/import pattern
 6. ✅ Fixed production bug discovered during refactoring
 7. ✅ Modernized code with `Object.hasOwn()` refactoring
-8. ✅ Documented all changes in development log
+8. ✅ Modernized `doPooling()` with ES2022+ iteration patterns
+9. ✅ Documented all changes in development log
 
 **Test results**: 71/71 passing (100%) ✅
 
@@ -594,11 +627,18 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 - Validated complex parsing and regex logic
 - Documented key behavioral insights
 
-**Phase 7**: Code modernization
+**Phase 7**: Code modernization (Object.hasOwn)
 
 - Refactored `Object.prototype.hasOwnProperty.call()` → `Object.hasOwn()` (4 occurrences)
 - Verified all 71 tests still passing after modernization
 - Improved code readability and ES2022+ compliance
+
+**Phase 8**: Additional ES2022+ modernization
+
+- Modernized `doPooling()` function iteration patterns
+- Converted nested `forEach` callbacks to cleaner `for...of` loops (4 conversions)
+- Replaced imperative string concatenation with declarative `map().join()`
+- Verified all 71 tests still passing after modernization
 
 **Total code changes**:
 
