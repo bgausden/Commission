@@ -18,7 +18,8 @@ import zlib from "zlib";
 import { debugLogger, errorLogger, warnLogger } from "./logging_functions.js";
 import { TStaffID } from "./types.js";
 import assert from "node:assert";
-import { DEFAULT_OLD_DIR } from "./constants.js";
+import { DEFAULT_OLD_DIR, defaultStaffID } from "./constants.js";
+import { StaffHurdle } from "./IStaffHurdle.js";
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === "number") {
@@ -50,20 +51,42 @@ export function stripToNumeric(n: unknown): number {
   return x;
 }
 
-export function isPayViaTalenox(staffID: TStaffID): boolean {
-  let sh = staffHurdles[staffID];
-
-  if (sh === undefined) {
-    if (config.missingStaffAreFatal === true) {
-      throw new Error(
-        `StaffID ${staffID} found in Payroll report but is missing from staffHurdle.json`,
-      );
-    } else {
-      console.warn(
-        `Warning: staffID ${staffID} is missing from staffHurdle.json`,
-      );
-    }
+/**
+ * Validates and retrieves staff hurdle configuration with consistent fallback behavior.
+ *
+ * @param staffID - The staff ID to validate
+ * @param context - Description of where validation is being called (for better error messages)
+ * @returns StaffHurdle configuration (either for staffID or default "000")
+ * @throws Error if staffID missing and config.missingStaffAreFatal=true OR if default "000" doesn't exist
+ */
+export function getValidatedStaffHurdle(staffID: TStaffID, context: string): StaffHurdle {
+  // First: Try to get staff's actual configuration
+  if (staffHurdles[staffID]) {
+    return staffHurdles[staffID];
   }
+
+  // Second: Staff not found - check if this is fatal
+  if (config.missingStaffAreFatal) {
+    const message = `Staff ID ${staffID} found in ${context} but is missing from staffHurdle.json`;
+    errorLogger.error(`Fatal: ${message}`);
+    throw new Error(message);
+  }
+
+  // Third: Fall back to default with warning
+  warnLogger.warn(`Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`);
+
+  // Fourth: Ensure default exists (fatal if missing)
+  if (!staffHurdles[defaultStaffID]) {
+    const message = `Default staff ID ${defaultStaffID} is missing from staffHurdle.json. Cannot process staff ${staffID}.`;
+    errorLogger.error(`Fatal: ${message}`);
+    throw new Error(message);
+  }
+
+  return staffHurdles[defaultStaffID];
+}
+
+export function isPayViaTalenox(staffID: TStaffID): boolean {
+  const sh = getValidatedStaffHurdle(staffID, "payroll Talenox check");
 
   if (!("payViaTalenox" in sh)) {
     throw new Error(`${staffID} has no payViaTalenox property.`);
@@ -78,13 +101,8 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-  const sh = staffHurdles[staffID];
-  if (!sh) {
-    //staffID = defaultStaffID
-    let message = `No hurdle found for staffID ${staffID}. Aborting.`;
-    errorLogger.error(message);
-    throw new Error(message);
-  }
+  const sh = getValidatedStaffHurdle(staffID, "contractor status check");
+
   if (
     "contractor" in sh
     //Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')
@@ -101,14 +119,8 @@ export function getStaffHurdle(staffID: string) {
   return staffHurdles[staffID];
 }
 
-export function assertLog4JsConfig(
-  config: unknown,
-): asserts config is l4JSConfiguration {
-  if (
-    typeof config === "object" &&
-    !!config &&
-    ("appenders" in config || "categories" in config)
-  ) {
+export function assertLog4JsConfig(config: unknown): asserts config is l4JSConfiguration {
+  if (typeof config === "object" && !!config && ("appenders" in config || "categories" in config)) {
     return;
   } else {
     throw new Error("Failed to validate provided log4JSConfig");
@@ -143,9 +155,7 @@ export function moveFilesToOldSubDir(
   retainCount = 0,
 ): void {
   if (!isValidDirectory(sourceDir)) {
-    warnLogger.warn(
-      `Unable to move files. Invalid source directory: ${sourceDir}`,
-    );
+    warnLogger.warn(`Unable to move files. Invalid source directory: ${sourceDir}`);
     return;
   }
 
@@ -154,9 +164,7 @@ export function moveFilesToOldSubDir(
   const targetDir = path.join(sourceDir, destDir);
 
   if (!isValidDirectory(targetDir)) {
-    warnLogger.warn(
-      `Target directory: ${targetDir} does not exist. Will create.`,
-    );
+    warnLogger.warn(`Target directory: ${targetDir} does not exist. Will create.`);
     mkdirSync(path.join(sourceDir, targetDir), { recursive: false });
     assert(isValidDirectory(targetDir));
   }
