@@ -529,19 +529,17 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
       commissionLogger.info(`Pool contains ${poolMembers.length} members: ${memberList}`);
       for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {
         const comm = commMap.get(poolMember);
-        if (comm) {
-          if (typeof aggregatePropValue === "number") {
-            comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100;
-            const aggregateCommString =
-              typeof comm[aggregatePropName] === "number"
-                ? comm[aggregatePropName].toString()
-                : JSON.stringify(comm[aggregatePropName]);
-            commissionLogger.info(
-              `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`,
-            );
-          }
-        } else {
-          throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`);
+        assert(comm, `No commMap entry for ${poolMember} ${staffName}. This should never happen.`);
+
+        if (typeof aggregatePropValue === "number") {
+          comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100;
+          const aggregateCommString =
+            typeof comm[aggregatePropName] === "number"
+              ? comm[aggregatePropName].toString()
+              : JSON.stringify(comm[aggregatePropName]);
+          commissionLogger.info(
+            `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`,
+          );
         }
       }
       commissionLogger.info("--------------");
