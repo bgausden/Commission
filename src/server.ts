@@ -3,6 +3,7 @@ import fileUpload, { UploadedFile } from "express-fileupload";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { spawn } from "child_process";
 import Ajv from "ajv";
 import { DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import { TStaffHurdles } from "./types.js";
@@ -13,15 +14,8 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONFIG_FILE_PATH = path.join(__dirname, "../config/default.json");
-const STAFF_HURDLE_FILE_PATH = path.join(
-  __dirname,
-  "..",
-  DEFAULT_STAFF_HURDLES_FILE,
-);
-const STAFF_HURDLE_SCHEMA_PATH = path.join(
-  __dirname,
-  "./staffHurdleSchema.json",
-);
+const STAFF_HURDLE_FILE_PATH = path.join(__dirname, "..", DEFAULT_STAFF_HURDLES_FILE);
+const STAFF_HURDLE_SCHEMA_PATH = path.join(__dirname, "./staffHurdleSchema.json");
 const DATA_DIR_PATH = path.join(__dirname, "../data");
 
 app.use(express.urlencoded({ extended: true }));
@@ -97,13 +91,8 @@ function loadConfig(): IConfig {
     const data = fs.readFileSync(CONFIG_FILE_PATH, "utf8");
     return JSON.parse(data);
   } catch (error) {
-    if (
-      error instanceof Error &&
-      (error as NodeJS.ErrnoException).code === "ENOENT"
-    ) {
-      debugLogger.debug(
-        `Failed to load config file. Will return default. Error: ${error.message}`,
-      );
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+      debugLogger.debug(`Failed to load config file. Will return default. Error: ${error.message}`);
       return {
         // return some safe default values
         PAYROLL_WB_FILENAME: "payroll.xlsx",
@@ -132,6 +121,67 @@ function loadStaffHurdles(): TStaffHurdles {
 function saveStaffHurdles(config: TStaffHurdles): void {
   fs.writeFileSync(STAFF_HURDLE_FILE_PATH, JSON.stringify(config, null, 4));
 }
+
+app.post("/run-commission", (_req: Request, res: Response) => {
+  try {
+    const indexPath = path.join(__dirname, "index.js");
+
+    // Check if the compiled index.js exists
+    if (!fs.existsSync(indexPath)) {
+      return res.status(500).json({
+        success: false,
+        message: "Commission script not found. Please build the project first.",
+      });
+    }
+
+    // Spawn the commission calculation process
+    const child = spawn("node", [indexPath], {
+      cwd: __dirname,
+      env: { ...process.env },
+      stdio: "pipe",
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
+      debugLogger.debug(`Commission stdout: ${data}`);
+    });
+
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+      debugLogger.error(`Commission stderr: ${data}`);
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        debugLogger.info("Commission calculation completed successfully");
+      } else {
+        debugLogger.error(`Commission calculation exited with code ${code}`);
+      }
+    });
+
+    // Send immediate response that the process has started
+    res.status(200).json({
+      success: true,
+      message: "Commission calculation started successfully. Check logs for details.",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      debugLogger.error(`Failed to run commission calculation. Error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to run commission calculation: " + error.message,
+      });
+    }
+    debugLogger.error(`Failed to run commission calculation. Error: ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to run commission calculation",
+    });
+  }
+});
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
