@@ -54,9 +54,9 @@ describe("/update-config endpoint", () => {
       json: jsonMock,
     };
 
-    // Spy on fs functions
-    readFileSyncSpy = vi.spyOn(fs, "readFileSync");
-    writeFileSyncSpy = vi.spyOn(fs, "writeFileSync");
+    // Spy on fs functions and prevent real file I/O
+    readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("");
+    writeFileSyncSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue(undefined);
 
     // Reset all mocks
     vi.clearAllMocks();
