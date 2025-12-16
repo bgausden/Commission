@@ -540,6 +540,37 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 - More declarative and functional (map/join pattern)
 - Zero test regressions (71/71 tests still passing ✅)
 
+#### 5. getServiceRevenues() Function Modernization ✅
+
+**Implemented**: Modernized Excel parsing logic with ES2022+ patterns
+
+**Changes applied**:
+
+1. **Removed redundant variable**
+   - Before: `const revColumn = revCol; ... wsArray[...][revColumn]`
+   - After: Direct use of `revCol` parameter
+
+2. **Applied optional chaining**
+   - Before: `const customPayRates = sh ? sh.customPayRates : [];`
+   - After: `const customPayRates = sh?.customPayRates ?? [];`
+
+3. **Modernized custom rate lookup**
+   - Before: Nested `forEach` with `for...in` and `Object.hasOwn()` checks
+   - After: `for...of` with `Object.entries()` (cleaner destructuring)
+
+4. **Simplified map existence check**
+   - Before: `if (!servRevenueMap.get(servName))`
+   - After: `if (!servRevenueMap.has(servName))`
+
+**Benefits achieved**:
+
+- More consistent with ES2022+ patterns (matching doPooling modernization)
+- Reduced nesting depth (eliminated `if (customPayRates)` wrapper)
+- More idiomatic Map usage (.has() vs .get() for existence checks)
+- Cleaner destructuring with Object.entries (removes need for Object.hasOwn)
+- Removed unnecessary variable assignment
+- Zero test regressions (71/71 tests still passing ✅)
+
 ---
 
 ### 🚀 Optional Future Enhancements
@@ -579,8 +610,7 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 5. ✅ Eliminated code duplication using export/import pattern
 6. ✅ Fixed production bug discovered during refactoring
 7. ✅ Modernized code with `Object.hasOwn()` refactoring
-8. ✅ Modernized `doPooling()` with ES2022+ iteration patterns
-9. ✅ Documented all changes in development log
+8. ✅ Modernized `doPooling()` with ES2022+ iteration patterns- ✅ Modernized `getServiceRevenues()` with ES2022+ patterns (for...of, optional chaining, .has())9. ✅ Documented all changes in development log
 
 **Test results**: 71/71 passing (100%) ✅
 
@@ -638,6 +668,15 @@ if (!wsaa[rowIndex]) continue; // Row existence check
 - Modernized `doPooling()` function iteration patterns
 - Converted nested `forEach` callbacks to cleaner `for...of` loops (4 conversions)
 - Replaced imperative string concatenation with declarative `map().join()`
+- Verified all 71 tests still passing after modernization
+
+**Phase 9**: getServiceRevenues ES2022+ modernization
+
+- Removed redundant `revColumn` variable assignment
+- Modernized custom rate lookup with `for...of` + `Object.entries()`
+- Applied optional chaining (`sh?.customPayRates ?? []`)
+- Replaced `.get()` with `.has()` for map existence checks
+- Removed unnecessary `Object.hasOwn()` check (Object.entries handles prototype chain)
 - Verified all 71 tests still passing after modernization
 
 **Total code changes**:

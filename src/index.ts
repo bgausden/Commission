@@ -219,12 +219,11 @@ export function getServiceRevenues(
     working our way down the sheet from top to bottom.
     */
   const numSearchRows = currentTotalRow - currentStaffIDRow - 1;
-  const revColumn = revCol;
   const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>();
   let serviceRevenue = 0;
   let customRate = NaN;
   const sh = getValidatedStaffHurdle(staffID, "Mindbody payroll report");
-  const customPayRates = sh ? sh.customPayRates : [];
+  const customPayRates = sh?.customPayRates ?? [];
   let servName: TServiceName = GENERAL_SERV_REVENUE;
   for (let i = numSearchRows; i >= 1; i--) {
     /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
@@ -242,43 +241,34 @@ export function getServiceRevenues(
       servName = match[SERVICE_TYPE_INDEX];
       // check if we have special rates for this servType
       customRate = NaN;
-      if (customPayRates) {
-        customPayRates.forEach((customPayRate) => {
-          for (const serviceWithCustomPayRate in customPayRate) {
-            if (Object.hasOwn(customPayRate, serviceWithCustomPayRate)) {
-              if (servName === serviceWithCustomPayRate) {
-                customRate = customPayRate[serviceWithCustomPayRate] || 0;
-                break;
-              }
-            }
+      for (const customPayRate of customPayRates) {
+        for (const [serviceName, rate] of Object.entries(customPayRate)) {
+          if (servName === serviceName) {
+            customRate = rate || 0;
+            break;
           }
-        });
+        }
       }
       if (!customRate) {
         servName = GENERAL_SERV_REVENUE; // catch-all servType for everything without a custom pay-rate
         customRate = NaN;
       }
-      if (!servRevenueMap.get(servName)) {
+      if (!servRevenueMap.has(servName)) {
         serviceRevenue = 0;
         servRevenueMap.set(servName, { serviceRevenue, customRate });
       }
     }
-    let revenueCellContents = wsArray[currentTotalRow - i][revColumn];
+    let revenueCellContents = wsArray[currentTotalRow - i][revCol];
     if (revenueCellContents !== undefined) {
       revenueCellContents = stripToNumeric(revenueCellContents);
       if (typeof revenueCellContents === "number" && revenueCellContents > 0) {
         serviceRevenue = revenueCellContents;
         // accumulate the serv revenues for this servType in the map
         const serviceRevenueEntry = servRevenueMap.get(servName);
-        if (serviceRevenueEntry) {
-          // customRate = custom.customRate
-          // custom = [custom[0] + revenueCellContents, custom[1]]
-          //servRevenueMap.set(servType, custom)
-          serviceRevenue += serviceRevenueEntry.serviceRevenue;
-          servRevenueMap.set(servName, { serviceRevenue, customRate });
-        } else {
-          throw new Error(`Did not find ${servName} in servRevenueMap. This should never happen.`);
-        }
+        assert(serviceRevenueEntry, `Did not find ${servName} in servRevenueMap. This should never happen.`);
+
+        serviceRevenue += serviceRevenueEntry.serviceRevenue;
+        servRevenueMap.set(servName, { serviceRevenue, customRate });
       }
     }
   }
