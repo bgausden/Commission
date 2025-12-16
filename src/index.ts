@@ -164,7 +164,7 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
   // eslint:disable-next-line: no-shadowed-variable
 
   const testString = wsArray[idRow][staffNameIndex];
-  const regex = new RegExp("^.*,.*" + STAFF_ID_HASH);
+  const regex = new RegExp(`^.*,.*${STAFF_ID_HASH}`);
   if (regex.test(testString as string)) {
     /* Split the name and ID string into an array ["Surname, Firstname", ID] */
     const staffInfo: string[] | undefined =
@@ -225,8 +225,6 @@ export function getServiceRevenues(
   let customRate = NaN;
   const sh = getValidatedStaffHurdle(staffID, "Mindbody payroll report");
   const customPayRates = sh ? sh.customPayRates : [];
-  // const customPayRates = Object.prototype.hasOwnProperty.call(sh, "customPayRates") ? sh["customPayRates"] : null
-  //const customPayRates = sh.customPayRates ?? []
   let servName: TServiceName = GENERAL_SERV_REVENUE;
   for (let i = numSearchRows; i >= 1; i--) {
     /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
@@ -268,13 +266,6 @@ export function getServiceRevenues(
     let revenueCellContents = wsArray[currentTotalRow - i][revColumn];
     if (revenueCellContents !== undefined) {
       revenueCellContents = stripToNumeric(revenueCellContents);
-      /*             if (typeof revenueCellContents === "string") {
-                revenueCellContents = stripToNumeric(revenueCellContents)
-             } else {
-                if (typeof revenueCellContents === "number") {
-                    // all good
-                }
-             } */
       if (typeof revenueCellContents === "number" && revenueCellContents > 0) {
         serviceRevenue = revenueCellContents;
         // accumulate the serv revenues for this servType in the map
@@ -513,9 +504,8 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
       customRateCommissions: {},
       generalServiceCommission: 0,
     };
-    poolMembers.forEach((poolMember) =>
-      Object.entries(aggregateComm).forEach((aggregateElement) => {
-        const [aggregatePropName, aggregatePropValue] = aggregateElement;
+    for (const poolMember of poolMembers) {
+      for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {
         const commMapElement = commMap.get(poolMember);
         if (commMapElement) {
           const commMapValue = commMapElement[aggregatePropName];
@@ -525,30 +515,29 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         } else {
           throw new Error(`No commMap entry for ${poolMember}. This should never happen.`);
         }
-      }),
-    );
+      }
+    }
     // divide the aggregate values across the pool members by updating their commComponents entries
     // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
     commissionLogger.info("=======================================");
     commissionLogger.info("Pooling Calculations");
     commissionLogger.info("=======================================");
 
-    poolMembers.forEach((poolMember) => {
+    for (const poolMember of poolMembers) {
       const staffName = `${
         talenoxStaff.get(poolMember)?.last_name ?? "<Last Name>"
       }, ${talenoxStaff.get(poolMember)?.first_name ?? "<First Name>"}`;
       commissionLogger.info(`Pooling for ${poolMember} ${staffName}`);
-      let memberList = "";
-      let comma = "";
-      poolMembers.forEach((member) => {
-        memberList += `${comma}${member} ${
-          talenoxStaff.get(member)?.last_name ?? "<Last Name>"
-        } ${talenoxStaff.get(member)?.first_name ?? "<First Name>"}`;
-        comma = ", ";
-      });
+      const memberList = poolMembers
+        .map(
+          (member) =>
+            `${member} ${
+              talenoxStaff.get(member)?.last_name ?? "<Last Name>"
+            } ${talenoxStaff.get(member)?.first_name ?? "<First Name>"}`,
+        )
+        .join(", ");
       commissionLogger.info(`Pool contains ${poolMembers.length} members: ${memberList}`);
-      Object.entries(aggregateComm).forEach((aggregate) => {
-        const [aggregatePropName, aggregatePropValue] = aggregate;
+      for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {
         const comm = commMap.get(poolMember);
         if (comm) {
           if (typeof aggregatePropValue === "number") {
@@ -564,9 +553,9 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
         } else {
           throw new Error(`No commMap entry for ${poolMember} ${staffName}. This should never happen.`);
         }
-      });
+      }
       commissionLogger.info("--------------");
-    });
+    }
   }
   commissionLogger.info("");
   commissionLogger.info("=======================================");
