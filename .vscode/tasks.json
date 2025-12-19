@@ -10,7 +10,10 @@
             "problemMatcher": [
                 "$tsc"
             ],
-            "group": "build"
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
             "type": "npm",
@@ -21,7 +24,7 @@
             },
             "problemMatcher": [],
             "label": "npm: build",
-            "detail": "build via run-script-os",
+            "detail": "build via run-script-os"
         },
         {
             "type": "npm",
