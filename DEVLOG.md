@@ -11,12 +11,14 @@ Changed the web UI’s commission runner feedback to show a clean, step-by-step 
 - Added structured progress markers from the commission runner (stdout lines prefixed with `__PROGRESS__`)
 - Server parses those markers and streams them to the browser as SSE `step` events
 - UI renders a “Progress” list by default, with raw logs hidden behind a “Show logs” toggle (stderr is separately toggleable)
+- Server now supports `PORT` env var to avoid Windows reserved/excluded port issues
 
 **Files touched**:
 
 - `src/index.ts` (adds `emitProgress()` and emits steps during `main()`)
 - `src/serverApp.ts` (parses progress markers, stores `steps`, streams SSE `step` events)
 - `public/index.html` (adds Progress panel UI and toggles)
+- `src/server.ts` (listen port is configurable via `PORT`)
 
 ---
 
