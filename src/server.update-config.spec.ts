@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Request, Response } from "express";
-import fs from "fs";
-import path from "path";
+import type { Server } from "node:http";
+import fs from "node:fs";
 
 // Mock modules before imports
 vi.mock("./logging_functions.js", () => ({
@@ -14,76 +13,125 @@ vi.mock("./logging_functions.js", () => ({
 }));
 
 describe("/update-config endpoint", () => {
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
-  let statusMock: ReturnType<typeof vi.fn>;
-  let jsonMock: ReturnType<typeof vi.fn>;
   let readFileSyncSpy: ReturnType<typeof vi.spyOn>;
   let writeFileSyncSpy: ReturnType<typeof vi.spyOn>;
 
-  // Simulate the endpoint logic
-  function updateConfigHandler(req: Request, res: Response) {
+  let configFileContents = "";
+  let configReadError: unknown | undefined;
+  let configWriteError: unknown | undefined;
+
+  let server: Server;
+  let baseUrl: string;
+
+  async function postUpdateConfig(
+    body: unknown,
+  ): Promise<{ status: number; json: unknown; text: string }> {
+    const response = await fetch(`${baseUrl}/update-config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const text = await response.text();
+    let json: unknown;
     try {
-      const configPath = path.join(process.cwd(), "config/default.json");
-      const data = fs.readFileSync(configPath, "utf8");
-      const config = JSON.parse(data);
-      
-      config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
-      config.updateTalenox = Boolean(req.body.updateTalenox);
-      
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
-      res.status(200).json({ message: "Config updated successfully skipper" });
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(500).json({ message: "Failed to update config" });
-      }
-      return res.status(500).json({ message: "Failed to update config" });
+      json = JSON.parse(text);
+    } catch {
+      json = undefined;
     }
+    return { status: response.status, json, text };
   }
 
-  beforeEach(() => {
-    statusMock = vi.fn().mockReturnThis();
-    jsonMock = vi.fn();
+  beforeEach(async () => {
+    // Reset all mocks first so we don't wipe out mockReturnValue/mockImplementation set below.
+    vi.clearAllMocks();
 
-    mockRequest = {
-      body: {},
-    };
+    // Import after mocks are set up (Vitest ESM) so mocked modules apply.
+    const { createApp } = await import("./serverApp.js");
+    const app = createApp();
+    server = app.listen(0);
+    const addr = server.address();
+    if (!addr || typeof addr === "string") {
+      throw new Error("Failed to acquire ephemeral port for test server");
+    }
+    baseUrl = `http://127.0.0.1:${addr.port}`;
 
-    mockResponse = {
-      status: statusMock,
-      json: jsonMock,
-    };
+    configFileContents = "";
+    configReadError = undefined;
+    configWriteError = undefined;
+
+    const isDefaultConfigPath = (p: unknown) =>
+      typeof p === "string" && /config[\\/]+default\.json$/.test(p);
+    const realReadFileSync = fs.readFileSync.bind(fs);
+    const realWriteFileSync = fs.writeFileSync.bind(fs);
 
     // Spy on fs functions and prevent real file I/O
-    readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("");
-    writeFileSyncSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue(undefined);
+    readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockImplementation(((
+      pathLike: unknown,
+      ...rest: unknown[]
+    ) => {
+      if (isDefaultConfigPath(pathLike)) {
+        if (configReadError !== undefined) {
+          throw configReadError;
+        }
+        return configFileContents;
+      }
+      // Allow other reads (node modules, encodings, etc.) to behave normally.
+      return (realReadFileSync as unknown as (...args: unknown[]) => unknown)(
+        pathLike,
+        ...rest,
+      );
+    }) as unknown as typeof fs.readFileSync) as unknown as ReturnType<
+      typeof vi.spyOn
+    >;
 
-    // Reset all mocks
-    vi.clearAllMocks();
+    writeFileSyncSpy = vi.spyOn(fs, "writeFileSync").mockImplementation(((
+      pathLike: unknown,
+      data: unknown,
+      ...rest: unknown[]
+    ) => {
+      if (isDefaultConfigPath(pathLike)) {
+        if (configWriteError !== undefined) {
+          throw configWriteError;
+        }
+        return;
+      }
+      return (realWriteFileSync as unknown as (...args: unknown[]) => unknown)(
+        pathLike,
+        data,
+        ...rest,
+      );
+    }) as unknown as typeof fs.writeFileSync) as unknown as ReturnType<
+      typeof vi.spyOn
+    >;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.restoreAllMocks();
+
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
   });
 
   describe("successful updates", () => {
-    it("should update config with both values true", () => {
+    it("should update config with both values true", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "test.xlsx",
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      mockRequest.body = {
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
-      expect(jsonMock).toHaveBeenCalledWith({
+      expect(response.status).toBe(200);
+      expect(response.json).toEqual({
         message: "Config updated successfully skipper",
       });
 
@@ -96,64 +144,60 @@ describe("/update-config endpoint", () => {
       expect(writtenConfig.PAYROLL_WB_FILENAME).toBe("test.xlsx");
     });
 
-    it("should update config with both values false", () => {
+    it("should update config with both values false", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "test.xlsx",
         missingStaffAreFatal: true,
         updateTalenox: true,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      mockRequest.body = {
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
         missingStaffAreFatal: false,
         updateTalenox: false,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(response.status).toBe(200);
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
       expect(writtenConfig.missingStaffAreFatal).toBe(false);
       expect(writtenConfig.updateTalenox).toBe(false);
     });
 
-    it("should update config with mixed values", () => {
+    it("should update config with mixed values", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "test.xlsx",
         missingStaffAreFatal: false,
         updateTalenox: true,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      mockRequest.body = {
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: false,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(response.status).toBe(200);
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
       expect(writtenConfig.missingStaffAreFatal).toBe(true);
       expect(writtenConfig.updateTalenox).toBe(false);
     });
 
-    it("should preserve PAYROLL_WB_FILENAME", () => {
+    it("should preserve PAYROLL_WB_FILENAME", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "important-file.xlsx",
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      mockRequest.body = {
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
@@ -168,16 +212,16 @@ describe("/update-config endpoint", () => {
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
+      configFileContents = JSON.stringify(existingConfig);
     });
 
-    it("should coerce string 'true' to boolean true", () => {
-      mockRequest.body = {
+    it("should coerce string 'true' to boolean true", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: "true",
         updateTalenox: "yes",
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
@@ -185,13 +229,13 @@ describe("/update-config endpoint", () => {
       expect(writtenConfig.updateTalenox).toBe(true);
     });
 
-    it("should coerce empty string to boolean false", () => {
-      mockRequest.body = {
+    it("should coerce empty string to boolean false", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: "",
         updateTalenox: "",
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
@@ -199,13 +243,13 @@ describe("/update-config endpoint", () => {
       expect(writtenConfig.updateTalenox).toBe(false);
     });
 
-    it("should coerce number 1 to boolean true, 0 to false", () => {
-      mockRequest.body = {
+    it("should coerce number 1 to boolean true, 0 to false", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: 1,
         updateTalenox: 0,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
@@ -213,13 +257,13 @@ describe("/update-config endpoint", () => {
       expect(writtenConfig.updateTalenox).toBe(false);
     });
 
-    it("should coerce undefined to boolean false", () => {
-      mockRequest.body = {
+    it("should coerce undefined to boolean false", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: undefined,
         updateTalenox: undefined,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
@@ -227,13 +271,13 @@ describe("/update-config endpoint", () => {
       expect(writtenConfig.updateTalenox).toBe(false);
     });
 
-    it("should coerce null to boolean false", () => {
-      mockRequest.body = {
+    it("should coerce null to boolean false", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: null,
         updateTalenox: null,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
@@ -243,83 +287,72 @@ describe("/update-config endpoint", () => {
   });
 
   describe("error handling", () => {
-    it("should return 500 when readFileSync throws ENOENT error", () => {
-      const error = new Error("ENOENT: no such file or directory") as NodeJS.ErrnoException;
+    it("should fall back to default config when config file is missing (ENOENT)", async () => {
+      const error = new Error(
+        "ENOENT: no such file or directory",
+      ) as NodeJS.ErrnoException;
       error.code = "ENOENT";
-      readFileSyncSpy.mockImplementation(() => {
-        throw error;
-      });
 
-      mockRequest.body = {
+      configReadError = error;
+
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
-
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(500);
-      expect(jsonMock).toHaveBeenCalledWith({
-        message: "Failed to update config",
       });
+
+      expect(response.status).toBe(200);
+      expect(response.json).toEqual({
+        message: "Config updated successfully skipper",
+      });
+
+      const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
+      const writtenConfig = JSON.parse(writtenData);
+      expect(writtenConfig.PAYROLL_WB_FILENAME).toBe("payroll.xlsx");
+      expect(writtenConfig.missingStaffAreFatal).toBe(true);
+      expect(writtenConfig.updateTalenox).toBe(true);
     });
 
-    it("should return 500 when JSON.parse throws error", () => {
-      readFileSyncSpy.mockReturnValue("invalid json {{{");
+    it("should return 500 when JSON.parse throws error", async () => {
+      configFileContents = "invalid json {{{";
 
-      mockRequest.body = {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
-
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(500);
-      expect(jsonMock).toHaveBeenCalledWith({
-        message: "Failed to update config",
       });
+
+      expect(response.status).toBe(500);
+      expect(response.json).toEqual({ message: "Failed to update config" });
     });
 
-    it("should return 500 when writeFileSync throws error", () => {
+    it("should return 500 when writeFileSync throws error", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "test.xlsx",
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      writeFileSyncSpy.mockImplementation(() => {
-        throw new Error("EACCES: permission denied");
-      });
+      configFileContents = JSON.stringify(existingConfig);
+      configWriteError = new Error("EACCES: permission denied");
 
-      mockRequest.body = {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
-
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(500);
-      expect(jsonMock).toHaveBeenCalledWith({
-        message: "Failed to update config",
       });
+
+      expect(response.status).toBe(500);
+      expect(response.json).toEqual({ message: "Failed to update config" });
     });
 
-    it("should handle non-Error exceptions", () => {
-      readFileSyncSpy.mockImplementation(() => {
-        throw "String error";
-      });
+    it("should handle non-Error exceptions", async () => {
+      configReadError = "String error";
 
-      mockRequest.body = {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
-
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(500);
-      expect(jsonMock).toHaveBeenCalledWith({
-        message: "Failed to update config",
       });
+
+      expect(response.status).toBe(500);
+      expect(response.json).toEqual({ message: "Failed to update config" });
     });
   });
 
@@ -330,15 +363,13 @@ describe("/update-config endpoint", () => {
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
+      configFileContents = JSON.stringify(existingConfig);
     });
 
-    it("should handle empty request body", () => {
-      mockRequest.body = {};
+    it("should handle empty request body", async () => {
+      const response = await postUpdateConfig({});
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(response.status).toBe(200);
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
       // Both should be false due to Boolean(undefined) === false
@@ -346,41 +377,37 @@ describe("/update-config endpoint", () => {
       expect(writtenConfig.updateTalenox).toBe(false);
     });
 
-    it("should handle partial request body - only missingStaffAreFatal", () => {
-      mockRequest.body = {
+    it("should handle partial request body - only missingStaffAreFatal", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(response.status).toBe(200);
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
       expect(writtenConfig.missingStaffAreFatal).toBe(true);
       expect(writtenConfig.updateTalenox).toBe(false); // undefined -> false
     });
 
-    it("should handle partial request body - only updateTalenox", () => {
-      mockRequest.body = {
+    it("should handle partial request body - only updateTalenox", async () => {
+      const response = await postUpdateConfig({
         updateTalenox: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(response.status).toBe(200);
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
       expect(writtenConfig.missingStaffAreFatal).toBe(false); // undefined -> false
       expect(writtenConfig.updateTalenox).toBe(true);
     });
 
-    it("should format JSON with 4-space indentation", () => {
-      mockRequest.body = {
+    it("should format JSON with 4-space indentation", async () => {
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       // Check that it has proper indentation
@@ -391,46 +418,45 @@ describe("/update-config endpoint", () => {
   });
 
   describe("file system operations", () => {
-    it("should read from correct config file path", () => {
+    it("should read from correct config file path", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "test.xlsx",
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      mockRequest.body = {
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
-
-      expect(readFileSyncSpy).toHaveBeenCalledWith(
-        expect.stringContaining("config/default.json"),
-        "utf8"
+      expect(response.status).toBe(200);
+      expect(readFileSyncSpy.mock.calls[0][0]).toMatch(
+        /config[\\/]+default\.json$/,
       );
+      expect(readFileSyncSpy.mock.calls[0][1]).toBe("utf8");
     });
 
-    it("should write to correct config file path", () => {
+    it("should write to correct config file path", async () => {
       const existingConfig = {
         PAYROLL_WB_FILENAME: "test.xlsx",
         missingStaffAreFatal: false,
         updateTalenox: false,
       };
 
-      readFileSyncSpy.mockReturnValue(JSON.stringify(existingConfig));
-      mockRequest.body = {
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
         missingStaffAreFatal: true,
         updateTalenox: true,
-      };
+      });
 
-      updateConfigHandler(mockRequest as Request, mockResponse as Response);
+      expect(response.status).toBe(200);
 
-      expect(writeFileSyncSpy).toHaveBeenCalledWith(
-        expect.stringContaining("config/default.json"),
-        expect.any(String)
+      expect(writeFileSyncSpy.mock.calls[0][0]).toMatch(
+        /config[\\/]+default\.json$/,
       );
+      expect(typeof writeFileSyncSpy.mock.calls[0][1]).toBe("string");
     });
   });
 });
