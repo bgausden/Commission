@@ -1,5 +1,20 @@
 # Development Log - Commission Calculator
 
+## 2025-12-19: Server App Factory & Real Route Tests
+
+### Overview
+
+Refactored the web server so routes can be tested via the real Express app (without duplicating handler logic), and hardened the `/update-config` test suite for Windows path separators and Node dependency file reads.
+
+**Session highlights**:
+
+- Extracted Express app creation into `createApp()` so importing the server has no side effects
+- Refactored `/update-config` tests to hit the real HTTP route via an ephemeral server + `fetch`
+- Scoped `fs` mocking to only `config/default.json` reads/writes (passes through other reads)
+- Made path assertions OS-agnostic (`/` vs `\\`)
+
+---
+
 ## 2025-12-16: Ajv to Zod Migration & Test Suite
 
 ### Overview
