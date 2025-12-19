@@ -1,5 +1,25 @@
 # Development Log - Commission Calculator
 
+## 2025-12-19: Commission Run Progress Steps (Web UI)
+
+### Overview
+
+Changed the web UI’s commission runner feedback to show a clean, step-by-step timeline (instead of streaming noisy debug output by default).
+
+**Session highlights**:
+
+- Added structured progress markers from the commission runner (stdout lines prefixed with `__PROGRESS__`)
+- Server parses those markers and streams them to the browser as SSE `step` events
+- UI renders a “Progress” list by default, with raw logs hidden behind a “Show logs” toggle (stderr is separately toggleable)
+
+**Files touched**:
+
+- `src/index.ts` (adds `emitProgress()` and emits steps during `main()`)
+- `src/serverApp.ts` (parses progress markers, stores `steps`, streams SSE `step` events)
+- `public/index.html` (adds Progress panel UI and toggles)
+
+---
+
 ## 2025-12-19: Server App Factory & Real Route Tests
 
 ### Overview
@@ -38,6 +58,7 @@ Migrated staff hurdle validation from Ajv (JSON Schema) to Zod (TypeScript-first
 **Created**: `src/staffHurdleSchema.ts`
 
 **Converted JSON Schema features to Zod**:
+
 - `patternProperties` → `z.record()` with regex key validation
 - `required` fields → fields without `.optional()`
 - `minimum`/`maximum` → `.min()` and `.max()` chained validators
@@ -45,25 +66,28 @@ Migrated staff hurdle validation from Ajv (JSON Schema) to Zod (TypeScript-first
 - `dependencies` → `.refine()` with custom validation logic
 
 **Key schema structure**:
+
 ```typescript
-const staffHurdleItemSchema = z.object({
-  staffName: z.string(),
-  baseRate: z.number().min(0).max(1),
-  hurdle1Level: z.number().optional(),
-  hurdle1Rate: z.number().min(0).max(1).optional(),
-  // ... more fields
-})
-.refine((data) => !data.hurdle1Level || data.hurdle1Rate !== undefined, {
-  message: "hurdle1Rate required when hurdle1Level present"
-});
+const staffHurdleItemSchema = z
+  .object({
+    staffName: z.string(),
+    baseRate: z.number().min(0).max(1),
+    hurdle1Level: z.number().optional(),
+    hurdle1Rate: z.number().min(0).max(1).optional(),
+    // ... more fields
+  })
+  .refine((data) => !data.hurdle1Level || data.hurdle1Rate !== undefined, {
+    message: "hurdle1Rate required when hurdle1Level present",
+  });
 
 export const staffHurdleSchema = z.record(
-  z.string().regex(/^[0-9]{3}$/),  // 3-digit staff IDs
-  staffHurdleItemSchema
+  z.string().regex(/^[0-9]{3}$/), // 3-digit staff IDs
+  staffHurdleItemSchema,
 );
 ```
 
 **Benefits achieved**:
+
 - ✅ Type inference: `z.infer<typeof staffHurdleSchema>` provides TypeScript types
 - ✅ Schema defined in code (no external JSON file)
 - ✅ Better IDE support with autocomplete
@@ -74,6 +98,7 @@ export const staffHurdleSchema = z.record(
 **Location**: `src/server.ts`
 
 **Before (Ajv)**:
+
 ```typescript
 const ajv = new Ajv();
 const schema = JSON.parse(fs.readFileSync(STAFF_HURDLE_SCHEMA_PATH, "utf8"));
@@ -85,6 +110,7 @@ if (!validate(staffHurdleConfig)) {
 ```
 
 **After (Zod)**:
+
 ```typescript
 const result = staffHurdleSchema.safeParse(req.body);
 
@@ -96,6 +122,7 @@ saveStaffHurdles(result.data); // Fully typed!
 ```
 
 **Changes**:
+
 - Removed `STAFF_HURDLE_SCHEMA_PATH` constant
 - Removed external JSON schema file dependency
 - Error format changed from `validate.errors` to `result.error.issues`
@@ -108,12 +135,14 @@ saveStaffHurdles(result.data); // Fully typed!
 **Test coverage**:
 
 **Successful Updates** (4 tests):
+
 - Both `missingStaffAreFatal` and `updateTalenox` true
 - Both values false
 - Mixed values (one true, one false)
 - `PAYROLL_WB_FILENAME` preservation across updates
 
 **Boolean Coercion** (5 tests):
+
 - String `"true"` → `true`, any non-empty string → `true`
 - Empty string `""` → `false`
 - Number `1` → `true`, `0` → `false`
@@ -121,22 +150,26 @@ saveStaffHurdles(result.data); // Fully typed!
 - `null` → `false`
 
 **Error Handling** (4 tests):
+
 - File read errors (`ENOENT` - file not found)
 - JSON parse errors (malformed JSON)
 - File write errors (`EACCES` - permission denied)
 - Non-Error exceptions (string throws)
 
 **Edge Cases** (4 tests):
+
 - Empty request body (both fields undefined → false)
 - Partial body - only `missingStaffAreFatal` provided
 - Partial body - only `updateTalenox` provided
 - JSON formatting verification (4-space indentation)
 
 **File System Operations** (2 tests):
+
 - Correct config file path for reads
 - Correct config file path for writes
 
 **Testing approach**:
+
 - Uses `vi.spyOn()` for mocking `fs.readFileSync` and `fs.writeFileSync`
 - Mock Express `Request` and `Response` objects
 - Simulates endpoint logic in test file
@@ -162,36 +195,40 @@ saveStaffHurdles(result.data); // Fully typed!
 
 ### 📊 Code Metrics
 
-| Metric | Value |
-|--------|-------|
-| Tests created | 19 |
-| Test file size | 436 lines |
-| Validation approach | JSON Schema (Ajv) → Zod |
-| External dependencies removed | 1 (Ajv) |
-| New files created | 2 (`staffHurdleSchema.ts`, `server.update-config.spec.ts`) |
-| Lines of schema code | ~50 (Zod schema) |
-| Type safety | Gained (Zod type inference) |
+| Metric                        | Value                                                      |
+| ----------------------------- | ---------------------------------------------------------- |
+| Tests created                 | 19                                                         |
+| Test file size                | 436 lines                                                  |
+| Validation approach           | JSON Schema (Ajv) → Zod                                    |
+| External dependencies removed | 1 (Ajv)                                                    |
+| New files created             | 2 (`staffHurdleSchema.ts`, `server.update-config.spec.ts`) |
+| Lines of schema code          | ~50 (Zod schema)                                           |
+| Type safety                   | Gained (Zod type inference)                                |
 
 ---
 
 ### 🎯 Key Improvements
 
 #### 1. Type Safety
+
 - Zod provides automatic TypeScript type inference
 - `result.data` is fully typed after validation
 - No need to maintain separate TypeScript interfaces for validation
 
 #### 2. Developer Experience
+
 - Schema defined in TypeScript code (better refactoring)
 - Full IDE autocomplete and type checking
 - No external JSON file to keep in sync
 
 #### 3. Test Coverage
+
 - `/update-config` endpoint fully tested
 - Boolean coercion behavior documented through tests
 - Error scenarios comprehensively covered
 
 #### 4. Maintainability
+
 - Single source of truth (Zod schema)
 - Easier to extend validation rules
 - Better error messages with Zod
@@ -203,10 +240,12 @@ saveStaffHurdles(result.data); // Fully typed!
 **Timeline**: Single development session on 2025-12-16
 
 **Branch organization**:
+
 - `web-ui-commission-button` - Web UI changes from previous session
 - `replace-ajv-with-zod` - Current session's validation migration
 
 **Major accomplishments**:
+
 1. ✅ Analyzed Ajv to Zod migration feasibility
 2. ✅ Created comprehensive Zod schema matching JSON Schema behavior
 3. ✅ Migrated `/update-staff-hurdle` endpoint to Zod
@@ -215,6 +254,7 @@ saveStaffHurdles(result.data); // Fully typed!
 6. ✅ Committed changes with descriptive messages
 
 **Commits**:
+
 1. `refactor: Replace Ajv with Zod for staff hurdle validation`
 2. `test: Add comprehensive test suite for /update-config endpoint`
 
@@ -249,11 +289,13 @@ Added web interface button to trigger commission calculations from the browser, 
 **Location**: `public/index.html`
 
 **Added elements**:
+
 - Green "Run Commission Calculation" button next to "Update Config" button
 - Modal confirmation dialog with Cancel (default focus) and OK buttons
 - JavaScript event handlers for button clicks and modal interactions
 
 **Safety logic**:
+
 ```javascript
 if (updateTalenoxChecked) {
   // Show modal: "You are about to run... with Talenox updates enabled"
@@ -266,6 +308,7 @@ if (updateTalenoxChecked) {
 ```
 
 **User experience**:
+
 - Click button → checks `updateTalenox` checkbox state
 - If checked → shows modal warning about live Talenox updates
 - If unchecked → runs immediately (dry-run mode)
@@ -277,19 +320,21 @@ if (updateTalenoxChecked) {
 **Location**: `src/server.ts`
 
 **Added**:
+
 - Import `spawn` from `child_process`
 - POST `/run-commission` endpoint
 
 **Implementation**:
+
 ```typescript
 app.post("/run-commission", (_req: Request, res: Response) => {
   const indexPath = path.join(__dirname, "index.js");
-  
+
   // Verify compiled script exists
   if (!fs.existsSync(indexPath)) {
-    return res.status(500).json({ 
-      success: false, 
-      message: "Commission script not found. Please build the project first." 
+    return res.status(500).json({
+      success: false,
+      message: "Commission script not found. Please build the project first.",
     });
   }
 
@@ -297,22 +342,28 @@ app.post("/run-commission", (_req: Request, res: Response) => {
   const child = spawn("node", [indexPath], {
     cwd: __dirname,
     env: { ...process.env },
-    stdio: "pipe"
+    stdio: "pipe",
   });
 
   // Log stdout/stderr via debugLogger
-  child.stdout.on("data", (data) => debugLogger.debug(`Commission stdout: ${data}`));
-  child.stderr.on("data", (data) => debugLogger.error(`Commission stderr: ${data}`));
-  
+  child.stdout.on("data", (data) =>
+    debugLogger.debug(`Commission stdout: ${data}`),
+  );
+  child.stderr.on("data", (data) =>
+    debugLogger.error(`Commission stderr: ${data}`),
+  );
+
   // Return immediate success (non-blocking)
-  res.status(200).json({ 
-    success: true, 
-    message: "Commission calculation started successfully. Check logs for details." 
+  res.status(200).json({
+    success: true,
+    message:
+      "Commission calculation started successfully. Check logs for details.",
   });
 });
 ```
 
 **Key features**:
+
 - Validates compiled `dist/index.js` exists before execution
 - Spawns child process (non-blocking)
 - Captures stdout/stderr for debugging
@@ -324,17 +375,20 @@ app.post("/run-commission", (_req: Request, res: Response) => {
 **Location**: `package.json`
 
 **Added**:
+
 ```json
 "server": "node dist/server.js"
 ```
 
 **Usage**:
+
 ```bash
 npm run build   # Compile TypeScript
 npm run server  # Run compiled server (production-like)
 ```
 
 **Benefits**:
+
 - Runs from compiled JavaScript (faster startup)
 - Production-ready execution
 - Complements existing `server:tsx` (development with hot reload)
@@ -344,6 +398,7 @@ npm run server  # Run compiled server (production-like)
 ### ✅ Testing Results
 
 **Manual testing performed**:
+
 - ✅ Build completed successfully
 - ✅ Server starts with new endpoint
 - ✅ Button displays correctly in UI
@@ -358,18 +413,21 @@ npm run server  # Run compiled server (production-like)
 ### 🎯 Key Improvements
 
 #### 1. User Experience
+
 - One-click commission execution from browser
 - Safety confirmation prevents accidental live updates
 - Clear visual feedback (green button, success/error messages)
 - Non-technical users can run calculations
 
 #### 2. Safety
+
 - Explicit confirmation required for Talenox updates
 - Cancel button has default focus (safer option)
 - Warning text clearly states "live Talenox system" impact
 - Dry-run mode (updateTalenox=false) bypasses confirmation
 
 #### 3. Developer Experience
+
 - `npm run server` for production-like execution
 - Existing `npm run server:tsx` still available for development
 - All commission output logged via debugLogger
@@ -382,6 +440,7 @@ npm run server  # Run compiled server (production-like)
 #### Confirmation Modal Design
 
 **HTML structure**:
+
 ```html
 <div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
   <div class="bg-white rounded-lg p-6 max-w-md mx-auto shadow-xl">
@@ -394,6 +453,7 @@ npm run server  # Run compiled server (production-like)
 ```
 
 **Styling**:
+
 - Fixed overlay with semi-transparent background
 - Centered white modal card
 - Tailwind CSS for responsive design
@@ -402,12 +462,14 @@ npm run server  # Run compiled server (production-like)
 #### Process Spawning Pattern
 
 **Why spawn instead of import/execute?**
+
 - Commission script designed to run standalone (process.exit at end)
 - Spawning isolates execution (separate process)
 - Non-blocking (server remains responsive)
 - Matches existing patterns (script expects to own process lifecycle)
 
 **Alternative considered**: Direct function import
+
 - Would require refactoring commission script
 - Risk of state pollution between runs
 - Current pattern is safer and simpler
@@ -419,6 +481,7 @@ npm run server  # Run compiled server (production-like)
 **Timeline**: Single development session on 2025-12-16
 
 **Major accomplishments**:
+
 1. ✅ Added web UI button for commission execution
 2. ✅ Implemented safety confirmation modal
 3. ✅ Created `/run-commission` backend endpoint
@@ -426,6 +489,7 @@ npm run server  # Run compiled server (production-like)
 5. ✅ Integrated with existing debugLogger
 
 **Files modified**:
+
 - `public/index.html` - Added button, modal, and JavaScript handlers
 - `src/server.ts` - Added `/run-commission` endpoint
 - `package.json` - Added `server` script
@@ -694,7 +758,11 @@ vol.fromJSON(
 
 // Set modification times
 const now = Date.now();
-fs.utimesSync(path.join(LOGS_DIR, "file1.log"), new Date(now), new Date(now - 24 * 3600000)); // 1 day old
+fs.utimesSync(
+  path.join(LOGS_DIR, "file1.log"),
+  new Date(now),
+  new Date(now - 24 * 3600000),
+); // 1 day old
 ```
 
 **Benefits**:
@@ -835,7 +903,10 @@ Comprehensive test suite for refactored business logic:
 #### 1. Extracted Pure Function: `calculateTieredCommission()`
 
 ```typescript
-function calculateTieredCommission(serviceRevenue: number, hurdleConfig: HurdleConfig): HurdleBreakdown;
+function calculateTieredCommission(
+  serviceRevenue: number,
+  hurdleConfig: HurdleConfig,
+): HurdleBreakdown;
 ```
 
 - **Purpose**: Pure function for tiered commission calculation
@@ -867,7 +938,10 @@ function extractStaffPayrollData(
 #### 3. Extracted Orchestration: `calculateStaffCommission()`
 
 ```typescript
-function calculateStaffCommission(payrollData: StaffPayrollData, talenoxStaff: TTalenoxInfoStaffMap): TCommComponents;
+function calculateStaffCommission(
+  payrollData: StaffPayrollData,
+  talenoxStaff: TTalenoxInfoStaffMap,
+): TCommComponents;
 ```
 
 - **Purpose**: Orchestrate commission calculations
@@ -940,7 +1014,10 @@ async function main() {
 **Function signature**:
 
 ```typescript
-function getValidatedStaffHurdle(staffID: TStaffID, context: string): StaffHurdle;
+function getValidatedStaffHurdle(
+  staffID: TStaffID,
+  context: string,
+): StaffHurdle;
 ```
 
 **Used consistently across**:
