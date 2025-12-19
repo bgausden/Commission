@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { Server } from "node:http";
+import type { Server } from "http";
 import fs from "node:fs";
 
 // Mock modules before imports

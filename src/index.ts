@@ -47,7 +47,12 @@ import {
   StaffPayrollData,
 } from "./types.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
-import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPayments } from "./talenox_functions.js";
+import {
+  createAdHocPayments,
+  getTalenoxEmployees,
+  createPayroll,
+  uploadAdHocPayments,
+} from "./talenox_functions.js";
 import {
   checkRate,
   stripToNumeric,
@@ -69,12 +74,31 @@ import {
   initLogs,
 } from "./logging_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
-import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE, defaultStaffID } from "./constants.js";
+import {
+  DEFAULT_OLD_DIR,
+  DEFAULT_STAFF_HURDLES_FILE,
+  defaultStaffID,
+} from "./constants.js";
 import path from "node:path";
 import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
+
+const PROGRESS_PREFIX = "__PROGRESS__ ";
+
+function emitProgress(step: string, detail?: string): void {
+  // Structured marker for the web UI/server runner to parse.
+  // Must stay stable to avoid breaking parsing in serverApp.ts.
+  const payload = {
+    ts: new Date().toISOString(),
+    step,
+    ...(detail ? { detail } : {}),
+  };
+  // Intentionally use stdout (console.log) so it can be streamed.
+  // eslint-disable-next-line no-console
+  console.log(`${PROGRESS_PREFIX}${JSON.stringify(payload)}`);
+}
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i;
 
@@ -103,7 +127,10 @@ const WB = XLSX.readFile(FILE_PATH, READ_OPTIONS)
 const WS = WB.Sheets[WB.SheetNames[FIRST_SHEET]] */
 const commMap: TCommMap = new Map<TStaffID, TCommComponents>();
 // const staffMap: TStaffMap = new Map<TStaffID, IStaffNames>()
-const serviceCommMap: TServiceCommMap = new Map<TStaffName, GeneralServiceComm>();
+const serviceCommMap: TServiceCommMap = new Map<
+  TStaffName,
+  GeneralServiceComm
+>();
 const emptyServComm: GeneralServiceComm = {
   staffName: "",
   base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
@@ -150,7 +177,10 @@ function revenueCol(wsArray: unknown[][]): number {
   throw new Error("Cannot find Revenue per session column");
 }
 
-function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | null {
+function getStaffIDAndName(
+  wsArray: unknown[][],
+  idRow: number,
+): StaffInfo | null {
   /*     assume the staffID can be found in the STAFF_ID_COL column.
     staffID will begin with "ID#: " the will need to be stored  in the serviceCommMap and
     commComponents maps along with First and Last name.
@@ -168,7 +198,9 @@ function getStaffIDAndName(wsArray: unknown[][], idRow: number): StaffInfo | nul
   if (regex.test(testString as string)) {
     /* Split the name and ID string into an array ["Surname, Firstname", ID] */
     const staffInfo: string[] | undefined =
-      testString !== undefined ? (testString as string).split(STAFF_ID_HASH) : undefined;
+      testString !== undefined
+        ? (testString as string).split(STAFF_ID_HASH)
+        : undefined;
     if (staffInfo !== undefined) {
       if (staffInfo[staffIDIndex].trim() === "") {
         // Missing Staff ID in MB?
@@ -219,7 +251,10 @@ export function getServiceRevenues(
     working our way down the sheet from top to bottom.
     */
   const numSearchRows = currentTotalRow - currentStaffIDRow - 1;
-  const servRevenueMap: TServRevenueMap = new Map<TServiceName, TCustomRateEntry>();
+  const servRevenueMap: TServRevenueMap = new Map<
+    TServiceName,
+    TCustomRateEntry
+  >();
   let serviceRevenue = 0;
   let customRate = NaN;
   const sh = getValidatedStaffHurdle(staffID, "Mindbody payroll report");
@@ -265,7 +300,10 @@ export function getServiceRevenues(
         serviceRevenue = revenueCellContents;
         // accumulate the serv revenues for this servType in the map
         const serviceRevenueEntry = servRevenueMap.get(servName);
-        assert(serviceRevenueEntry, `Did not find ${servName} in servRevenueMap. This should never happen.`);
+        assert(
+          serviceRevenueEntry,
+          `Did not find ${servName} in servRevenueMap. This should never happen.`,
+        );
 
         serviceRevenue += serviceRevenueEntry.serviceRevenue;
         servRevenueMap.set(servName, { serviceRevenue, customRate });
@@ -282,8 +320,19 @@ export function getServiceRevenues(
  * @param hurdleConfig - Commission tier configuration
  * @returns Detailed breakdown of commission calculation at each tier
  */
-export function calculateTieredCommission(serviceRevenue: number, hurdleConfig: HurdleConfig): HurdleBreakdown {
-  const { baseRate, hurdle1Level, hurdle1Rate, hurdle2Level, hurdle2Rate, hurdle3Level, hurdle3Rate } = hurdleConfig;
+export function calculateTieredCommission(
+  serviceRevenue: number,
+  hurdleConfig: HurdleConfig,
+): HurdleBreakdown {
+  const {
+    baseRate,
+    hurdle1Level,
+    hurdle1Rate,
+    hurdle2Level,
+    hurdle2Rate,
+    hurdle3Level,
+    hurdle3Rate,
+  } = hurdleConfig;
 
   let baseRevenue = 0;
   let hurdle1Revenue = 0;
@@ -322,12 +371,21 @@ export function calculateTieredCommission(serviceRevenue: number, hurdleConfig: 
 
   // Calculate commission for each tier
   const baseCommission = Math.round(baseRevenue * baseRate * 100) / 100;
-  const hurdle1Commission = Math.round(hurdle1Revenue * hurdle1Rate * 100) / 100;
-  const hurdle2Commission = Math.round(hurdle2Revenue * hurdle2Rate * 100) / 100;
-  const hurdle3Commission = Math.round(hurdle3Revenue * hurdle3Rate * 100) / 100;
+  const hurdle1Commission =
+    Math.round(hurdle1Revenue * hurdle1Rate * 100) / 100;
+  const hurdle2Commission =
+    Math.round(hurdle2Revenue * hurdle2Rate * 100) / 100;
+  const hurdle3Commission =
+    Math.round(hurdle3Revenue * hurdle3Rate * 100) / 100;
 
   const totalCommission =
-    Math.round((baseCommission + hurdle1Commission + hurdle2Commission + hurdle3Commission) * 100) / 100;
+    Math.round(
+      (baseCommission +
+        hurdle1Commission +
+        hurdle2Commission +
+        hurdle3Commission) *
+        100,
+    ) / 100;
 
   return {
     baseRevenue,
@@ -348,7 +406,10 @@ function calcGeneralServiceCommission(
   serviceRev: TServiceRevenue,
 ): number {
   // Get staff commission configuration with centralized validation
-  const staffCommConfig = getValidatedStaffHurdle(staffID, "commission calculation") as StaffCommConfig;
+  const staffCommConfig = getValidatedStaffHurdle(
+    staffID,
+    "commission calculation",
+  ) as StaffCommConfig;
 
   // Extract and validate hurdle configuration
   const baseRate = stripToNumeric(staffCommConfig.baseRate);
@@ -362,7 +423,9 @@ function calcGeneralServiceCommission(
     hurdle1Level = stripToNumeric(staffCommConfig.hurdle1Level);
     hurdle1Rate = stripToNumeric(staffCommConfig.hurdle1Rate);
     if (!checkRate(hurdle1Rate)) {
-      errorLogger.error(`Fatal: Error with ${staffID}'s commission config in staffHurdle.json`);
+      errorLogger.error(
+        `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`,
+      );
       throw new Error("Invalid hurdle1Rate");
     }
   }
@@ -373,7 +436,9 @@ function calcGeneralServiceCommission(
     hurdle2Level = stripToNumeric(staffCommConfig.hurdle2Level);
     hurdle2Rate = stripToNumeric(staffCommConfig.hurdle2Rate);
     if (!checkRate(hurdle2Rate)) {
-      errorLogger.error(`Fatal: Error with ID ${staffID}'s commission config in staffHurdle.json`);
+      errorLogger.error(
+        `Fatal: Error with ID ${staffID}'s commission config in staffHurdle.json`,
+      );
       throw new Error("Invalid hurdle2Rate");
     }
   }
@@ -384,7 +449,9 @@ function calcGeneralServiceCommission(
     hurdle3Level = stripToNumeric(staffCommConfig.hurdle3Level);
     hurdle3Rate = stripToNumeric(staffCommConfig.hurdle3Rate);
     if (!checkRate(hurdle3Rate)) {
-      errorLogger.error(`Fatal: Error with ${staffID}'s commission config in staffHurdle.json`);
+      errorLogger.error(
+        `Fatal: Error with ${staffID}'s commission config in staffHurdle.json`,
+      );
       throw new Error("Invalid hurdle3Rate");
     }
   }
@@ -440,11 +507,19 @@ function calcGeneralServiceCommission(
 
 function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
   const paymentsWB = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(paymentsWB, XLSX.utils.json_to_sheet(payments, { skipHeader: true }), PAYMENTS_WS_NAME);
+  XLSX.utils.book_append_sheet(
+    paymentsWB,
+    XLSX.utils.json_to_sheet(payments, { skipHeader: true }),
+    PAYMENTS_WS_NAME,
+  );
   XLSX.writeFile(paymentsWB, `${PAYMENTS_DIR}/${PAYMENTS_WB_NAME}`);
 }
 
-function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: TTalenoxInfoStaffMap): void {
+function doPooling(
+  commMap: TCommMap,
+  staffHurdle: TStaffHurdles,
+  talenoxStaff: TTalenoxInfoStaffMap,
+): void {
   let poolCounter = 0;
   const pools = new Map<number, TStaffID[]>();
   Object.entries(staffHurdle).forEach((element) => {
@@ -469,7 +544,9 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
               foundPoolID = poolID;
               foundPoolMembers = poolingStaff;
             } else {
-              throw new Error(`Pooling config for ${staffID} appears to be incorrect.`);
+              throw new Error(
+                `Pooling config for ${staffID} appears to be incorrect.`,
+              );
             }
           }
         }
@@ -495,15 +572,23 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
       generalServiceCommission: 0,
     };
     for (const poolMember of poolMembers) {
-      for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {
+      for (const [aggregatePropName, aggregatePropValue] of Object.entries(
+        aggregateComm,
+      )) {
         const commMapElement = commMap.get(poolMember);
         if (commMapElement) {
           const commMapValue = commMapElement[aggregatePropName];
-          if (typeof aggregatePropValue === "number" && typeof commMapValue === "number") {
-            aggregateComm[aggregatePropName] = aggregatePropValue + commMapValue;
+          if (
+            typeof aggregatePropValue === "number" &&
+            typeof commMapValue === "number"
+          ) {
+            aggregateComm[aggregatePropName] =
+              aggregatePropValue + commMapValue;
           }
         } else {
-          throw new Error(`No commMap entry for ${poolMember}. This should never happen.`);
+          throw new Error(
+            `No commMap entry for ${poolMember}. This should never happen.`,
+          );
         }
       }
     }
@@ -526,13 +611,21 @@ function doPooling(commMap: TCommMap, staffHurdle: TStaffHurdles, talenoxStaff: 
             } ${talenoxStaff.get(member)?.first_name ?? "<First Name>"}`,
         )
         .join(", ");
-      commissionLogger.info(`Pool contains ${poolMembers.length} members: ${memberList}`);
-      for (const [aggregatePropName, aggregatePropValue] of Object.entries(aggregateComm)) {
+      commissionLogger.info(
+        `Pool contains ${poolMembers.length} members: ${memberList}`,
+      );
+      for (const [aggregatePropName, aggregatePropValue] of Object.entries(
+        aggregateComm,
+      )) {
         const comm = commMap.get(poolMember);
-        assert(comm, `No commMap entry for ${poolMember} ${staffName}. This should never happen.`);
+        assert(
+          comm,
+          `No commMap entry for ${poolMember} ${staffName}. This should never happen.`,
+        );
 
         if (typeof aggregatePropValue === "number") {
-          comm[aggregatePropName] = Math.round((aggregatePropValue * 100) / poolMembers.length) / 100;
+          comm[aggregatePropName] =
+            Math.round((aggregatePropValue * 100) / poolMembers.length) / 100;
           const aggregateCommString =
             typeof comm[aggregatePropName] === "number"
               ? comm[aggregatePropName].toString()
@@ -587,7 +680,13 @@ export function extractStaffPayrollData(
     }
   }
 
-  const servicesRevenues = getServiceRevenues(wsaa, endRow, startRow, revCol, staffID);
+  const servicesRevenues = getServiceRevenues(
+    wsaa,
+    endRow,
+    startRow,
+    revCol,
+    staffID,
+  );
 
   return {
     staffID,
@@ -632,7 +731,11 @@ export function calculateStaffCommission(
   commComponents.totalServiceRevenue = totalServiceRevenue;
 
   // Calculate general service commission (uses hurdle logic)
-  const generalServiceCommission = calcGeneralServiceCommission(staffID, talenoxStaff, generalServiceRevenue);
+  const generalServiceCommission = calcGeneralServiceCommission(
+    staffID,
+    talenoxStaff,
+    generalServiceRevenue,
+  );
   commComponents.generalServiceCommission = generalServiceCommission;
   commComponents.totalServiceCommission += generalServiceCommission;
 
@@ -641,8 +744,10 @@ export function calculateStaffCommission(
   if (servicesRevenues) {
     servicesRevenues.forEach((customRateEntry, serviceName) => {
       if (serviceName !== GENERAL_SERV_REVENUE) {
-        const customServiceRevenue = customRateEntry.serviceRevenue * Number(customRateEntry.customRate);
-        commComponents.customRateCommissions[serviceName] = customServiceRevenue;
+        const customServiceRevenue =
+          customRateEntry.serviceRevenue * Number(customRateEntry.customRate);
+        commComponents.customRateCommissions[serviceName] =
+          customServiceRevenue;
         totalCustomServiceCommission += customServiceRevenue;
       }
     });
@@ -665,7 +770,9 @@ function logStaffCommission(
   const logger = isContractor(staffID) ? contractorLogger : commissionLogger;
 
   if (!isPayViaTalenox(staffID) && !isContractor(staffID)) {
-    commissionLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`);
+    commissionLogger.warn(
+      `Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`,
+    );
   }
 
   let text = `Payroll details for ${staffID} ${staffName}`;
@@ -680,19 +787,33 @@ function logStaffCommission(
   // Log revenue breakdown
   logger.info(
     fws32Left("General Services Revenue:"),
-    fws14RightHKD(servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0),
+    fws14RightHKD(
+      servicesRevenues.get(GENERAL_SERV_REVENUE)?.serviceRevenue ?? 0,
+    ),
   );
   servicesRevenues.forEach((customRateEntry, serviceName) => {
     if (serviceName !== GENERAL_SERV_REVENUE) {
-      logger.info(fws32Left(`${serviceName} Revenue:`), fws14RightHKD(customRateEntry.serviceRevenue));
+      logger.info(
+        fws32Left(`${serviceName} Revenue:`),
+        fws14RightHKD(customRateEntry.serviceRevenue),
+      );
     }
   });
 
   // Log commission breakdown
   logger.info("");
-  logger.info(fws32Left("General Service Commission:"), fws14RightHKD(commComponents.generalServiceCommission));
-  logger.info(fws32Left("Custom Rate Service Commission:"), fws14RightHKD(commComponents.customRateCommission));
-  logger.info(fws32Left("Product Commission:"), fws14RightHKD(commComponents.productCommission));
+  logger.info(
+    fws32Left("General Service Commission:"),
+    fws14RightHKD(commComponents.generalServiceCommission),
+  );
+  logger.info(
+    fws32Left("Custom Rate Service Commission:"),
+    fws14RightHKD(commComponents.customRateCommission),
+  );
+  logger.info(
+    fws32Left("Product Commission:"),
+    fws14RightHKD(commComponents.productCommission),
+  );
   logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips));
   logger.info(fws32Left(""), fws14Right("------------"));
   logger.info(
@@ -750,7 +871,9 @@ function processPayrollExcelData(
                 }
               } else {
                 if (!isContractor(staffID)) {
-                  warnLogger.warn(`Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`);
+                  warnLogger.warn(
+                    `Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`,
+                  );
                 }
               }
             }
@@ -762,23 +885,40 @@ function processPayrollExcelData(
       if ((element as string).startsWith(TOTAL_FOR)) {
         if (staffID === undefined) {
           const possibleStaffName = (element as string).slice(TOTAL_FOR.length);
-          throw new Error("Reached Totals row with no identified StaffID. Staff name is possibly " + possibleStaffName);
+          throw new Error(
+            "Reached Totals row with no identified StaffID. Staff name is possibly " +
+              possibleStaffName,
+          );
         }
 
         currentTotalForRow = rowIndex;
 
         // Extract payroll data for this staff member
-        const payrollData = extractStaffPayrollData(wsaa, currentStaffIDRow, currentTotalForRow, revCol, staffID);
+        const payrollData = extractStaffPayrollData(
+          wsaa,
+          currentStaffIDRow,
+          currentTotalForRow,
+          revCol,
+          staffID,
+        );
         payrollData.staffName = staffName ?? "<Staff Name>";
 
         // Calculate commissions
-        const commComponents = calculateStaffCommission(payrollData, talenoxStaff);
+        const commComponents = calculateStaffCommission(
+          payrollData,
+          talenoxStaff,
+        );
 
         // Store in commission map
         commMap.set(staffID, commComponents);
 
         // Log results
-        logStaffCommission(staffID, payrollData.staffName, commComponents, payrollData.servicesRevenues);
+        logStaffCommission(
+          staffID,
+          payrollData.staffName,
+          commComponents,
+          payrollData.servicesRevenues,
+        );
 
         // Reset for next staff member
         staffID = undefined;
@@ -788,9 +928,12 @@ function processPayrollExcelData(
 }
 
 async function main() {
+  emitProgress("Initializing logs");
   await initLogs();
 
-  const { PAYROLL_MONTH, PAYROLL_YEAR, PAYMENTS_WB_NAME, PAYMENTS_WS_NAME } = parseFilename(config.PAYROLL_WB_FILENAME);
+  emitProgress("Parsing payroll filename");
+  const { PAYROLL_MONTH, PAYROLL_YEAR, PAYMENTS_WB_NAME, PAYMENTS_WS_NAME } =
+    parseFilename(config.PAYROLL_WB_FILENAME);
   global.PAYROLL_MONTH = PAYROLL_MONTH;
   global.PAYROLL_YEAR = PAYROLL_YEAR;
   global.PAYMENTS_WB_NAME = PAYMENTS_WB_NAME;
@@ -804,6 +947,7 @@ async function main() {
   }
   commissionLogger.info(`Payroll Month is ${PAYROLL_MONTH}`);
 
+  emitProgress("Loading environment configuration");
   const { PAYMENTS_DIR, DATA_DIR, LOGS_DIR } = processEnv();
   global.LOGS_DIR = LOGS_DIR;
   global.PAYMENTS_DIR = PAYMENTS_DIR;
@@ -817,19 +961,31 @@ async function main() {
   const DATA_OLD_DIR = path.join(DATA_DIR, DEFAULT_OLD_DIR);
 
   if (!isValidDirectory(DATA_OLD_DIR)) {
-    warnLogger.warn(`Invalid or missing default old data directory: ${DATA_OLD_DIR}`);
+    warnLogger.warn(
+      `Invalid or missing default old data directory: ${DATA_OLD_DIR}`,
+    );
   }
 
-  debugLogger.debug(`Moving (and compressing) files from ${DATA_DIR} to ${DATA_OLD_DIR}`);
+  debugLogger.debug(
+    `Moving (and compressing) files from ${DATA_DIR} to ${DATA_OLD_DIR}`,
+  );
+  emitProgress(
+    "Archiving old payroll workbooks",
+    `From ${DATA_DIR} to ${DATA_OLD_DIR}`,
+  );
   await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2); // probably not necessary for the destination folder to be configurable
 
   const payrollWorkbookPath = path.join(DATA_DIR, config.PAYROLL_WB_FILENAME);
 
+  emitProgress("Loading staff hurdle configuration");
   loadStaffHurdles(DEFAULT_STAFF_HURDLES_FILE);
 
   debugLogger.debug(`Requesting employees from Talenox`);
+  emitProgress("Fetching employees from Talenox");
   const talenoxStaff = await getTalenoxEmployees();
   debugLogger.debug(`Requesting employees complete`);
+
+  emitProgress("Reading Mindbody payroll workbook", config.PAYROLL_WB_FILENAME);
   const WS = readExcelFile(payrollWorkbookPath);
 
   // Using option {header:1} returns an array of arrays
@@ -838,17 +994,25 @@ async function main() {
     header: 1,
   });
 
+  emitProgress("Locating revenue column");
   const revCol = revenueCol(wsaa);
 
   // Process all staff payroll data from Excel
+  emitProgress("Parsing payroll rows and calculating commissions");
   processPayrollExcelData(wsaa, revCol, talenoxStaff, commMap);
 
   // Apply pooling logic to commission map
+  emitProgress("Applying pooling rules");
   doPooling(commMap, staffHurdles, talenoxStaff);
 
   // Create payment spreadsheet and upload to Talenox
+  emitProgress("Creating Talenox payment entries");
   const payments = createAdHocPayments(commMap, talenoxStaff);
+
+  emitProgress("Archiving old payment spreadsheets");
   await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
+
+  emitProgress("Writing payment spreadsheet");
   writePaymentsWorkBook(payments);
 
   /* 
@@ -856,24 +1020,33 @@ async function main() {
     */
 
   if (!config.updateTalenox) {
+    emitProgress("Complete (dry run)", "updateTalenox is disabled");
     return;
   }
 
   debugLogger.debug(`Requesting new payroll payment creation from Talenox`);
+  emitProgress("Creating payroll in Talenox");
   const createPayrollResult = await createPayroll(talenoxStaff);
   debugLogger.debug(`New payroll payment is created in Talenox.`);
   if (!createPayrollResult[1]) {
     if (createPayrollResult[0]) {
-      errorLogger.error(`Failed to create payroll payment for ${PAYROLL_MONTH}: ${createPayrollResult[0].message}`);
+      errorLogger.error(
+        `Failed to create payroll payment for ${PAYROLL_MONTH}: ${createPayrollResult[0].message}`,
+      );
     }
     if (!createPayrollResult[0]) {
-      errorLogger.error(`Failed to create payroll payment for ${PAYROLL_MONTH}: no reason given by Talenox API`);
+      errorLogger.error(
+        `Failed to create payroll payment for ${PAYROLL_MONTH}: no reason given by Talenox API`,
+      );
     }
-    throw new Error(`Failed to create payroll payment: ${createPayrollResult[0]?.message}`);
+    throw new Error(
+      `Failed to create payroll payment: ${createPayrollResult[0]?.message}`,
+    );
   }
   debugLogger.debug(`OK: ${createPayrollResult[1].message}`);
 
   debugLogger.debug(`Pushing ad-hoc payments into new payroll`);
+  emitProgress("Uploading ad-hoc payments to Talenox");
   const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments);
   if (!uploadAdHocResult[1]) {
     if (uploadAdHocResult[0]) {
@@ -882,12 +1055,16 @@ async function main() {
     if (!uploadAdHocResult[0]) {
       errorLogger.error("Failed: Unknown reason");
     }
-    throw new Error(`Failed to upload ad-hoc payments: ${uploadAdHocResult[0]?.message}`);
+    throw new Error(
+      `Failed to upload ad-hoc payments: ${uploadAdHocResult[0]?.message}`,
+    );
   }
   debugLogger.debug(`Pushing ad-hoc payments is complete`);
   if (uploadAdHocResult[1]) {
     debugLogger.debug(`OK: ${uploadAdHocResult[1].message}`);
   }
+
+  emitProgress("Complete", "Talenox updated");
 }
 
 //initDebug()
@@ -902,7 +1079,9 @@ main()
     } else if (typeof error === "string") {
       errorLogger.error(`${error.toString()}`);
     } else {
-      errorLogger.error(`Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`);
+      errorLogger.error(
+        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
+      );
     }
     shutdownLogging();
   });
