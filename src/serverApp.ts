@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import fs from "fs";
 import path from "path";
+import { resolveFromProjectRootIfRelative } from "./projectRoot.js";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { randomUUID } from "node:crypto";
@@ -85,7 +86,10 @@ function nowIso(): string {
 
 function getLogsDir(currentModuleDir: string): string {
   // Prefer explicit env var, else default to repo's ./logs relative to src/ or dist/.
-  return process.env.LOGS_DIR ?? path.join(currentModuleDir, "../logs");
+  if (process.env.LOGS_DIR) {
+    return resolveFromProjectRootIfRelative(process.env.LOGS_DIR);
+  }
+  return path.join(currentModuleDir, "../logs");
 }
 
 function getDebugLogPath(logsDir: string): string {

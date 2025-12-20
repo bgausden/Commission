@@ -161,11 +161,12 @@ export async function moveFilesToOldSubDir(
 
   const sourceFiles = readdirSync(sourceDir);
 
-  const targetDir = path.join(sourceDir, destDir);
+  const targetDir = path.isAbsolute(destDir) ? destDir : path.join(sourceDir, destDir);
+  const destDirName = path.basename(targetDir);
 
   if (!isValidDirectory(targetDir)) {
     warnLogger.warn(`Target directory: ${targetDir} does not exist. Will create.`);
-    mkdirSync(path.join(sourceDir, targetDir), { recursive: false });
+    mkdirSync(targetDir, { recursive: true });
     assert(isValidDirectory(targetDir));
   }
 
@@ -179,7 +180,7 @@ export async function moveFilesToOldSubDir(
   sourceFiles.forEach((file) => {
     const filePath = path.join(sourceDir, file);
     const newFilePath = path.join(targetDir, file);
-    if (file !== destDir && !filesToRetain.includes(file)) {
+    if (file !== destDirName && !filesToRetain.includes(file)) {
       if (compressFiles) {
         // Compress the file asynchronously
         const compressionPromise = new Promise<void>((resolve, reject) => {
