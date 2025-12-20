@@ -33,13 +33,16 @@ import {
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult.js";
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.js";
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js";
-import debug from "debug";
+import { debugLogger } from "./logging_functions.js";
 
 const SERVICES_COMM_REMARK = "Services commission";
 const TIPS_REMARK = "Tips";
 const PRODUCT_COMM_REMARK = "Product commission";
 
-const talenoxFunctionsDebug = debug("talenox_functions");
+function talenoxDebug(scope: string, message: string, ...args: unknown[]): void {
+  const prefix = scope ? `talenox_functions:${scope}` : "talenox_functions";
+  debugLogger.debug(`[${prefix}] ${message}`, ...args);
+}
 
 export function createAdHocPayments(
   _commMap: TCommMap,
@@ -139,9 +142,6 @@ export function createAdHocPayments(
 }
 
 export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
-  const getTalenoxEmployeesDebug = talenoxFunctionsDebug.extend(
-    "talenoxFunctionsDebug",
-  );
   const url = TALENOX_EMPLOYEE_ENDPOINT;
   const myHeaders = new Headers({
     "Content-Type": "application/json;charset=utf-8",
@@ -153,8 +153,8 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
     redirect: "follow",
     method: "GET",
   };
-  getTalenoxEmployeesDebug("url: %s", url);
-  getTalenoxEmployeesDebug("init: %O", init);
+  talenoxDebug("getTalenoxEmployees", "url: %s", url);
+  talenoxDebug("getTalenoxEmployees", "init: %O", init);
   const response = await fetch(url, init);
   if (!response.ok) {
     throw new Error(`${response.status}: ${response.statusText}`);
@@ -164,7 +164,8 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
   const staffMap = new Map<TStaffID, Partial<ITalenoxStaffInfo>>();
   result.forEach((staffInfo) => {
     if (staffInfo.employee_id === "") {
-      getTalenoxEmployeesDebug(
+      talenoxDebug(
+        "getTalenoxEmployees",
         "error: %s %O",
         "employee_id is not set",
         staffInfo,
@@ -185,8 +186,6 @@ export async function createPayroll(
 ): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
   const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT;
 
-  const createPayrollDebug = talenoxFunctionsDebug.extend("createPayroll");
-
   /* const myHeaders = new Headers()
     myHeaders.append("Content-Type", "application/json; charset=utf-8") */
   const myHeaders = new Headers({
@@ -197,7 +196,7 @@ export async function createPayroll(
   const employee_ids: TStaffID[] = [];
   staffMap.forEach((staffInfo, staffID) => {
     if (staffID === "") {
-      createPayrollDebug("error: %s %s", "staffID is empty", staffInfo);
+      talenoxDebug("createPayroll", "error: %s %s", "staffID is empty", staffInfo);
       throw new Error(
         `staffID is empty for ${staffInfo.first_name} ${staffInfo.last_name}`,
       );
@@ -225,7 +224,7 @@ export async function createPayroll(
   };
 
   const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll);
-  createPayrollDebug("body: %s", body);
+  talenoxDebug("createPayroll", "body: %s", body);
 
   const init: RequestInit = {
     headers: myHeaders,
@@ -236,11 +235,8 @@ export async function createPayroll(
   const response = await fetch(url, init);
   if (!response.ok) {
     // Something went horribly wrong. Unlikely we can do anything useful with the failure
-    response
-      .text()
-      .then((text = "No text from Talenox API call.") =>
-        createPayrollDebug("talenox response: %s", text),
-      );
+    const text = await response.text().catch(() => "No text from Talenox API call.");
+    talenoxDebug("createPayroll", "talenox response: %s", text);
     return [new Error(`${response.status}: ${response.statusText}`), undefined];
   }
 
