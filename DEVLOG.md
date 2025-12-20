@@ -1,5 +1,30 @@
 # Development Log - Commission Calculator
 
+## 2025-12-20: Web Runner Stability + Log Hygiene
+
+### Overview
+
+Improved reliability and readability of web-triggered commission runs.
+
+**Session highlights**:
+
+- Added `LOG4JS_CONSOLE=on|off|errors` to control log4js console noise (tests force a known mode for determinism)
+- Improved the web runner so it can reliably locate and run the built commission CLI from repo root (even when the server runs via `tsx`)
+- Hardened run streaming: parse `__PROGRESS__` markers as structured steps and strip ANSI sequences before streaming to the UI
+- Fixed a critical archiving edge case where the active payroll workbook could be moved to `data/old` before being read (added explicit retain list support)
+- Kept payout logs clean: `commission-*.log` and `contractor-*.log` are payout-only; lifecycle/warnings/pooling go to `commission.debug`
+- Added optional “tee” of child output to the server console via a console-only logger category (no file pollution)
+
+**Files touched**:
+
+- `src/serverApp.ts`
+- `src/index.ts`
+- `src/logging_functions.ts`
+- `src/utility_functions.ts`
+- `log4js.json`, `src/log4js.json`
+- `src/logging_functions.spec.ts`, `src/logging_functions.cleanup.spec.ts`
+- `README.md`, `eslint.config.js`
+
 ## 2025-12-20: Always Use Repo-Root `logs/` (CWD-Independent)
 
 ### Overview
