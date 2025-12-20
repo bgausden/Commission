@@ -1,5 +1,26 @@
 # Development Log - Commission Calculator
 
+## 2025-12-20: Always Use Repo-Root `logs/` (CWD-Independent)
+
+### Overview
+
+Standardized path resolution so the app always writes logs to the repository root `logs/` directory regardless of how it’s executed (tsx from `src/`, node from `dist/`, or different working directories).
+
+**Session highlights**:
+
+- Added a small “project root” resolver (finds the directory containing `package.json`)
+- `initLogs()` now resolves `LOGS_DIR` and `LOG4JS_CONFIG_FILE` relative to project root (relative env vars are treated as project-root relative)
+- `processEnv()` now resolves `DATA_DIR`, `PAYMENTS_DIR`, and `LOGS_DIR` relative to project root (and normalizes paths on Windows)
+- Fixed `moveFilesToOldSubDir()` directory creation to prevent duplicated paths like `dist\logs\logs\old`
+
+**Files touched**:
+
+- `src/projectRoot.ts` (new)
+- `src/logging_functions.ts`
+- `src/env_functions.ts`
+- `src/serverApp.ts`
+- `src/utility_functions.ts`
+
 ## 2025-12-19: Commission Run Progress Steps (Web UI)
 
 ### Overview
