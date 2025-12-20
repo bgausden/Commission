@@ -35,13 +35,41 @@ describe("Log cleanup functionality", () => {
 
     // Set modification times to simulate different ages
     const nowDate = new Date(now);
-    fs.utimesSync(path.join(LOGS_DIR, "commission-20241210.log"), nowDate, new Date(fourDaysAgo));
-    fs.utimesSync(path.join(LOGS_DIR, "contractor-20241210.log"), nowDate, new Date(fourDaysAgo));
-    fs.utimesSync(path.join(LOGS_DIR, "commission-20241212.log"), nowDate, new Date(twoDaysAgo));
-    fs.utimesSync(path.join(LOGS_DIR, "contractor-20241212.log"), nowDate, new Date(twoDaysAgo));
-    fs.utimesSync(path.join(LOGS_DIR, "commission-20241215.log"), nowDate, new Date(oneHourAgo));
-    fs.utimesSync(path.join(LOGS_DIR, "contractor-20241215.log"), nowDate, new Date(oneHourAgo));
-    fs.utimesSync(path.join(LOGS_DIR, "commission.debug"), nowDate, new Date(threeDaysAgo));
+    fs.utimesSync(
+      path.join(LOGS_DIR, "commission-20241210.log"),
+      nowDate,
+      new Date(fourDaysAgo),
+    );
+    fs.utimesSync(
+      path.join(LOGS_DIR, "contractor-20241210.log"),
+      nowDate,
+      new Date(fourDaysAgo),
+    );
+    fs.utimesSync(
+      path.join(LOGS_DIR, "commission-20241212.log"),
+      nowDate,
+      new Date(twoDaysAgo),
+    );
+    fs.utimesSync(
+      path.join(LOGS_DIR, "contractor-20241212.log"),
+      nowDate,
+      new Date(twoDaysAgo),
+    );
+    fs.utimesSync(
+      path.join(LOGS_DIR, "commission-20241215.log"),
+      nowDate,
+      new Date(oneHourAgo),
+    );
+    fs.utimesSync(
+      path.join(LOGS_DIR, "contractor-20241215.log"),
+      nowDate,
+      new Date(oneHourAgo),
+    );
+    fs.utimesSync(
+      path.join(LOGS_DIR, "commission.debug"),
+      nowDate,
+      new Date(threeDaysAgo),
+    );
   });
 
   afterEach(() => {
@@ -69,7 +97,9 @@ describe("Log cleanup functionality", () => {
       ]);
 
       // Files should not be compressed
-      expect(oldDirFiles.filter((f) => String(f).endsWith(".gz"))).toHaveLength(0);
+      expect(oldDirFiles.filter((f) => String(f).endsWith(".gz"))).toHaveLength(
+        0,
+      );
     });
   });
 
@@ -81,7 +111,11 @@ describe("Log cleanup functionality", () => {
       const oldDirFiles = fs.readdirSync(path.join(LOGS_DIR, OLD_DIR)).sort();
 
       // Should keep 2 most recent files in main directory
-      expect(mainDirFiles).toEqual(["commission-20241215.log", "contractor-20241215.log", OLD_DIR]);
+      expect(mainDirFiles).toEqual([
+        "commission-20241215.log",
+        "contractor-20241215.log",
+        OLD_DIR,
+      ]);
 
       // Older files should be moved and compressed
       expect(oldDirFiles).toContain("commission-20241210.log.gz");
@@ -94,7 +128,11 @@ describe("Log cleanup functionality", () => {
     it("should correctly decompress the compressed files", async () => {
       await moveFilesToOldSubDir(LOGS_DIR, OLD_DIR, true, 2);
 
-      const compressedFilePath = path.join(LOGS_DIR, OLD_DIR, "commission-20241210.log.gz");
+      const compressedFilePath = path.join(
+        LOGS_DIR,
+        OLD_DIR,
+        "commission-20241210.log.gz",
+      );
       const compressedContent = fs.readFileSync(compressedFilePath);
       const decompressed = zlib.gunzipSync(compressedContent).toString();
 
@@ -130,7 +168,9 @@ describe("Log cleanup functionality", () => {
 
       const oldDirFiles = fs.readdirSync(path.join(LOGS_DIR, OLD_DIR));
       // Only .gitkeep should be in old directory
-      expect(oldDirFiles.filter((f) => !String(f).startsWith("."))).toHaveLength(0);
+      expect(
+        oldDirFiles.filter((f) => !String(f).startsWith(".")),
+      ).toHaveLength(0);
     });
 
     it("should not move files that are in the retention count", async () => {
@@ -147,9 +187,21 @@ describe("Log cleanup functionality", () => {
       );
 
       const nowDate = new Date(now);
-      fs.utimesSync(path.join(LOGS_DIR, "commission-20241214.log"), nowDate, new Date(now - 3 * 24 * 3600000));
-      fs.utimesSync(path.join(LOGS_DIR, "commission-20241215.log"), nowDate, new Date(now - 2 * 24 * 3600000));
-      fs.utimesSync(path.join(LOGS_DIR, "commission-20241216.log"), nowDate, new Date(now - 1 * 24 * 3600000));
+      fs.utimesSync(
+        path.join(LOGS_DIR, "commission-20241214.log"),
+        nowDate,
+        new Date(now - 3 * 24 * 3600000),
+      );
+      fs.utimesSync(
+        path.join(LOGS_DIR, "commission-20241215.log"),
+        nowDate,
+        new Date(now - 2 * 24 * 3600000),
+      );
+      fs.utimesSync(
+        path.join(LOGS_DIR, "commission-20241216.log"),
+        nowDate,
+        new Date(now - 1 * 24 * 3600000),
+      );
 
       await moveFilesToOldSubDir(LOGS_DIR, OLD_DIR, true, 2);
 
@@ -157,10 +209,48 @@ describe("Log cleanup functionality", () => {
       const oldDirFiles = fs.readdirSync(path.join(LOGS_DIR, OLD_DIR)).sort();
 
       // Two most recent should remain
-      expect(mainDirFiles).toEqual(["commission-20241215.log", "commission-20241216.log", OLD_DIR]);
+      expect(mainDirFiles).toEqual([
+        "commission-20241215.log",
+        "commission-20241216.log",
+        OLD_DIR,
+      ]);
 
       // Oldest should be compressed and moved
       expect(oldDirFiles).toContain("commission-20241214.log.gz");
+    });
+
+    it("should not move explicitly retained files even if old", async () => {
+      vol.reset();
+      const now = Date.now();
+      vol.fromJSON(
+        {
+          "./keepme.log": "important",
+          "./other.log": "other",
+          "./old/.gitkeep": "",
+        },
+        LOGS_DIR,
+      );
+
+      const nowDate = new Date(now);
+      // Make keepme.log very old so it would be moved without explicit retain.
+      fs.utimesSync(
+        path.join(LOGS_DIR, "keepme.log"),
+        nowDate,
+        new Date(now - 10 * 24 * 3600000),
+      );
+      fs.utimesSync(
+        path.join(LOGS_DIR, "other.log"),
+        nowDate,
+        new Date(now - 1 * 24 * 3600000),
+      );
+
+      await moveFilesToOldSubDir(LOGS_DIR, OLD_DIR, true, 0, ["keepme.log"]);
+
+      const mainDirFiles = fs.readdirSync(LOGS_DIR).sort();
+      const oldDirFiles = fs.readdirSync(path.join(LOGS_DIR, OLD_DIR)).sort();
+
+      expect(mainDirFiles).toEqual(["keepme.log", OLD_DIR]);
+      expect(oldDirFiles).toContain("other.log.gz");
     });
   });
 
@@ -175,7 +265,9 @@ describe("Log cleanup functionality", () => {
       expect(mainDirFiles).toEqual([OLD_DIR]);
 
       // All files should be compressed
-      expect(oldDirFiles.filter((f) => String(f).endsWith(".gz")).length).toBeGreaterThan(0);
+      expect(
+        oldDirFiles.filter((f) => String(f).endsWith(".gz")).length,
+      ).toBeGreaterThan(0);
     });
 
     it("should not compress with retention but without compression flag", async () => {
@@ -184,7 +276,9 @@ describe("Log cleanup functionality", () => {
       const oldDirFiles = fs.readdirSync(path.join(LOGS_DIR, OLD_DIR));
 
       // Files should not be compressed even with retention
-      expect(oldDirFiles.filter((f) => String(f).endsWith(".gz"))).toHaveLength(0);
+      expect(oldDirFiles.filter((f) => String(f).endsWith(".gz"))).toHaveLength(
+        0,
+      );
     });
   });
 });

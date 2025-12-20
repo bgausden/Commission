@@ -67,6 +67,7 @@ import {
 import {
   contractorLogger,
   commissionLogger,
+  infoLogger,
   warnLogger,
   errorLogger,
   debugLogger,
@@ -84,6 +85,7 @@ import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
+import { existsSync, readdirSync } from "node:fs";
 
 const PROGRESS_PREFIX = "__PROGRESS__ ";
 
@@ -98,6 +100,12 @@ function emitProgress(step: string, detail?: string): void {
   // Intentionally use stdout (console.log) so it can be streamed.
   // eslint-disable-next-line no-console
   console.log(`${PROGRESS_PREFIX}${JSON.stringify(payload)}`);
+}
+
+function emitProgressAndInfo(step: string, detail?: string): void {
+  emitProgress(step, detail);
+  // Mirror progress markers into INFO logs so they're visible in log files.
+  infoLogger.info(detail ? `${step}: ${detail}` : step);
 }
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i;
@@ -594,15 +602,15 @@ function doPooling(
     }
     // divide the aggregate values across the pool members by updating their commComponents entries
     // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
-    commissionLogger.info("=======================================");
-    commissionLogger.info("Pooling Calculations");
-    commissionLogger.info("=======================================");
+    infoLogger.info("=======================================");
+    infoLogger.info("Pooling Calculations");
+    infoLogger.info("=======================================");
 
     for (const poolMember of poolMembers) {
       const staffName = `${
         talenoxStaff.get(poolMember)?.last_name ?? "<Last Name>"
       }, ${talenoxStaff.get(poolMember)?.first_name ?? "<First Name>"}`;
-      commissionLogger.info(`Pooling for ${poolMember} ${staffName}`);
+      infoLogger.info(`Pooling for ${poolMember} ${staffName}`);
       const memberList = poolMembers
         .map(
           (member) =>
@@ -611,7 +619,7 @@ function doPooling(
             } ${talenoxStaff.get(member)?.first_name ?? "<First Name>"}`,
         )
         .join(", ");
-      commissionLogger.info(
+      infoLogger.info(
         `Pool contains ${poolMembers.length} members: ${memberList}`,
       );
       for (const [aggregatePropName, aggregatePropValue] of Object.entries(
@@ -630,17 +638,17 @@ function doPooling(
             typeof comm[aggregatePropName] === "number"
               ? comm[aggregatePropName].toString()
               : JSON.stringify(comm[aggregatePropName]);
-          commissionLogger.info(
+          infoLogger.info(
             `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`,
           );
         }
       }
-      commissionLogger.info("--------------");
+      infoLogger.info("--------------");
     }
   }
-  commissionLogger.info("");
-  commissionLogger.info("=======================================");
-  commissionLogger.info("");
+  infoLogger.info("");
+  infoLogger.info("=======================================");
+  infoLogger.info("");
   return;
 }
 
@@ -770,7 +778,7 @@ function logStaffCommission(
   const logger = isContractor(staffID) ? contractorLogger : commissionLogger;
 
   if (!isPayViaTalenox(staffID) && !isContractor(staffID)) {
-    commissionLogger.warn(
+    warnLogger.warn(
       `Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`,
     );
   }
@@ -931,7 +939,10 @@ async function main() {
   emitProgress("Initializing logs");
   await initLogs();
 
-  emitProgress("Parsing payroll filename");
+  // Now that log4js is configured, mirror the first progress marker into logs.
+  infoLogger.info("Initializing logs");
+
+  emitProgressAndInfo("Parsing payroll filename");
   const { PAYROLL_MONTH, PAYROLL_YEAR, PAYMENTS_WB_NAME, PAYMENTS_WS_NAME } =
     parseFilename(config.PAYROLL_WB_FILENAME);
   global.PAYROLL_MONTH = PAYROLL_MONTH;
@@ -941,13 +952,13 @@ async function main() {
 
   global.firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
 
-  commissionLogger.info(`Commission run begins ${firstDay.toDateString()}`);
+  infoLogger.info(`Commission run begins ${firstDay.toDateString()}`);
   if (config.updateTalenox === false) {
-    commissionLogger.info(`Talenox update is disabled in config.`);
+    infoLogger.info(`Talenox update is disabled in config.`);
   }
-  commissionLogger.info(`Payroll Month is ${PAYROLL_MONTH}`);
+  infoLogger.info(`Payroll Month is ${PAYROLL_MONTH}`);
 
-  emitProgress("Loading environment configuration");
+  emitProgressAndInfo("Loading environment configuration");
   const { PAYMENTS_DIR, DATA_DIR, LOGS_DIR } = processEnv();
   global.LOGS_DIR = LOGS_DIR;
   global.PAYMENTS_DIR = PAYMENTS_DIR;
@@ -966,26 +977,40 @@ async function main() {
     );
   }
 
-  debugLogger.debug(
+  const payrollWorkbookPath = path.join(DATA_DIR, config.PAYROLL_WB_FILENAME);
+  if (!existsSync(payrollWorkbookPath)) {
+    const candidates = readdirSync(DATA_DIR)
+      .filter((f) => f.toLowerCase().endsWith(".xlsx"))
+      .slice(0, 10)
+      .join(", ");
+    throw new Error(
+      `Payroll workbook not found at '${payrollWorkbookPath}'. Check config.PAYROLL_WB_FILENAME and/or upload/copy the workbook into DATA_DIR (${DATA_DIR}). Found .xlsx files: ${candidates || "<none>"}`,
+    );
+  }
+
+  infoLogger.info(
     `Moving (and compressing) files from ${DATA_DIR} to ${DATA_OLD_DIR}`,
   );
-  emitProgress(
+  emitProgressAndInfo(
     "Archiving old payroll workbooks",
     `From ${DATA_DIR} to ${DATA_OLD_DIR}`,
   );
-  await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2); // probably not necessary for the destination folder to be configurable
+  await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2, [
+    config.PAYROLL_WB_FILENAME,
+  ]);
 
-  const payrollWorkbookPath = path.join(DATA_DIR, config.PAYROLL_WB_FILENAME);
-
-  emitProgress("Loading staff hurdle configuration");
+  emitProgressAndInfo("Loading staff hurdle configuration");
   loadStaffHurdles(DEFAULT_STAFF_HURDLES_FILE);
 
-  debugLogger.debug(`Requesting employees from Talenox`);
-  emitProgress("Fetching employees from Talenox");
+  infoLogger.info(`Requesting employees from Talenox`);
+  emitProgressAndInfo("Fetching employees from Talenox");
   const talenoxStaff = await getTalenoxEmployees();
-  debugLogger.debug(`Requesting employees complete`);
+  infoLogger.info(`Requesting employees complete`);
 
-  emitProgress("Reading Mindbody payroll workbook", config.PAYROLL_WB_FILENAME);
+  emitProgressAndInfo(
+    "Reading Mindbody payroll workbook",
+    config.PAYROLL_WB_FILENAME,
+  );
   const WS = readExcelFile(payrollWorkbookPath);
 
   // Using option {header:1} returns an array of arrays
@@ -994,25 +1019,25 @@ async function main() {
     header: 1,
   });
 
-  emitProgress("Locating revenue column");
+  emitProgressAndInfo("Locating revenue column");
   const revCol = revenueCol(wsaa);
 
   // Process all staff payroll data from Excel
-  emitProgress("Parsing payroll rows and calculating commissions");
+  emitProgressAndInfo("Parsing payroll rows and calculating commissions");
   processPayrollExcelData(wsaa, revCol, talenoxStaff, commMap);
 
   // Apply pooling logic to commission map
-  emitProgress("Applying pooling rules");
+  emitProgressAndInfo("Applying pooling rules");
   doPooling(commMap, staffHurdles, talenoxStaff);
 
   // Create payment spreadsheet and upload to Talenox
-  emitProgress("Creating Talenox payment entries");
+  emitProgressAndInfo("Creating Talenox payment entries");
   const payments = createAdHocPayments(commMap, talenoxStaff);
 
-  emitProgress("Archiving old payment spreadsheets");
+  emitProgressAndInfo("Archiving old payment spreadsheets");
   await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
 
-  emitProgress("Writing payment spreadsheet");
+  emitProgressAndInfo("Writing payment spreadsheet");
   writePaymentsWorkBook(payments);
 
   /* 
@@ -1020,12 +1045,12 @@ async function main() {
     */
 
   if (!config.updateTalenox) {
-    emitProgress("Complete (dry run)", "updateTalenox is disabled");
+    emitProgressAndInfo("Complete (dry run)", "updateTalenox is disabled");
     return;
   }
 
   debugLogger.debug(`Requesting new payroll payment creation from Talenox`);
-  emitProgress("Creating payroll in Talenox");
+  emitProgressAndInfo("Creating payroll in Talenox");
   const createPayrollResult = await createPayroll(talenoxStaff);
   debugLogger.debug(`New payroll payment is created in Talenox.`);
   if (!createPayrollResult[1]) {
@@ -1046,7 +1071,7 @@ async function main() {
   debugLogger.debug(`OK: ${createPayrollResult[1].message}`);
 
   debugLogger.debug(`Pushing ad-hoc payments into new payroll`);
-  emitProgress("Uploading ad-hoc payments to Talenox");
+  emitProgressAndInfo("Uploading ad-hoc payments to Talenox");
   const uploadAdHocResult = await uploadAdHocPayments(talenoxStaff, payments);
   if (!uploadAdHocResult[1]) {
     if (uploadAdHocResult[0]) {
@@ -1064,7 +1089,7 @@ async function main() {
     debugLogger.debug(`OK: ${uploadAdHocResult[1].message}`);
   }
 
-  emitProgress("Complete", "Talenox updated");
+  emitProgressAndInfo("Complete", "Talenox updated");
 }
 
 //initDebug()
@@ -1074,12 +1099,25 @@ main()
     shutdownLogging();
   })
   .catch((error) => {
+    // Important: propagate failure to the process exit code.
+    // Otherwise the web runner (and shell scripts) will treat failures as success.
+    process.exitCode = 1;
+
     if (error instanceof Error) {
       errorLogger.error(`${error.message}`);
+      // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
+      // eslint-disable-next-line no-console
+      console.error(error.message);
     } else if (typeof error === "string") {
       errorLogger.error(`${error.toString()}`);
+      // eslint-disable-next-line no-console
+      console.error(error.toString());
     } else {
       errorLogger.error(
+        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
+      );
+      // eslint-disable-next-line no-console
+      console.error(
         `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
       );
     }
