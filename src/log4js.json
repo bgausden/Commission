@@ -38,6 +38,9 @@
         },
         "fatal": {
             "type": "stderr"
+        },
+        "webEcho": {
+            "type": "stderr"
         }
     },
     "categories": {
@@ -51,8 +54,7 @@
         "contractor": {
             "appenders": [
                 "contractor",
-                "info",
-                "commission"
+                "info"
             ],
             "level": "info"
         },
@@ -66,30 +68,36 @@
         "info": {
             "appenders": [
                 "info",
-                "commission"
+                "debugLog"
             ],
             "level": "info"
         },
         "warn": {
             "appenders": [
                 "warn",
-                "commission"
+                "debugLog"
             ],
             "level": "warn"
         },
         "error": {
             "appenders": [
                 "error",
-                "commission"
+                "debugLog"
             ],
             "level": "error"
         },
         "fatal": {
             "appenders": [
                 "fatal",
-                "commission"
+                "debugLog"
             ],
             "level": "fatal"
+        },
+        "webEcho": {
+            "appenders": [
+                "webEcho"
+            ],
+            "level": "info"
         }
     }
 }
