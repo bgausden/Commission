@@ -1,5 +1,23 @@
 # Development Log - Commission Calculator
 
+## 2025-12-20: Remove `debug` + `prettyjson`
+
+### Overview
+
+Removed unused dependencies and routed all tracing through log4js.
+
+**Changes**:
+
+- Removed `prettyjson` (and `@types/prettyjson`) since it was only referenced as a commented import
+- Removed `debug` (and `@types/debug`) and replaced Talenox API tracing with `debugLogger.debug(...)` in `src/talenox_functions.ts`
+- Deleted unused `src/debug_functions.ts`
+
+**Files touched**:
+
+- `src/talenox_functions.ts`
+- `package.json` (+ lockfile)
+- `src/debug_functions.ts` (deleted)
+
 ## 2025-12-20: Web Runner Stability + Log Hygiene
 
 ### Overview
