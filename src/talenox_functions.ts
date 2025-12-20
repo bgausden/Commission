@@ -32,8 +32,6 @@ import {
 } from "./ITalenoxPayrollPayment.js";
 import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult.js";
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.js";
-import fetch from "node-fetch";
-import { Headers, RequestInit } from "node-fetch";
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js";
 import debug from "debug";
 

@@ -21,6 +21,25 @@ Standardized path resolution so the app always writes logs to the repository roo
 - `src/serverApp.ts`
 - `src/utility_functions.ts`
 
+---
+
+## 2025-12-20: Remove `ncp` + `node-fetch`
+
+### Overview
+
+Removed a couple of small dependencies in favor of built-in Node APIs.
+
+**Changes**:
+
+- Build script no longer uses `ncp`; it copies build artifacts with `fs/promises` (`mkdir` + `copyFile`)
+- Talenox API calls now use Node’s native `fetch` (no `node-fetch` dependency)
+
+**Files touched**:
+
+- `scripts/build.js`
+- `src/talenox_functions.ts`
+- `package.json` (+ lockfile)
+
 ## 2025-12-19: Commission Run Progress Steps (Web UI)
 
 ### Overview
