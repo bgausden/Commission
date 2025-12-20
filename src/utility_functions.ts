@@ -59,7 +59,10 @@ export function stripToNumeric(n: unknown): number {
  * @returns StaffHurdle configuration (either for staffID or default "000")
  * @throws Error if staffID missing and config.missingStaffAreFatal=true OR if default "000" doesn't exist
  */
-export function getValidatedStaffHurdle(staffID: TStaffID, context: string): StaffHurdle {
+export function getValidatedStaffHurdle(
+  staffID: TStaffID,
+  context: string,
+): StaffHurdle {
   // First: Try to get staff's actual configuration
   if (staffHurdles[staffID]) {
     return staffHurdles[staffID];
@@ -73,7 +76,9 @@ export function getValidatedStaffHurdle(staffID: TStaffID, context: string): Sta
   }
 
   // Third: Fall back to default with warning
-  warnLogger.warn(`Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`);
+  warnLogger.warn(
+    `Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`,
+  );
 
   // Fourth: Ensure default exists (fatal if missing)
   if (!staffHurdles[defaultStaffID]) {
@@ -119,8 +124,14 @@ export function getStaffHurdle(staffID: string) {
   return staffHurdles[staffID];
 }
 
-export function assertLog4JsConfig(config: unknown): asserts config is l4JSConfiguration {
-  if (typeof config === "object" && !!config && ("appenders" in config || "categories" in config)) {
+export function assertLog4JsConfig(
+  config: unknown,
+): asserts config is l4JSConfiguration {
+  if (
+    typeof config === "object" &&
+    !!config &&
+    ("appenders" in config || "categories" in config)
+  ) {
     return;
   } else {
     throw new Error("Failed to validate provided log4JSConfig");
@@ -153,26 +164,38 @@ export async function moveFilesToOldSubDir(
   destDir = DEFAULT_OLD_DIR,
   compressFiles = false,
   retainCount = 0,
+  retainFiles: string[] = [],
 ): Promise<void> {
   if (!isValidDirectory(sourceDir)) {
-    warnLogger.warn(`Unable to move files. Invalid source directory: ${sourceDir}`);
+    warnLogger.warn(
+      `Unable to move files. Invalid source directory: ${sourceDir}`,
+    );
     return;
   }
 
   const sourceFiles = readdirSync(sourceDir);
 
-  const targetDir = path.isAbsolute(destDir) ? destDir : path.join(sourceDir, destDir);
+  const targetDir = path.isAbsolute(destDir)
+    ? destDir
+    : path.join(sourceDir, destDir);
   const destDirName = path.basename(targetDir);
 
   if (!isValidDirectory(targetDir)) {
-    warnLogger.warn(`Target directory: ${targetDir} does not exist. Will create.`);
+    warnLogger.warn(
+      `Target directory: ${targetDir} does not exist. Will create.`,
+    );
     mkdirSync(targetDir, { recursive: true });
     assert(isValidDirectory(targetDir));
   }
 
-  let filesToRetain: string[] = [];
+  const filesToRetain = new Set<string>();
   if (retainCount > 0) {
-    filesToRetain = getMostRecentlyModifiedFiles(sourceDir, retainCount);
+    for (const file of getMostRecentlyModifiedFiles(sourceDir, retainCount)) {
+      filesToRetain.add(file);
+    }
+  }
+  for (const file of retainFiles) {
+    if (file && file.trim()) filesToRetain.add(file);
   }
 
   const compressionPromises: Promise<void>[] = [];
@@ -180,7 +203,7 @@ export async function moveFilesToOldSubDir(
   sourceFiles.forEach((file) => {
     const filePath = path.join(sourceDir, file);
     const newFilePath = path.join(targetDir, file);
-    if (file !== destDirName && !filesToRetain.includes(file)) {
+    if (file !== destDirName && !filesToRetain.has(file)) {
       if (compressFiles) {
         // Compress the file asynchronously
         const compressionPromise = new Promise<void>((resolve, reject) => {
