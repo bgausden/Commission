@@ -2,7 +2,11 @@ import express, { Request, Response } from "express";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import fs from "fs";
 import path from "path";
-import { resolveFromProjectRootIfRelative } from "./projectRoot.js";
+import {
+  getProjectRoot,
+  resolveFromProjectRoot,
+  resolveFromProjectRootIfRelative,
+} from "./projectRoot.js";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { randomUUID } from "node:crypto";
@@ -14,7 +18,7 @@ import { staffHurdleSchema } from "./staffHurdleSchema.js";
 import { DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import { TStaffHurdles } from "./types.js";
 import { IConfig } from "node-config-ts";
-import { debugLogger } from "./logging_functions.js";
+import { debugLogger, webEchoLogger } from "./logging_functions.js";
 
 type CommissionJobStatus = "queued" | "running" | "success" | "failed";
 
@@ -82,6 +86,18 @@ function writeSse(res: Response, event: string, data: unknown): void {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function shouldEchoChildToServerConsole(): boolean {
+  const value = (process.env.WEB_RUN_ECHO_CHILD ?? "").trim().toLowerCase();
+  return value !== "" && !["0", "false", "off", "no"].includes(value);
+}
+
+function stripAnsi(input: string): string {
+  // Matches ANSI escape sequences like "\u001b[32m" (colors), cursor controls, etc.
+  // Keeps the textual content for clean display in the web UI.
+  // eslint-disable-next-line no-control-regex
+  return input.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, "");
 }
 
 function getLogsDir(currentModuleDir: string): string {
@@ -165,6 +181,8 @@ function getLatestCommissionLogFiles(logsDir: string): {
 
 export function createApp() {
   const app = express();
+
+  const projectRoot = getProjectRoot();
 
   const commissionJobs = new Map<string, CommissionJob>();
 
@@ -314,10 +332,16 @@ export function createApp() {
 
   app.post("/run-commission", (_req: Request, res: Response) => {
     try {
-      const indexPath = path.join(__dirname, "index.js");
+      // When running the server via tsx, __dirname points at src/ (so src/index.js won't exist).
+      // Always resolve the built entrypoint from the repo root.
+      const indexPathCandidates = [
+        resolveFromProjectRoot("dist", "index.js"),
+        resolveFromProjectRoot("dist", "src", "index.js"),
+      ];
+      const indexPath = indexPathCandidates.find((p) => fs.existsSync(p));
 
       // Check if the compiled index.js exists
-      if (!fs.existsSync(indexPath)) {
+      if (!indexPath) {
         return res.status(500).json({
           success: false,
           message:
@@ -349,7 +373,8 @@ export function createApp() {
       commissionJobs.set(jobId, job);
 
       const pushLog = (level: CommissionJobLogLevel, message: string) => {
-        const trimmed = message.replace(/\r?\n$/, "");
+        const sanitized = stripAnsi(message);
+        const trimmed = sanitized.replace(/\r?\n$/, "");
         if (!trimmed) return;
 
         const entry: CommissionJobLogLine = {
@@ -365,6 +390,12 @@ export function createApp() {
         }
         for (const client of job.clients) {
           writeSse(client, "log", entry);
+        }
+
+        // Optional: echo streamed child output to the server console for local debugging.
+        // Uses a console-only logger so we don't pollute commission.debug.
+        if (shouldEchoChildToServerConsole()) {
+          webEchoLogger.info(`[${level}] ${trimmed}`);
         }
       };
 
@@ -392,6 +423,14 @@ export function createApp() {
         }
         for (const client of job.clients) {
           writeSse(client, "step", step);
+        }
+
+        if (shouldEchoChildToServerConsole()) {
+          webEchoLogger.info(
+            step.detail
+              ? `[step] ${step.step}: ${step.detail}`
+              : `[step] ${step.step}`,
+          );
         }
       };
 
@@ -428,8 +467,11 @@ export function createApp() {
       }, 500);
 
       const child = spawn("node", [indexPath], {
-        cwd: __dirname,
-        env: { ...process.env },
+        cwd: projectRoot,
+        // For web UI runs, we want rich logs to stream back to the browser.
+        // Force the child process to emit log4js console output to stdout/stderr,
+        // regardless of the server's own LOG4JS_CONSOLE setting.
+        env: { ...process.env, LOG4JS_CONSOLE: "on" },
         stdio: "pipe",
       });
 
@@ -437,13 +479,14 @@ export function createApp() {
       let stderrBuf = "";
 
       child.stdout.on("data", (data) => {
-        const text = data.toString();
-        debugLogger.debug(`Commission stdout: ${text}`);
+        const text = stripAnsi(data.toString());
+        // Avoid logging the entire child stdout into the server debug log file;
+        // it can be very large and is already streamed to the UI.
         stdoutBuf += text;
         const lines = stdoutBuf.split(/\r?\n/);
         stdoutBuf = lines.pop() ?? "";
         for (const line of lines) {
-          const step = tryParseProgressLine(line);
+          const step = tryParseProgressLine(stripAnsi(line));
           if (step) {
             pushStep(step);
             continue;
@@ -453,8 +496,8 @@ export function createApp() {
       });
 
       child.stderr.on("data", (data) => {
-        const text = data.toString();
-        debugLogger.error(`Commission stderr: ${text}`);
+        const text = stripAnsi(data.toString());
+        // Avoid duplicating child stderr into the server debug log file.
         stderrBuf += text;
         const lines = stderrBuf.split(/\r?\n/);
         stderrBuf = lines.pop() ?? "";
@@ -509,7 +552,11 @@ export function createApp() {
         }
 
         // Always add a final step so the UI has a clear end marker.
-        pushStep({ ts: nowIso(), step: "Complete", detail: job.message });
+        pushStep({
+          ts: nowIso(),
+          step: code === 0 ? "Complete" : "Failed",
+          detail: job.message,
+        });
 
         pushStatus();
         for (const client of job.clients) {
