@@ -4,9 +4,13 @@ const { configure, getLogger, shutdown } = log4js;
 import path, { basename, extname } from "node:path";
 import { assertLog4JsConfig, moveFilesToOldSubDir } from "./utility_functions.js";
 // import { z } from "zod";
-import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
 import { DEFAULT_LOG4JS_CONFIG_FILE } from "./constants.js";
+import {
+  getProjectRoot,
+  resolveFromProjectRoot,
+  resolveFromProjectRootIfRelative,
+} from "./projectRoot.js";
 
 function isFileAppender(appender: unknown): asserts appender is FileAppender {
   assert(
@@ -33,8 +37,13 @@ export async function initLogs() {
     return possibleL4jsConfig
   } */
 
-  // We need to invoke processEnv() here because we init logs before processEnv() is called in index.ts:main()
-  const LOGS_DIR = processEnv().LOGS_DIR;
+  const projectRoot = getProjectRoot();
+
+  // Always default to the repository root logs/ folder, regardless of cwd.
+  // If LOGS_DIR is provided and is relative, treat it as relative to repo root.
+  const LOGS_DIR = process.env.LOGS_DIR
+    ? resolveFromProjectRootIfRelative(process.env.LOGS_DIR)
+    : resolveFromProjectRoot("logs");
 
   await moveFilesToOldSubDir(LOGS_DIR, undefined, true, 2);
 
@@ -45,7 +54,10 @@ export async function initLogs() {
   }
 
   //const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
-  const possibleL4jsConfig = JSON.parse(readFileSync(`./${LOG4JS_CONFIG_FILE}`, "utf-8"));
+  const log4jsConfigPath = path.isAbsolute(LOG4JS_CONFIG_FILE)
+    ? LOG4JS_CONFIG_FILE
+    : path.join(projectRoot, LOG4JS_CONFIG_FILE);
+  const possibleL4jsConfig = JSON.parse(readFileSync(log4jsConfigPath, "utf-8"));
   assertLog4JsConfig(possibleL4jsConfig);
 
   /* const l4jsConfigSchema = z.object({
