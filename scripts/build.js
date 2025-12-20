@@ -2,38 +2,29 @@
 
 import { promisify } from "util";
 import { exec as noPromiseExec } from "child_process";
-import fs from "fs";
-import ncpPkg from "ncp";
-const { ncp } = ncpPkg;
+import { mkdir, copyFile } from "node:fs/promises";
+import path from "node:path";
 const DIST = "./dist";
-
-const isExecutable = (s) => {
-  return new Promise((r) => {
-    fs.access(s, fs.constants.X_OK, (e) => r(!e));
-  });
-};
 
 const exec = promisify(noPromiseExec);
 
-isExecutable("./node_modules/.bin/tsc").then((executable) => {
-  if (executable) {
-    exec("./node_modules/.bin/tsc -p tsconfig.json")
-      .then((result) => {
-        if (result.stdout) console.log(result.stdout);
-        if (result.stderr) console.log(result.stderr);
-        ncp("./config/staffHurdle.json", "./dist/", (error) => {
-          error ? console.error(error.Message) : console.log(`Copied staffHurdle.json to ${DIST}`);
-        });
-        ncp("./log4js.json", "./dist/", (error) => {
-          error ? console.error(error.Message) : console.log(`Copied logging config template to ${DIST}`);
-        });
-      })
-      .catch((err) => {
-        console.error(err);
-        process.abort();
-      });
-  } else {
-    console.error("Not executable");
+async function copyBuildArtifacts() {
+  await mkdir(DIST, { recursive: true });
+
+  await copyFile("./config/staffHurdle.json", path.join(DIST, "staffHurdle.json"));
+  console.log(`Copied staffHurdle.json to ${DIST}`);
+
+  await copyFile("./log4js.json", path.join(DIST, "log4js.json"));
+  console.log(`Copied logging config template to ${DIST}`);
+}
+
+exec("node ./node_modules/typescript/bin/tsc -p tsconfig.json")
+  .then((result) => {
+    if (result.stdout) console.log(result.stdout);
+    if (result.stderr) console.log(result.stderr);
+    return copyBuildArtifacts();
+  })
+  .catch((err) => {
+    console.error(err);
     process.abort();
-  }
-});
+  });
