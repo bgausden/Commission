@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { initLogs, shutdownLogging, commissionLogger, contractorLogger, debugLogger } from "./logging_functions.js";
+import {
+  initLogs,
+  shutdownLogging,
+  commissionLogger,
+  contractorLogger,
+  debugLogger,
+} from "./logging_functions.js";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import assert from "node:assert";
@@ -7,13 +13,22 @@ import { PassThrough } from "node:stream";
 
 describe("logging_functions", () => {
   const LOGS_DIR = "./logs";
+  const originalLog4jsConsole = process.env.LOG4JS_CONSOLE;
 
   beforeAll(async () => {
+    // Ensure test expectations are stable regardless of local .env settings.
+    process.env.LOG4JS_CONSOLE = "on";
     await initLogs();
   });
 
   afterAll(() => {
     shutdownLogging();
+
+    if (typeof originalLog4jsConsole === "undefined") {
+      delete process.env.LOG4JS_CONSOLE;
+    } else {
+      process.env.LOG4JS_CONSOLE = originalLog4jsConsole;
+    }
   });
 
   it("should create log files in the logs directory", () => {
@@ -49,7 +64,9 @@ describe("logging_functions", () => {
       stderrOutput.push(data.toString());
     });
     const originalStderrWrite = process.stderr.write;
-    process.stderr.write = outputStream.write.bind(outputStream) as unknown as typeof process.stderr.write;
+    process.stderr.write = outputStream.write.bind(
+      outputStream,
+    ) as unknown as typeof process.stderr.write;
 
     debugLogger.debug("Debug log message");
 
@@ -58,6 +75,8 @@ describe("logging_functions", () => {
 
     outputStream.end();
     process.stderr.write = originalStderrWrite;
-    expect(stderrOutput.some((output) => output.includes("Debug log message"))).toBe(true);
+    expect(
+      stderrOutput.some((output) => output.includes("Debug log message")),
+    ).toBe(true);
   });
 });
