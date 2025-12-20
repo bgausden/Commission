@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-import { promisify } from "util";
-import { exec as noPromiseExec } from "child_process";
-import { mkdir, copyFile } from "node:fs/promises";
+import {promisify} from "util";
+import {exec as noPromiseExec} from "child_process";
+import {mkdir, copyFile} from "node:fs/promises";
 import path from "node:path";
 const DIST = "./dist";
 
 const exec = promisify(noPromiseExec);
 
 async function copyBuildArtifacts() {
-  await mkdir(DIST, { recursive: true });
+  await mkdir(DIST, {recursive: true});
 
   await copyFile("./config/staffHurdle.json", path.join(DIST, "staffHurdle.json"));
   console.log(`Copied staffHurdle.json to ${DIST}`);

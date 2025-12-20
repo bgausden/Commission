@@ -27,6 +27,18 @@ export default [
     ...typeCompat.extends(),
     js.configs.recommended,
 
+    // Node-only scripts (plain .js) like scripts/build.js
+    {
+        files: ["scripts/**/*.js"],
+        languageOptions: {
+            ecmaVersion: 2023,
+            sourceType: "module",
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+
     {
         files: ["**/*.ts", "**/*.tsx"],
         languageOptions: {
