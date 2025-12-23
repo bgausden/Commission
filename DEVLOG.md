@@ -1,5 +1,277 @@
 # Development Log - Commission Calculator
 
+## 2025-12-23: Fix TypeScript Global Variable Declarations
+
+### Overview
+
+Fixed TypeScript TS7017 errors ("Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature") when assigning to global variables in VS Code.
+
+**Session highlights**:
+
+- Renamed `globals.d.ts` to `globals.ts` for better module recognition
+- Changed from `globalThis.X = value` pattern to direct assignment (`X = value`)
+- Added explicit import of `./globals.js` in `index.ts`
+- All 105 tests passing
+
+---
+
+### 🔧 Changes Made
+
+#### 1. Renamed Global Declarations File
+
+**Before**: `src/globals.d.ts`  
+**After**: `src/globals.ts`
+
+The `.d.ts` extension wasn't being recognized consistently by VS Code's TypeScript language server.
+
+#### 2. Changed Global Assignment Pattern
+
+**Before** (caused TS7017 in VS Code):
+
+```typescript
+const { PAYROLL_MONTH, PAYROLL_YEAR, ... } = parseFilename(...);
+globalThis.PAYROLL_MONTH = PAYROLL_MONTH;
+globalThis.PAYROLL_YEAR = PAYROLL_YEAR;
+```
+
+**After** (works correctly):
+
+```typescript
+const parsed = parseFilename(...);
+PAYROLL_MONTH = parsed.PAYROLL_MONTH;
+PAYROLL_YEAR = parsed.PAYROLL_YEAR;
+```
+
+When using `declare global { var X }`, TypeScript makes `X` available as a bare identifier. Direct assignment works better than `globalThis.X` access.
+
+#### 3. Added Explicit Import
+
+Added to `src/index.ts`:
+
+```typescript
+import "./globals.js"; // Import global type declarations
+```
+
+---
+
+### 📝 Technical Notes
+
+- `tsc --noEmit` compiled successfully with both patterns, but VS Code's language server only recognized the direct assignment pattern
+- The `export {}` at the end of `globals.ts` is required to make `declare global` work in module context
+- All 7 global variables now use direct assignment: `PAYROLL_MONTH`, `PAYROLL_YEAR`, `PAYMENTS_WB_NAME`, `PAYMENTS_WS_NAME`, `LOGS_DIR`, `PAYMENTS_DIR`, `firstDay`
+
+---
+
+### ✅ Test Results
+
+All 105 tests passing.
+
+---
+
+## 2025-12-21: Per-Employee Tips Charge Feature
+
+### Overview
+
+Added configurable per-employee tips charge deduction. Each staff member can now have a percentage charge applied to their tips (e.g., 3% card processing fee), with detailed breakdown shown in commission and contractor logs.
+
+**Session highlights**:
+
+- Added `tipsCharge` property to `StaffHurdle` interface (optional, 0-1 range)
+- Extended JSON schema validation for the new property
+- Added `tipsChargeRate` and `tipsChargeAmount` to `TCommComponents` type
+- Implemented tips charge calculation in `calculateStaffCommission()`
+- Enhanced `logStaffCommission()` to show gross/charge/net breakdown when applicable
+- Updated `doPooling()` aggregateComm to initialize new fields
+- Created 6 comprehensive tests for tips charge feature (TDD approach)
+
+---
+
+### 🔧 Changes Made
+
+#### 1. Interface Update (`src/IStaffHurdle.ts`)
+
+Added optional `tipsCharge` property:
+
+```typescript
+tipsCharge?: number; // Percentage charge on tips (0.03 = 3%)
+```
+
+#### 2. JSON Schema Update (`src/staffHurdleSchema.json`)
+
+Added validation for tips charge:
+
+```json
+"tipsCharge": {
+  "type": "number",
+  "minimum": 0,
+  "maximum": 1,
+  "description": "Percentage charge on tips (0.03 = 3%)"
+}
+```
+
+#### 3. Type Definition Update (`src/types.ts`)
+
+Extended `TCommComponents` interface:
+
+```typescript
+tipsChargeRate: number; // The charge rate applied (e.g., 0.03)
+tipsChargeAmount: number; // The calculated charge amount
+```
+
+#### 4. Commission Calculation (`src/index.ts`)
+
+**calculateStaffCommission()** - Added tips charge logic:
+
+```typescript
+const staffConfig = getValidatedStaffHurdle(staffID, "tips charge calculation");
+const tipsChargeRate = staffConfig.tipsCharge ?? 0;
+const tipsChargeAmount =
+  Math.round(payrollData.tips * tipsChargeRate * 100) / 100;
+const netTips = Math.round((payrollData.tips - tipsChargeAmount) * 100) / 100;
+```
+
+**logStaffCommission()** - Enhanced tips display:
+
+```typescript
+if (commComponents.tipsChargeRate > 0) {
+  const grossTips = commComponents.tips + commComponents.tipsChargeAmount;
+  const chargePercent = Math.round(commComponents.tipsChargeRate * 100);
+  logger.info(fws32Left(`Tips (gross):`), fws14RightHKD(grossTips));
+  logger.info(
+    fws32Left(`Tips Charge (${chargePercent}%):`),
+    fws14RightHKD(-commComponents.tipsChargeAmount),
+  );
+  logger.info(fws32Left(`Tips (net):`), fws14RightHKD(commComponents.tips));
+} else {
+  logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips));
+}
+```
+
+**doPooling()** - Updated aggregateComm initialization:
+
+```typescript
+const aggregateComm: TCommComponents = {
+  // ... existing fields
+  tipsChargeRate: 0,
+  tipsChargeAmount: 0,
+};
+```
+
+#### 5. Test Suite (`src/index.spec.ts`)
+
+Added 6 tests in new `calculateStaffCommission - Tips Charge` describe block:
+
+1. **Should calculate tips charge when tipsCharge is configured** - Verifies 3% charge calculation
+2. **Should not charge tips when tipsCharge is 0** - Verifies zero charge behavior
+3. **Should not charge tips when tipsCharge is not configured** - Verifies undefined handling
+4. **Should correctly calculate tipsChargeAmount** - Validates precise amount calculation
+5. **Should store tipsChargeRate in commission components** - Verifies rate storage
+6. **Should round tips charge to 2 decimal places** - Validates rounding behavior
+
+**Mock data added**:
+
+```typescript
+"050": {
+  staffName: "TestStaff3",
+  baseRate: 0,
+  tipsCharge: 0.03, // 3% tips charge
+  // ...
+},
+"051": {
+  staffName: "TestStaff4",
+  baseRate: 0,
+  tipsCharge: 0, // Explicit 0% charge
+  // ...
+}
+```
+
+---
+
+### ✅ Test Results
+
+**Total: 105 tests passing** (up from 99)
+
+| Test File                                  | Tests   | Status              |
+| ------------------------------------------ | ------- | ------------------- |
+| `src/parseFilename.spec.ts`                | 3       | ✅ All passing      |
+| `src/logging_functions.spec.ts`            | 4       | ✅ All passing      |
+| `src/logging_functions.cleanup.spec.ts`    | 8       | ✅ All passing      |
+| `src/utility_functions.spec.ts`            | 6       | ✅ All passing      |
+| `src/utility_functions.validation.spec.ts` | 19      | ✅ All passing      |
+| `src/index.spec.ts`                        | 45      | ✅ All passing (+6) |
+| `src/server.update-config.spec.ts`         | 20      | ✅ All passing      |
+| **TOTAL**                                  | **105** | ✅ **100% passing** |
+
+---
+
+### 📊 Example Log Output
+
+**With tips charge (3%)**:
+
+```
+Tips (gross):                       HK$ 1,000.00
+Tips Charge (3%):                   HK$   -30.00
+Tips (net):                         HK$   970.00
+```
+
+**Without tips charge**:
+
+```
+Tips:                               HK$ 1,000.00
+```
+
+---
+
+### 🎯 Configuration Example
+
+To enable a 3% tips charge for a staff member in `config/staffHurdle.json`:
+
+```json
+{
+  "050": {
+    "staffName": "Example Staff",
+    "baseRate": 0,
+    "hurdle1Level": 30000,
+    "hurdle1Rate": 0.11,
+    "tipsCharge": 0.03,
+    "contractor": false,
+    "payViaTalenox": true
+  }
+}
+```
+
+---
+
+### 📝 Session Summary
+
+**Timeline**: Single development session on 2025-12-21
+
+**Approach**: TDD (Test-Driven Development) - wrote failing tests first, then implemented feature
+
+**Major accomplishments**:
+
+1. ✅ Added `tipsCharge` to StaffHurdle interface
+2. ✅ Updated JSON schema for validation
+3. ✅ Extended TCommComponents with charge fields
+4. ✅ Implemented tips charge calculation
+5. ✅ Enhanced logging with charge breakdown
+6. ✅ Created 6 comprehensive tests
+7. ✅ All 105 tests passing
+
+**Files modified**:
+
+- `src/IStaffHurdle.ts` - Added tipsCharge property
+- `src/staffHurdleSchema.json` - Added tipsCharge validation
+- `src/types.ts` - Added tipsChargeRate and tipsChargeAmount
+- `src/index.ts` - Implemented calculation and logging
+- `src/index.spec.ts` - Added 6 tests + mock data
+
+**Breaking changes**: None  
+**Migration required**: None (tipsCharge is optional, defaults to 0)  
+**Backward compatibility**: Maintained
+
+---
+
 ## 2025-12-20: Remove `debug` + `prettyjson`
 
 ### Overview
@@ -267,10 +539,12 @@ saveStaffHurdles(result.data); // Fully typed!
 **Root cause**: `vi.spyOn()` by default calls through to the real implementation unless `.mockReturnValue()` is specified
 
 **Evidence**:
+
 - `git diff config/default.json` showed `PAYROLL_WB_FILENAME` changed to `"test.xlsx"`
 - Tests were performing real file I/O instead of using mocked values
 
 **Solution implemented**:
+
 ```typescript
 // Before (in beforeEach)
 const readFileSyncSpy = vi.spyOn(fs, "readFileSync");
@@ -278,10 +552,13 @@ const writeFileSyncSpy = vi.spyOn(fs, "writeFileSync");
 
 // After (in beforeEach)
 const readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("");
-const writeFileSyncSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue(undefined);
+const writeFileSyncSpy = vi
+  .spyOn(fs, "writeFileSync")
+  .mockReturnValue(undefined);
 ```
 
 **Changes**:
+
 - Added `.mockReturnValue("")` to prevent real file reads
 - Added `.mockReturnValue(undefined)` to prevent real file writes
 - Restored `config/default.json` with `git restore`
@@ -337,6 +614,7 @@ const writeFileSyncSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue(undefined
 - Schema defined in TypeScript code (better refactoring)
 - Full IDE autocomplete and type checking
 - No external JSON file to keep in sync
+
 3. `fix: Prevent tests from modifying real config/default.json`
 
 #### 3. Test Coverage

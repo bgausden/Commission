@@ -20,7 +20,8 @@ vi.mock("./logging_functions.js", () => ({
 }));
 
 vi.mock("./utility_functions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./utility_functions.js")>();
+  const actual =
+    await importOriginal<typeof import("./utility_functions.js")>();
   return {
     ...actual,
     getValidatedStaffHurdle: vi.fn((staffID: string) => {
@@ -35,6 +36,28 @@ vi.mock("./utility_functions.js", async (importOriginal) => {
           contractor: false,
           payViaTalenox: true,
           customPayRates: [{ Extensions: 0.15 }],
+        };
+      }
+      if (staffID === "050") {
+        return {
+          staffName: "Test WithCharge",
+          baseRate: 0,
+          hurdle1Level: 20000,
+          hurdle1Rate: 0.1,
+          contractor: false,
+          payViaTalenox: true,
+          tipsCharge: 0.03, // 3% tips charge
+        };
+      }
+      if (staffID === "051") {
+        return {
+          staffName: "Zero Charge",
+          baseRate: 0,
+          hurdle1Level: 20000,
+          hurdle1Rate: 0.1,
+          contractor: false,
+          payViaTalenox: true,
+          tipsCharge: 0, // Explicit 0% charge
         };
       }
       return {
@@ -690,7 +713,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 100,
       productCommission: 50,
-      servicesRevenues: new Map([["General Services", { serviceRevenue: 35000, customRate: null }]]),
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 35000, customRate: null }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -709,7 +734,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 0,
       productCommission: 0,
-      servicesRevenues: new Map([["Extensions", { serviceRevenue: 10000, customRate: 0.15 }]]),
+      servicesRevenues: new Map([
+        ["Extensions", { serviceRevenue: 10000, customRate: 0.15 }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -769,7 +796,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 0,
       productCommission: 0,
-      servicesRevenues: new Map([["General Services", { serviceRevenue: 0, customRate: null }]]),
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 0, customRate: null }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -786,7 +815,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 0,
       productCommission: 0,
-      servicesRevenues: new Map([["Extensions", { serviceRevenue: 10000, customRate: 0.15 }]]),
+      servicesRevenues: new Map([
+        ["Extensions", { serviceRevenue: 10000, customRate: 0.15 }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -801,7 +832,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Rex Wong",
       tips: 250,
       productCommission: 125,
-      servicesRevenues: new Map([["General Services", { serviceRevenue: 35000, customRate: null }]]),
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 35000, customRate: null }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -809,5 +842,128 @@ describe("calculateStaffCommission", () => {
     expect(result.tips).toBe(250);
     expect(result.productCommission).toBe(125);
     // Tips and product commission are separate from service commissions
+  });
+});
+
+describe("calculateStaffCommission - Tips Charge", () => {
+  let mockTalenoxStaff: TTalenoxInfoStaffMap;
+
+  beforeEach(() => {
+    mockTalenoxStaff = new Map([
+      ["012", { first_name: "Kate", last_name: "Smith" }],
+      ["019", { first_name: "Rex", last_name: "Wong" }],
+      ["050", { first_name: "Test", last_name: "WithCharge" }],
+      ["051", { first_name: "Zero", last_name: "Charge" }],
+    ]);
+  });
+
+  it("should not apply tips charge when tipsCharge is not configured", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "012", // Kate - no tipsCharge configured
+      staffName: "Kate Smith",
+      tips: 300,
+      productCommission: 0,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 35000, customRate: null }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    expect(result.tips).toBe(300); // Full tips, no charge
+    expect(result.tipsChargeRate).toBe(0);
+    expect(result.tipsChargeAmount).toBe(0);
+  });
+
+  it("should apply 3% tips charge when configured", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "050", // Has tipsCharge: 0.03
+      staffName: "Test WithCharge",
+      tips: 300,
+      productCommission: 0,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 25000, customRate: null }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    expect(result.tipsChargeRate).toBe(0.03);
+    expect(result.tipsChargeAmount).toBe(9); // 300 * 0.03 = 9
+    expect(result.tips).toBe(291); // 300 - 9 = 291 (net tips after charge)
+  });
+
+  it("should not apply charge when tipsCharge is explicitly 0", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "051", // Has tipsCharge: 0
+      staffName: "Zero Charge",
+      tips: 500,
+      productCommission: 0,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 25000, customRate: null }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    expect(result.tipsChargeRate).toBe(0);
+    expect(result.tipsChargeAmount).toBe(0);
+    expect(result.tips).toBe(500); // Full tips
+  });
+
+  it("should handle zero tips with charge configured", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "050", // Has tipsCharge: 0.03
+      staffName: "Test WithCharge",
+      tips: 0,
+      productCommission: 0,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 25000, customRate: null }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    expect(result.tipsChargeRate).toBe(0.03);
+    expect(result.tipsChargeAmount).toBe(0); // 0 * 0.03 = 0
+    expect(result.tips).toBe(0);
+  });
+
+  it("should round tips charge amount to 2 decimal places", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "050", // Has tipsCharge: 0.03
+      staffName: "Test WithCharge",
+      tips: 333.33,
+      productCommission: 0,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 25000, customRate: null }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    // 333.33 * 0.03 = 9.9999 → should round to 10.00
+    expect(result.tipsChargeAmount).toBe(10);
+    expect(result.tips).toBe(323.33); // 333.33 - 10 = 323.33
+  });
+
+  it("should preserve other commission calculations when tips charge is applied", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "050", // Has tipsCharge: 0.03
+      staffName: "Test WithCharge",
+      tips: 200,
+      productCommission: 100,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 25000, customRate: null }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    // Tips charge should not affect other calculations
+    expect(result.productCommission).toBe(100);
+    expect(result.generalServiceCommission).toBe(500); // (25000 - 20000) * 0.1
+    expect(result.tipsChargeAmount).toBe(6); // 200 * 0.03
+    expect(result.tips).toBe(194); // 200 - 6
   });
 });

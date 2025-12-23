@@ -72,18 +72,33 @@
             "type": "string",
             "pattern": "^[0-9][0-9][0-9]$"
           }
+        },
+        "tipsCharge": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Percentage charge on tips (0.03 = 3%)"
         }
       },
-      "required": ["staffName", "baseRate"],
+      "required": [
+        "staffName",
+        "baseRate"
+      ],
       "dependencies": {
         "hurdle1Level": {
-          "required": ["hurdle1Rate"]
+          "required": [
+            "hurdle1Rate"
+          ]
         },
         "hurdle2Level": {
-          "required": ["hurdle2Rate"]
+          "required": [
+            "hurdle2Rate"
+          ]
         },
         "hurdle3Level": {
-          "required": ["hurdle3Rate"]
+          "required": [
+            "hurdle3Rate"
+          ]
         }
       }
     }

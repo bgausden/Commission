@@ -22,8 +22,14 @@ export type TCommSimpleComponentsKeys =
   | TCommSimpleComponentTips
   | TCommSimpleComponentProductCommission
   | TCommSimpleComponentGeneralServiceCommission;
-export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission;
-export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>;
+export type TCommSimpleComponentsValues =
+  | TTips
+  | TProductCommission
+  | TServiceCommission;
+export type TCommSimpleComponents = Record<
+  TCommSimpleComponentsKeys,
+  TCommSimpleComponentsValues
+>;
 export type TCustomRateEntry = {
   serviceRevenue: number;
   customRate: number | null;
@@ -32,17 +38,23 @@ export type TCustomRateEntry = {
 export const COMM_COMPONENT_TOTAL_SERVICE_REVENUE = "totalServiceRevenue";
 export const COMM_COMPONENT_TIPS = "tips";
 export const COMM_COMPONENT_PRODUCT_COMMISSION = "productCommission";
-export const COMM_COMPONENT_GENERAL_SERVICE_COMMISSION = "generalServiceCommission";
+export const COMM_COMPONENT_GENERAL_SERVICE_COMMISSION =
+  "generalServiceCommission";
 export const COMM_COMPONENT_CUSTOM_RATE_COMMISSION = "customRateCommission";
 export const COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS = "customRateCommissions";
 export const COMM_COMPONENT_TOTAL_SERVICE_COMMISSION = "totalServiceCommission";
 
-export type TCommComponentTotalServiceRevenue = typeof COMM_COMPONENT_TOTAL_SERVICE_REVENUE;
+export type TCommComponentTotalServiceRevenue =
+  typeof COMM_COMPONENT_TOTAL_SERVICE_REVENUE;
 export type TCommComponentTips = typeof COMM_COMPONENT_TIPS;
-export type TCommComponentProductCommission = typeof COMM_COMPONENT_PRODUCT_COMMISSION;
-export type TCommComponentsGeneralServiceCommission = typeof COMM_COMPONENT_GENERAL_SERVICE_COMMISSION;
-export type TCommComponentCustomRateCommission = typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION;
-export type TCommComponentTotalServiceCommission = typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION;
+export type TCommComponentProductCommission =
+  typeof COMM_COMPONENT_PRODUCT_COMMISSION;
+export type TCommComponentsGeneralServiceCommission =
+  typeof COMM_COMPONENT_GENERAL_SERVICE_COMMISSION;
+export type TCommComponentCustomRateCommission =
+  typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION;
+export type TCommComponentTotalServiceCommission =
+  typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION;
 export type TCommComponentCustomRateCommissions = {
   [key: string]: TServiceCommission;
 };
@@ -51,6 +63,8 @@ export type TCommComponents = {
   [key: string]: number | TCommComponentCustomRateCommissions;
   totalServiceRevenue: TServiceRevenue;
   tips: TTips;
+  tipsChargeRate: number; // Percentage rate applied (e.g., 0.03 for 3%)
+  tipsChargeAmount: number; // Amount deducted from tips
   productCommission: TProductCommission;
   generalServiceCommission: TServiceCommission;
   customRateCommission: TServiceCommission;

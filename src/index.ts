@@ -86,6 +86,7 @@ import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
 import { existsSync, readdirSync } from "node:fs";
+import "./globals.js"; // Import global type declarations
 
 const PROGRESS_PREFIX = "__PROGRESS__ ";
 
@@ -574,6 +575,8 @@ function doPooling(
       totalServiceRevenue: 0,
       totalServiceCommission: 0,
       tips: 0,
+      tipsChargeRate: 0,
+      tipsChargeAmount: 0,
       productCommission: 0,
       customRateCommission: 0,
       customRateCommissions: {},
@@ -714,8 +717,20 @@ export function calculateStaffCommission(
 ): TCommComponents {
   const { staffID, servicesRevenues } = payrollData;
 
+  // Get staff config to check for tips charge
+  const staffConfig = getValidatedStaffHurdle(
+    staffID,
+    "tips charge calculation",
+  );
+  const tipsChargeRate = staffConfig.tipsCharge ?? 0;
+  const tipsChargeAmount =
+    Math.round(payrollData.tips * tipsChargeRate * 100) / 100;
+  const netTips = Math.round((payrollData.tips - tipsChargeAmount) * 100) / 100;
+
   const commComponents: TCommComponents = {
-    tips: payrollData.tips,
+    tips: netTips,
+    tipsChargeRate,
+    tipsChargeAmount,
     productCommission: payrollData.productCommission,
     generalServiceCommission: 0,
     customRateCommissions: {},
@@ -822,7 +837,19 @@ function logStaffCommission(
     fws32Left("Product Commission:"),
     fws14RightHKD(commComponents.productCommission),
   );
-  logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips));
+  // Show tips with charge breakdown if applicable
+  if (commComponents.tipsChargeRate > 0) {
+    const grossTips = commComponents.tips + commComponents.tipsChargeAmount;
+    const chargePercent = Math.round(commComponents.tipsChargeRate * 100);
+    logger.info(fws32Left(`Tips (gross):`), fws14RightHKD(grossTips));
+    logger.info(
+      fws32Left(`Tips Charge (${chargePercent}%):`),
+      fws14RightHKD(-commComponents.tipsChargeAmount),
+    );
+    logger.info(fws32Left(`Tips (net):`), fws14RightHKD(commComponents.tips));
+  } else {
+    logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips));
+  }
   logger.info(fws32Left(""), fws14Right("------------"));
   logger.info(
     fws32Left(`Total Payable`),
@@ -943,14 +970,13 @@ async function main() {
   infoLogger.info("Initializing logs");
 
   emitProgressAndInfo("Parsing payroll filename");
-  const { PAYROLL_MONTH, PAYROLL_YEAR, PAYMENTS_WB_NAME, PAYMENTS_WS_NAME } =
-    parseFilename(config.PAYROLL_WB_FILENAME);
-  global.PAYROLL_MONTH = PAYROLL_MONTH;
-  global.PAYROLL_YEAR = PAYROLL_YEAR;
-  global.PAYMENTS_WB_NAME = PAYMENTS_WB_NAME;
-  global.PAYMENTS_WS_NAME = PAYMENTS_WS_NAME;
+  const parsed = parseFilename(config.PAYROLL_WB_FILENAME);
+  PAYROLL_MONTH = parsed.PAYROLL_MONTH;
+  PAYROLL_YEAR = parsed.PAYROLL_YEAR;
+  PAYMENTS_WB_NAME = parsed.PAYMENTS_WB_NAME;
+  PAYMENTS_WS_NAME = parsed.PAYMENTS_WS_NAME;
 
-  global.firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
+  firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
 
   infoLogger.info(`Commission run begins ${firstDay.toDateString()}`);
   if (config.updateTalenox === false) {
@@ -959,9 +985,10 @@ async function main() {
   infoLogger.info(`Payroll Month is ${PAYROLL_MONTH}`);
 
   emitProgressAndInfo("Loading environment configuration");
-  const { PAYMENTS_DIR, DATA_DIR, LOGS_DIR } = processEnv();
-  global.LOGS_DIR = LOGS_DIR;
-  global.PAYMENTS_DIR = PAYMENTS_DIR;
+  const envDirs = processEnv();
+  PAYMENTS_DIR = envDirs.PAYMENTS_DIR;
+  LOGS_DIR = envDirs.LOGS_DIR;
+  const DATA_DIR = envDirs.DATA_DIR;
 
   assert(isValidDirectory(DATA_DIR));
 
