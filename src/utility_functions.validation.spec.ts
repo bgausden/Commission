@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { getValidatedStaffHurdle } from "./utility_functions.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
+import "./globals.js"; // Import global type declarations
+
 
 // Mock dependencies
 vi.mock("node-config-ts", () => ({
@@ -52,7 +54,7 @@ const mockStaffHurdles: Record<string, StaffHurdle> = {
   },
 };
 
-global.staffHurdles = mockStaffHurdles;
+staffHurdles = mockStaffHurdles;
 
 describe("getValidatedStaffHurdle", () => {
   beforeEach(() => {
@@ -60,7 +62,7 @@ describe("getValidatedStaffHurdle", () => {
     vi.clearAllMocks();
 
     // Ensure global staffHurdles is reset to original state
-    global.staffHurdles = { ...mockStaffHurdles };
+    staffHurdles = { ...mockStaffHurdles };
   });
 
   describe("when staff ID exists in staffHurdles", () => {
@@ -140,12 +142,12 @@ describe("getValidatedStaffHurdle", () => {
   describe("when staff ID is missing and default 000 is also missing", () => {
     beforeEach(() => {
       // Remove default from global staffHurdles
-      delete global.staffHurdles["000"];
+      delete staffHurdles["000"];
     });
 
     afterEach(() => {
       // Restore default
-      global.staffHurdles["000"] = mockStaffHurdles["000"];
+      staffHurdles["000"] = mockStaffHurdles["000"];
     });
 
     it("should throw an error even when missingStaffAreFatal is false", async () => {
@@ -196,12 +198,12 @@ describe("getValidatedStaffHurdle", () => {
     it("should include context in default-missing error messages", async () => {
       const { config } = await import("node-config-ts");
       config.missingStaffAreFatal = false;
-      delete global.staffHurdles["000"];
+      delete staffHurdles["000"];
 
       expect(() => getValidatedStaffHurdle("099", "commission breakdown")).toThrow(/Cannot process staff 099/);
 
       // Restore default
-      global.staffHurdles["000"] = mockStaffHurdles["000"];
+      staffHurdles["000"] = mockStaffHurdles["000"];
     });
   });
 
