@@ -8,9 +8,7 @@
     "scripts": {
         "test": "./node_modules/.bin/vitest --run",
         "postinstall": "node-config-ts",
-        "build": "run-script-os",
-        "build:win32": "scripts\\build.cmd",
-        "build:default": "scripts/build.sh",
+        "build": "node scripts/build.js",
         "run:tsx": "npx tsx src/index.ts",
         "server": "node dist/server.js",
         "server:tsx": "npx tsx src/server.ts",
@@ -51,7 +49,6 @@
         "eslint-plugin-prettier": "^5.2.1",
         "expect": "^29.7.0",
         "memfs": "^4.13.0",
-        "run-script-os": "^1.1.6",
         "tsx": "^4.16.0",
         "typescript": "^5.7.2",
         "vitest": "^2.1.2"
