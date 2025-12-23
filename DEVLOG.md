@@ -260,6 +260,38 @@ saveStaffHurdles(result.data); // Fully typed!
 - Simulates endpoint logic in test file
 - Verifies both HTTP responses and file system operations
 
+#### 4. Bug Fix: Test File System Isolation
+
+**Problem discovered**: Tests were modifying real `config/default.json` file
+
+**Root cause**: `vi.spyOn()` by default calls through to the real implementation unless `.mockReturnValue()` is specified
+
+**Evidence**:
+- `git diff config/default.json` showed `PAYROLL_WB_FILENAME` changed to `"test.xlsx"`
+- Tests were performing real file I/O instead of using mocked values
+
+**Solution implemented**:
+```typescript
+// Before (in beforeEach)
+const readFileSyncSpy = vi.spyOn(fs, "readFileSync");
+const writeFileSyncSpy = vi.spyOn(fs, "writeFileSync");
+
+// After (in beforeEach)
+const readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("");
+const writeFileSyncSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue(undefined);
+```
+
+**Changes**:
+- Added `.mockReturnValue("")` to prevent real file reads
+- Added `.mockReturnValue(undefined)` to prevent real file writes
+- Restored `config/default.json` with `git restore`
+- Verified tests still pass with proper mocking (19/19 ✅)
+- Confirmed clean working tree after test run
+
+**Commit**: `fix: Prevent tests from modifying real config/default.json`
+
+**Lesson learned**: Always specify mock return values when using `vi.spyOn()` to prevent unintended side effects on real files
+
 ---
 
 ### ✅ Test Results
@@ -305,6 +337,7 @@ saveStaffHurdles(result.data); // Fully typed!
 - Schema defined in TypeScript code (better refactoring)
 - Full IDE autocomplete and type checking
 - No external JSON file to keep in sync
+3. `fix: Prevent tests from modifying real config/default.json`
 
 #### 3. Test Coverage
 
