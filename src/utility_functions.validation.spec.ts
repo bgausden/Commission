@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { getValidatedStaffHurdle } from "./utility_functions.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import "./globals.js"; // Import global type declarations
+import type { TStaffHurdles } from "./types.js";
 
+// Initialize global staffHurdles for test environment
+// (declare global only provides types, not runtime initialization)
+// @ts-ignore
+global.staffHurdles = {} as TStaffHurdles;
 
 // Mock dependencies
 vi.mock("node-config-ts", () => ({

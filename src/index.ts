@@ -86,6 +86,7 @@ import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
 import { existsSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import "./globals.js"; // Import global type declarations
 
 const PROGRESS_PREFIX = "__PROGRESS__ ";
@@ -1119,34 +1120,40 @@ async function main() {
   emitProgressAndInfo("Complete", "Talenox updated");
 }
 
-//initDebug()
-main()
-  .then(() => {
-    debugLogger.debug("Done!");
-    shutdownLogging();
-  })
-  .catch((error) => {
-    // Important: propagate failure to the process exit code.
-    // Otherwise the web runner (and shell scripts) will treat failures as success.
-    process.exitCode = 1;
+// Only run main() when this file is executed directly, not when imported for testing
+const thisFilePath = fileURLToPath(import.meta.url);
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const isMain = invokedPath !== "" && invokedPath === path.resolve(thisFilePath);
 
-    if (error instanceof Error) {
-      errorLogger.error(`${error.message}`);
-      // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
-      // eslint-disable-next-line no-console
-      console.error(error.message);
-    } else if (typeof error === "string") {
-      errorLogger.error(`${error.toString()}`);
-      // eslint-disable-next-line no-console
-      console.error(error.toString());
-    } else {
-      errorLogger.error(
-        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
-      );
-      // eslint-disable-next-line no-console
-      console.error(
-        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
-      );
-    }
-    shutdownLogging();
-  });
+if (isMain) {
+  main()
+    .then(() => {
+      debugLogger.debug("Done!");
+      shutdownLogging();
+    })
+    .catch((error) => {
+      // Important: propagate failure to the process exit code.
+      // Otherwise the web runner (and shell scripts) will treat failures as success.
+      process.exitCode = 1;
+
+      if (error instanceof Error) {
+        errorLogger.error(`${error.message}`);
+        // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
+        // eslint-disable-next-line no-console
+        console.error(error.message);
+      } else if (typeof error === "string") {
+        errorLogger.error(`${error.toString()}`);
+        // eslint-disable-next-line no-console
+        console.error(error.toString());
+      } else {
+        errorLogger.error(
+          `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
+        );
+        // eslint-disable-next-line no-console
+        console.error(
+          `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
+        );
+      }
+      shutdownLogging();
+    });
+}

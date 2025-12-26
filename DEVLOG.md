@@ -1,5 +1,103 @@
 # Development Log - Commission Calculator
 
+## 2025-12-26: Fix Vitest Debug Mode and Test Isolation
+
+### Overview
+
+Fixed issues preventing Vitest debug mode from working correctly. When running tests via the Vitest VS Code plugin, the process was aborting with `PAYROLL_MONTH is not defined` because `main()` was executing as a side effect of importing `index.ts`.
+
+**Session highlights**:
+
+- Added `isMain` guard to prevent `main()` from running when imported for testing
+- Fixed test file initialization of global `staffHurdles` variable
+- Added missing `initLogs` mock to `index.spec.ts`
+- All 105 tests passing in both normal and debug modes
+
+---
+
+### 🔧 Changes Made
+
+#### 1. Guarded main() Execution
+
+**Before** (runs on import, breaks tests):
+
+```typescript
+main()
+  .then(() => { ... })
+  .catch((error) => { ... });
+```
+
+**After** (only runs when executed directly):
+
+```typescript
+import { fileURLToPath } from "node:url";
+
+const thisFilePath = fileURLToPath(import.meta.url);
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const isMain = invokedPath !== "" && invokedPath === path.resolve(thisFilePath);
+
+if (isMain) {
+  main()
+    .then(() => { ... })
+    .catch((error) => { ... });
+}
+```
+
+This pattern compares the current module's path (`import.meta.url`) with the script Node.js was invoked with (`process.argv[1]`). When they match, the file is being executed directly. When they differ (e.g., Vitest imports the file for testing), `main()` is not called.
+
+#### 2. Fixed Test Global Initialization
+
+In `utility_functions.validation.spec.ts`, the global `staffHurdles` must be initialized using `global.` prefix because `declare global { var X }` only provides TypeScript types—it doesn't create the runtime variable in Vitest's isolated module environment:
+
+```typescript
+import "./globals.js"; // Import global type declarations
+import type { TStaffHurdles } from "./types.js";
+
+// Initialize global staffHurdles for test environment
+// (declare global only provides types, not runtime initialization)
+global.staffHurdles = {} as TStaffHurdles;
+```
+
+After initialization, subsequent assignments can use direct `staffHurdles = value` syntax.
+
+#### 3. Added Missing Mock Export
+
+Added `initLogs` to the logging mock in `index.spec.ts`:
+
+```typescript
+vi.mock("./logging_functions.js", () => ({
+  errorLogger: { error: vi.fn() },
+  // ... other loggers ...
+  shutdownLogging: vi.fn(),
+  initLogs: vi.fn(), // Added - was causing warning
+}));
+```
+
+---
+
+### 📝 Technical Notes
+
+**Why side effects in modules are problematic for Vitest:**
+
+- Vitest imports modules to access exported functions for testing
+- Any code at module scope (outside functions) runs during import
+- This includes `main()` calls, API requests, file operations, etc.
+- The `isMain` guard follows the same pattern used in `server.ts`
+
+**Node.js `global` vs `globalThis`:**
+
+- In Node.js, `global` and `globalThis` are equivalent (`global === globalThis` is `true`)
+- `global` is the Node.js-idiomatic choice for Node.js projects
+- Either works, but `global` is consistent with project conventions
+
+---
+
+### ✅ Test Results
+
+All 105 tests passing. Debug mode via Vitest VS Code plugin now works correctly.
+
+---
+
 ## 2025-12-23: Fix TypeScript Global Variable Declarations
 
 ### Overview
