@@ -1,5 +1,117 @@
 # Development Log - Commission Calculator
 
+## 2025-12-31: Rename Tips Charge Properties & Build Script Cleanup
+
+### Overview
+
+Renamed tips charge properties for clarity and consistency. The configuration property remains `tipsCCCharge`, but the calculated values stored in `TCommComponents` are now named `tipsCCProcessingRate` and `tipsCCProcessingAmount` (previously `tipsChargeRate`/`tipsChargeAmount`).
+
+Also simplified npm scripts by removing unused OS-specific build variants.
+
+**Session highlights**:
+
+- Renamed `tipsCharge` → `tipsCCCharge` in StaffHurdle interface
+- Renamed `tipsChargeRate/Amount` → `tipsCCProcessingRate/Amount` in TCommComponents
+- Updated all tests to use new property names
+- Added JSDoc documentation to `extractStaffPayrollData()` function
+- Cleaned up package.json scripts (removed unused `build:win32`, `build:default`, `test:tsx` variants)
+- Added `serviceCCCharge` property to JSON schema (for future use)
+- All 105 tests passing
+
+---
+
+### 🔧 Changes Made
+
+#### 1. Property Naming Standardization
+
+**Configuration property** (`src/IStaffHurdle.ts`):
+
+- `tipsCharge` → `tipsCCCharge` (clearer that it's a credit card processing charge)
+
+**Calculated values** (`src/types.ts`):
+
+- `tipsChargeRate` → `tipsCCProcessingRate`
+- `tipsChargeAmount` → `tipsCCProcessingAmount`
+
+#### 2. Build Script Cleanup (`package.json`)
+
+**Removed** OS-specific build variants:
+
+```json
+"build:win32": "scripts\\build.cmd",
+"build:default": "scripts/build.sh"
+```
+
+**Simplified to**:
+
+```json
+"build": "node scripts/build.js"
+```
+
+The cross-platform Node.js build script (`scripts/build.js`) works on all platforms.
+
+**Removed** redundant test scripts:
+
+```json
+"test:tsx": "npx tsx --test src/**/*.spec.ts",
+"test:debug:tsx": "npx tsx --inspect-brk --test src/**/*.spec.ts",
+"debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts"
+```
+
+#### 3. Enhanced Documentation
+
+Added comprehensive JSDoc to `extractStaffPayrollData()`:
+
+```typescript
+/**
+ * Extracts payroll data for a specific staff member from a worksheet array.
+ *
+ * Searches backward from the total row (within 3 rows) to find tips and product commission
+ * values, then retrieves service revenues for the staff member.
+ *
+ * @param wsaa - Two-dimensional array representing worksheet data
+ * @param startRow - Starting row index for data extraction
+ * @param endRow - Ending row index (total row) for the staff member
+ * @param revCol - Column index containing revenue data
+ * @param staffID - Unique identifier for the staff member
+ *
+ * @returns Staff payroll data object containing tips, product commission, and service revenues
+ */
+```
+
+#### 4. Schema Update (`src/staffHurdleSchema.json`)
+
+Added `serviceCCCharge` property for future implementation:
+
+```json
+"serviceCCCharge": {
+  "type": "number",
+  "minimum": 0,
+  "maximum": 1,
+  "description": "Processing charge on services and products (0.03 = 3%)"
+}
+```
+
+---
+
+### ✅ Test Results
+
+All 105 tests passing. No functional changes—refactoring only.
+
+---
+
+### 📝 Files Modified
+
+- `src/IStaffHurdle.ts` - Renamed `tipsCharge` → `tipsCCCharge`
+- `src/types.ts` - Renamed rate/amount properties
+- `src/index.ts` - Updated property references + added JSDoc
+- `src/index.spec.ts` - Updated test assertions
+- `src/staffHurdleSchema.json` - Renamed property + added serviceCCCharge
+- `package.json` - Simplified scripts
+- `DEVLOG.md` - Updated documentation
+
+---
+
 ## 2025-12-26: Fix Vitest Debug Mode and Test Isolation
 
 ### Overview
@@ -174,9 +286,9 @@ Added configurable per-employee tips charge deduction. Each staff member can now
 
 **Session highlights**:
 
-- Added `tipsCharge` property to `StaffHurdle` interface (optional, 0-1 range)
+- Added `tipsCCCharge` property to `StaffHurdle` interface (optional, 0-1 range)
 - Extended JSON schema validation for the new property
-- Added `tipsChargeRate` and `tipsChargeAmount` to `TCommComponents` type
+- Added `tipsCCProcessingRate` and `tipsCCProcessingAmount` to `TCommComponents` type
 - Implemented tips charge calculation in `calculateStaffCommission()`
 - Enhanced `logStaffCommission()` to show gross/charge/net breakdown when applicable
 - Updated `doPooling()` aggregateComm to initialize new fields
@@ -188,10 +300,10 @@ Added configurable per-employee tips charge deduction. Each staff member can now
 
 #### 1. Interface Update (`src/IStaffHurdle.ts`)
 
-Added optional `tipsCharge` property:
+Added optional `tipsCCCharge` property:
 
 ```typescript
-tipsCharge?: number; // Percentage charge on tips (0.03 = 3%)
+tipsCCCharge?: number; // Percentage charge on tips (0.03 = 3%)
 ```
 
 #### 2. JSON Schema Update (`src/staffHurdleSchema.json`)
@@ -199,7 +311,7 @@ tipsCharge?: number; // Percentage charge on tips (0.03 = 3%)
 Added validation for tips charge:
 
 ```json
-"tipsCharge": {
+"tipsCCCharge": {
   "type": "number",
   "minimum": 0,
   "maximum": 1,
@@ -212,8 +324,8 @@ Added validation for tips charge:
 Extended `TCommComponents` interface:
 
 ```typescript
-tipsChargeRate: number; // The charge rate applied (e.g., 0.03)
-tipsChargeAmount: number; // The calculated charge amount
+tipsCCProcessingRate: number; // Percentage rate applied (e.g., 0.03 for 3%)
+tipsCCProcessingAmount: number; // Amount deducted from tips
 ```
 
 #### 4. Commission Calculation (`src/index.ts`)
@@ -222,22 +334,22 @@ tipsChargeAmount: number; // The calculated charge amount
 
 ```typescript
 const staffConfig = getValidatedStaffHurdle(staffID, "tips charge calculation");
-const tipsChargeRate = staffConfig.tipsCharge ?? 0;
-const tipsChargeAmount =
-  Math.round(payrollData.tips * tipsChargeRate * 100) / 100;
-const netTips = Math.round((payrollData.tips - tipsChargeAmount) * 100) / 100;
+const tipsCCChargeRate = staffConfig.tipsCCCharge ?? 0;
+const tipsCCChargeAmount =
+  Math.round(payrollData.tips * tipsCCChargeRate * 100) / 100;
+const netTips = Math.round((payrollData.tips - tipsCCChargeAmount) * 100) / 100;
 ```
 
 **logStaffCommission()** - Enhanced tips display:
 
 ```typescript
-if (commComponents.tipsChargeRate > 0) {
-  const grossTips = commComponents.tips + commComponents.tipsChargeAmount;
-  const chargePercent = Math.round(commComponents.tipsChargeRate * 100);
+if (commComponents.tipsCCProcessingRate > 0) {
+  const grossTips = commComponents.tips + commComponents.tipsCCProcessingAmount;
+  const chargePercent = Math.round(commComponents.tipsCCProcessingRate * 100);
   logger.info(fws32Left(`Tips (gross):`), fws14RightHKD(grossTips));
   logger.info(
     fws32Left(`Tips Charge (${chargePercent}%):`),
-    fws14RightHKD(-commComponents.tipsChargeAmount),
+    fws14RightHKD(-commComponents.tipsCCProcessingAmount),
   );
   logger.info(fws32Left(`Tips (net):`), fws14RightHKD(commComponents.tips));
 } else {
@@ -250,8 +362,8 @@ if (commComponents.tipsChargeRate > 0) {
 ```typescript
 const aggregateComm: TCommComponents = {
   // ... existing fields
-  tipsChargeRate: 0,
-  tipsChargeAmount: 0,
+  tipsCCProcessingRate: 0,
+  tipsCCProcessingAmount: 0,
 };
 ```
 
@@ -259,11 +371,11 @@ const aggregateComm: TCommComponents = {
 
 Added 6 tests in new `calculateStaffCommission - Tips Charge` describe block:
 
-1. **Should calculate tips charge when tipsCharge is configured** - Verifies 3% charge calculation
-2. **Should not charge tips when tipsCharge is 0** - Verifies zero charge behavior
-3. **Should not charge tips when tipsCharge is not configured** - Verifies undefined handling
-4. **Should correctly calculate tipsChargeAmount** - Validates precise amount calculation
-5. **Should store tipsChargeRate in commission components** - Verifies rate storage
+1. **Should calculate tips charge when tipsCCCharge is configured** - Verifies 3% charge calculation
+2. **Should not charge tips when tipsCCCharge is 0** - Verifies zero charge behavior
+3. **Should not charge tips when tipsCCCharge is not configured** - Verifies undefined handling
+4. **Should correctly calculate tipsCCProcessingAmount** - Validates precise amount calculation
+5. **Should store tipsCCProcessingRate in commission components** - Verifies rate storage
 6. **Should round tips charge to 2 decimal places** - Validates rounding behavior
 
 **Mock data added**:
@@ -272,13 +384,13 @@ Added 6 tests in new `calculateStaffCommission - Tips Charge` describe block:
 "050": {
   staffName: "TestStaff3",
   baseRate: 0,
-  tipsCharge: 0.03, // 3% tips charge
+  tipsCCCharge: 0.03, // 3% tips charge
   // ...
 },
 "051": {
   staffName: "TestStaff4",
   baseRate: 0,
-  tipsCharge: 0, // Explicit 0% charge
+  tipsCCCharge: 0, // Explicit 0% charge
   // ...
 }
 ```
@@ -331,7 +443,7 @@ To enable a 3% tips charge for a staff member in `config/staffHurdle.json`:
     "baseRate": 0,
     "hurdle1Level": 30000,
     "hurdle1Rate": 0.11,
-    "tipsCharge": 0.03,
+    "tipsCCCharge": 0.03,
     "contractor": false,
     "payViaTalenox": true
   }
@@ -348,7 +460,7 @@ To enable a 3% tips charge for a staff member in `config/staffHurdle.json`:
 
 **Major accomplishments**:
 
-1. ✅ Added `tipsCharge` to StaffHurdle interface
+1. ✅ Added `tipsCCCharge` to StaffHurdle interface
 2. ✅ Updated JSON schema for validation
 3. ✅ Extended TCommComponents with charge fields
 4. ✅ Implemented tips charge calculation
@@ -358,14 +470,14 @@ To enable a 3% tips charge for a staff member in `config/staffHurdle.json`:
 
 **Files modified**:
 
-- `src/IStaffHurdle.ts` - Added tipsCharge property
-- `src/staffHurdleSchema.json` - Added tipsCharge validation
-- `src/types.ts` - Added tipsChargeRate and tipsChargeAmount
+- `src/IStaffHurdle.ts` - Added tipsCCCharge property
+- `src/staffHurdleSchema.json` - Added tipsCCCharge validation
+- `src/types.ts` - Added tipsCCProcessingRate and tipsCCProcessingAmount
 - `src/index.ts` - Implemented calculation and logging
 - `src/index.spec.ts` - Added 6 tests + mock data
 
 **Breaking changes**: None  
-**Migration required**: None (tipsCharge is optional, defaults to 0)  
+**Migration required**: None (tipsCCCharge is optional, defaults to 0)  
 **Backward compatibility**: Maintained
 
 ---

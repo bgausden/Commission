@@ -576,8 +576,8 @@ function doPooling(
       totalServiceRevenue: 0,
       totalServiceCommission: 0,
       tips: 0,
-      tipsChargeRate: 0,
-      tipsChargeAmount: 0,
+      tipsCCProcessingRate: 0,
+      tipsCCProcessingAmount: 0,
       productCommission: 0,
       customRateCommission: 0,
       customRateCommissions: {},
@@ -659,6 +659,29 @@ function doPooling(
 /**
  * Extract payroll data for a single staff member from Excel rows
  */
+/**
+ * Extracts payroll data for a specific staff member from a worksheet array.
+ *
+ * Searches backward from the total row (within 3 rows) to find tips and product commission
+ * values, then retrieves service revenues for the staff member.
+ *
+ * @param wsaa - Two-dimensional array representing worksheet data
+ * @param startRow - Starting row index for data extraction
+ * @param endRow - Ending row index (total row) for the staff member
+ * @param revCol - Column index containing revenue data
+ * @param staffID - Unique identifier for the staff member
+ *
+ * @returns Staff payroll data object containing tips, product commission, and service revenues
+ *
+ * @example
+ * Expected worksheet structure:
+ * ```
+ * Tips:                           150
+ * Sales Commission:                26
+ *                   # Services  # Clients  # Comps  Base Earnings    Earnings
+ * Total for Name       28         29         0       HK$ 19360      19,536.00
+ * ```
+ */
 export function extractStaffPayrollData(
   wsaa: unknown[][],
   startRow: number,
@@ -670,6 +693,7 @@ export function extractStaffPayrollData(
   let productCommission = 0;
 
   // Search backward from total row for tips and product commission
+  // Product commission and tips are expected to be within 3 rows of the total row
   for (let j = 3; j >= 0; j--) {
     const rowIndex = endRow - j;
     if (rowIndex < 0 || rowIndex >= wsaa.length) continue; // Bounds check
@@ -683,8 +707,7 @@ export function extractStaffPayrollData(
           const value = Number(wsaa[rowIndex][maxRowIndex]);
           if (payComponent === TIPS_FOR) {
             tips = value;
-          }
-          if (payComponent === COMM_FOR) {
+          } else if (payComponent === COMM_FOR) {
             productCommission = value;
           }
         }
@@ -723,15 +746,16 @@ export function calculateStaffCommission(
     staffID,
     "tips charge calculation",
   );
-  const tipsChargeRate = staffConfig.tipsCharge ?? 0;
-  const tipsChargeAmount =
-    Math.round(payrollData.tips * tipsChargeRate * 100) / 100;
-  const netTips = Math.round((payrollData.tips - tipsChargeAmount) * 100) / 100;
+  const tipsCCChargeRate = staffConfig.tipsCCCharge ?? 0;
+  const tipsCCChargeAmount =
+    Math.round(payrollData.tips * tipsCCChargeRate * 100) / 100;
+  const netTips =
+    Math.round((payrollData.tips - tipsCCChargeAmount) * 100) / 100;
 
   const commComponents: TCommComponents = {
     tips: netTips,
-    tipsChargeRate,
-    tipsChargeAmount,
+    tipsCCProcessingRate: tipsCCChargeRate,
+    tipsCCProcessingAmount: tipsCCChargeAmount,
     productCommission: payrollData.productCommission,
     generalServiceCommission: 0,
     customRateCommissions: {},
@@ -839,13 +863,14 @@ function logStaffCommission(
     fws14RightHKD(commComponents.productCommission),
   );
   // Show tips with charge breakdown if applicable
-  if (commComponents.tipsChargeRate > 0) {
-    const grossTips = commComponents.tips + commComponents.tipsChargeAmount;
-    const chargePercent = Math.round(commComponents.tipsChargeRate * 100);
+  if (commComponents.tipsCCProcessingRate > 0) {
+    const grossTips =
+      commComponents.tips + commComponents.tipsCCProcessingAmount;
+    const chargePercent = Math.round(commComponents.tipsCCProcessingRate * 100);
     logger.info(fws32Left(`Tips (gross):`), fws14RightHKD(grossTips));
     logger.info(
       fws32Left(`Tips Charge (${chargePercent}%):`),
-      fws14RightHKD(-commComponents.tipsChargeAmount),
+      fws14RightHKD(-commComponents.tipsCCProcessingAmount),
     );
     logger.info(fws32Left(`Tips (net):`), fws14RightHKD(commComponents.tips));
   } else {

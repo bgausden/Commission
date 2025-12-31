@@ -73,11 +73,17 @@
             "pattern": "^[0-9][0-9][0-9]$"
           }
         },
-        "tipsCharge": {
+        "tipsCCCharge": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "description": "Percentage charge on tips (0.03 = 3%)"
+          "description": "Processing charge on tips (0.03 = 3%)"
+        },
+        "serviceCCCharge": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Processing charge on services and products (0.03 = 3%)"
         }
       },
       "required": [

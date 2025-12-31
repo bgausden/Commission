@@ -6,19 +6,14 @@
     "exports": "./dist/index.js",
     "type": "module",
     "scripts": {
-        "test": "./node_modules/.bin/vitest --run",
         "postinstall": "node-config-ts",
-        "build": "run-script-os",
-        "build:win32": "scripts\\build.cmd",
-        "build:default": "scripts/build.sh",
+        "build": "node scripts/build.js",
         "run:tsx": "npx tsx src/index.ts",
         "server": "node dist/server.js",
         "server:tsx": "npx tsx src/server.ts",
         "server:debug:tsx": "npx tsx --inspect-brk src/server.ts",
-        "test:tsx": "npx tsx --test src/**/*.spec.ts",
-        "test:debug:tsx": "npx tsx --inspect-brk --test src/**/*.spec.ts",
-        "test:debug": "npx vitest --inspect-brk",
-        "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts"
+        "test": "./node_modules/.bin/vitest --run",
+        "test:debug": "npx vitest --inspect-brk --no-file-parallelism"
     },
     "repository": {
         "type": "git",

@@ -18,5 +18,5 @@ export interface StaffHurdle {
   contractor: boolean;
   payViaTalenox: boolean;
   customPayRates?: CustomPayRate[];
-  tipsCharge?: number; // Percentage charge on tips (0.03 = 3%)
+  tipsCCCharge?: number; // Percentage charge on tips (0.03 = 3%)
 }

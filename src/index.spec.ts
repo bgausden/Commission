@@ -47,7 +47,7 @@ vi.mock("./utility_functions.js", async (importOriginal) => {
           hurdle1Rate: 0.1,
           contractor: false,
           payViaTalenox: true,
-          tipsCharge: 0.03, // 3% tips charge
+          tipsCCCharge: 0.03, // 3% tips charge
         };
       }
       if (staffID === "051") {
@@ -58,7 +58,7 @@ vi.mock("./utility_functions.js", async (importOriginal) => {
           hurdle1Rate: 0.1,
           contractor: false,
           payViaTalenox: true,
-          tipsCharge: 0, // Explicit 0% charge
+          tipsCCCharge: 0, // Explicit 0% charge
         };
       }
       return {
@@ -858,9 +858,9 @@ describe("calculateStaffCommission - Tips Charge", () => {
     ]);
   });
 
-  it("should not apply tips charge when tipsCharge is not configured", () => {
+  it("should not apply tips charge when tipsCCCharge is not configured", () => {
     const payrollData: StaffPayrollData = {
-      staffID: "012", // Kate - no tipsCharge configured
+      staffID: "012", // Kate - no tipsCCCharge configured
       staffName: "Kate Smith",
       tips: 300,
       productCommission: 0,
@@ -872,13 +872,13 @@ describe("calculateStaffCommission - Tips Charge", () => {
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
 
     expect(result.tips).toBe(300); // Full tips, no charge
-    expect(result.tipsChargeRate).toBe(0);
-    expect(result.tipsChargeAmount).toBe(0);
+    expect(result.tipsCCProcessingRate).toBe(0);
+    expect(result.tipsCCProcessingAmount).toBe(0);
   });
 
   it("should apply 3% tips charge when configured", () => {
     const payrollData: StaffPayrollData = {
-      staffID: "050", // Has tipsCharge: 0.03
+      staffID: "050", // Has tipsCCCharge: 0.03
       staffName: "Test WithCharge",
       tips: 300,
       productCommission: 0,
@@ -889,14 +889,14 @@ describe("calculateStaffCommission - Tips Charge", () => {
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
 
-    expect(result.tipsChargeRate).toBe(0.03);
-    expect(result.tipsChargeAmount).toBe(9); // 300 * 0.03 = 9
+    expect(result.tipsCCProcessingRate).toBe(0.03);
+    expect(result.tipsCCProcessingAmount).toBe(9); // 300 * 0.03 = 9
     expect(result.tips).toBe(291); // 300 - 9 = 291 (net tips after charge)
   });
 
-  it("should not apply charge when tipsCharge is explicitly 0", () => {
+  it("should not apply charge when tipsCCCharge is explicitly 0", () => {
     const payrollData: StaffPayrollData = {
-      staffID: "051", // Has tipsCharge: 0
+      staffID: "051", // Has tipsCCCharge: 0
       staffName: "Zero Charge",
       tips: 500,
       productCommission: 0,
@@ -907,14 +907,14 @@ describe("calculateStaffCommission - Tips Charge", () => {
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
 
-    expect(result.tipsChargeRate).toBe(0);
-    expect(result.tipsChargeAmount).toBe(0);
+    expect(result.tipsCCProcessingRate).toBe(0);
+    expect(result.tipsCCProcessingAmount).toBe(0);
     expect(result.tips).toBe(500); // Full tips
   });
 
   it("should handle zero tips with charge configured", () => {
     const payrollData: StaffPayrollData = {
-      staffID: "050", // Has tipsCharge: 0.03
+      staffID: "050", // Has tipsCCCharge: 0.03
       staffName: "Test WithCharge",
       tips: 0,
       productCommission: 0,
@@ -925,14 +925,14 @@ describe("calculateStaffCommission - Tips Charge", () => {
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
 
-    expect(result.tipsChargeRate).toBe(0.03);
-    expect(result.tipsChargeAmount).toBe(0); // 0 * 0.03 = 0
+    expect(result.tipsCCProcessingRate).toBe(0.03);
+    expect(result.tipsCCProcessingAmount).toBe(0); // 0 * 0.03 = 0
     expect(result.tips).toBe(0);
   });
 
   it("should round tips charge amount to 2 decimal places", () => {
     const payrollData: StaffPayrollData = {
-      staffID: "050", // Has tipsCharge: 0.03
+      staffID: "050", // Has tipsCCCharge: 0.03
       staffName: "Test WithCharge",
       tips: 333.33,
       productCommission: 0,
@@ -944,13 +944,13 @@ describe("calculateStaffCommission - Tips Charge", () => {
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
 
     // 333.33 * 0.03 = 9.9999 → should round to 10.00
-    expect(result.tipsChargeAmount).toBe(10);
+    expect(result.tipsCCProcessingAmount).toBe(10);
     expect(result.tips).toBe(323.33); // 333.33 - 10 = 323.33
   });
 
   it("should preserve other commission calculations when tips charge is applied", () => {
     const payrollData: StaffPayrollData = {
-      staffID: "050", // Has tipsCharge: 0.03
+      staffID: "050", // Has tipsCCCharge: 0.03
       staffName: "Test WithCharge",
       tips: 200,
       productCommission: 100,
@@ -964,7 +964,7 @@ describe("calculateStaffCommission - Tips Charge", () => {
     // Tips charge should not affect other calculations
     expect(result.productCommission).toBe(100);
     expect(result.generalServiceCommission).toBe(500); // (25000 - 20000) * 0.1
-    expect(result.tipsChargeAmount).toBe(6); // 200 * 0.03
+    expect(result.tipsCCProcessingAmount).toBe(6); // 200 * 0.03
     expect(result.tips).toBe(194); // 200 - 6
   });
 });

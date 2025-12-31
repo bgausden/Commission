@@ -63,8 +63,8 @@ export type TCommComponents = {
   [key: string]: number | TCommComponentCustomRateCommissions;
   totalServiceRevenue: TServiceRevenue;
   tips: TTips;
-  tipsChargeRate: number; // Percentage rate applied (e.g., 0.03 for 3%)
-  tipsChargeAmount: number; // Amount deducted from tips
+  tipsCCProcessingRate: number; // Percentage rate applied (e.g., 0.03 for 3%)
+  tipsCCProcessingAmount: number; // Amount deducted from tips
   productCommission: TProductCommission;
   generalServiceCommission: TServiceCommission;
   customRateCommission: TServiceCommission;
