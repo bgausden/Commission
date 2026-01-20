@@ -14,3 +14,4 @@ declare global {
 
   var firstDay: Date;
 }
+export {};
