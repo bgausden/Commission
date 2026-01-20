@@ -1,5 +1,24 @@
 # Development Log - Commission Calculator
 
+## 2025-01-20: Fix Global Variable Shadowing + Add CLAUDE.md
+
+### Overview
+
+Fixed TypeScript warnings about variable shadowing and global object access in `main()`.
+
+**Changes**:
+
+- Fixed variable shadowing by using intermediate objects (`parsedFilename`, `envConfig`) instead of destructuring directly to names that match globals
+- Removed `global.` prefix on global variable assignments to fix "no index signature on typeof globalThis" warning (bare identifiers work via `declare global { var }`)
+- Added `CLAUDE.md` documentation file for Claude Code AI guidance
+
+**Files touched**:
+
+- `src/index.ts`
+- `CLAUDE.md` (new)
+
+---
+
 ## 2025-12-20: Remove `debug` + `prettyjson`
 
 ### Overview
