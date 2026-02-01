@@ -17,6 +17,7 @@ vi.mock("./logging_functions.js", () => ({
   commissionLogger: { info: vi.fn() },
   contractorLogger: { info: vi.fn() },
   shutdownLogging: vi.fn(),
+  initLogs: vi.fn(),
 }));
 
 vi.mock("./utility_functions.js", async (importOriginal) => {
