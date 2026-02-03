@@ -24,7 +24,7 @@ Extensions - Application:   28152.000000000004
 
 import { config } from "node-config-ts";
 // import prettyjson from "prettyjson"
-import XLSX from "xlsx";
+import XLSX from "../vendor/xlsx-0.20.3/xlsx.mjs";
 import { StaffInfo } from "./IStaffInfo.js";
 //import staffHurdle from './staffHurdle.json' assert { type: 'json' }
 import { ITalenoxPayment } from "./ITalenoxPayment.js";
