@@ -18,3 +18,4 @@ data/*
 !data/old/
 data/old/*
 config/env/production.json
+vendor/**/*
