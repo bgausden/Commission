@@ -1,4 +1,4 @@
-/* global staffHurdles, PAYMENTS_WS_NAME, PAYMENTS_WB_NAME, PAYMENTS_DIR, firstDay */
+
 
 // TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
@@ -45,6 +45,7 @@ import {
   HurdleConfig,
   HurdleBreakdown,
   StaffPayrollData,
+  monthName,
 } from "./types.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { createAdHocPayments, getTalenoxEmployees, createPayroll, uploadAdHocPayments } from "./talenox_functions.js";
@@ -77,6 +78,27 @@ import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import assert from "node:assert";
 import { existsSync, readdirSync } from "node:fs";
+import * as fs from "node:fs";
+
+// Initialize XLSX library with fs module for file operations
+XLSX.set_fs(fs);
+
+// Type-safe interface for custom global properties
+interface CustomGlobals {
+  staffHurdles: TStaffHurdles;
+  PAYROLL_MONTH: monthName;
+  PAYROLL_YEAR: string;
+  PAYMENTS_WB_NAME: string;
+  PAYMENTS_WS_NAME: string;
+  LOGS_DIR: string;
+  PAYMENTS_DIR: string;
+  firstDay: Date;
+}
+
+// Type-safe global setter - provides type checking for both key and value
+const setGlobal = <K extends keyof CustomGlobals>(key: K, value: CustomGlobals[K]): void => {
+  (globalThis as any)[key] = value;
+};
 
 const PROGRESS_PREFIX = "__PROGRESS__ ";
 
@@ -823,12 +845,19 @@ async function main() {
 
   emitProgressAndInfo("Parsing payroll filename");
   const parsedFilename = parseFilename(config.PAYROLL_WB_FILENAME);
-  PAYROLL_MONTH = parsedFilename.PAYROLL_MONTH;
-  PAYROLL_YEAR = parsedFilename.PAYROLL_YEAR;
-  PAYMENTS_WB_NAME = parsedFilename.PAYMENTS_WB_NAME;
-  PAYMENTS_WS_NAME = parsedFilename.PAYMENTS_WS_NAME;
+  const PAYROLL_MONTH = parsedFilename.PAYROLL_MONTH;
+  const PAYROLL_YEAR = parsedFilename.PAYROLL_YEAR;
+  const PAYMENTS_WB_NAME = parsedFilename.PAYMENTS_WB_NAME;
+  const PAYMENTS_WS_NAME = parsedFilename.PAYMENTS_WS_NAME;
 
-  firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
+  // Set global variables for use in other functions
+  setGlobal('PAYROLL_MONTH', PAYROLL_MONTH);
+  setGlobal('PAYROLL_YEAR', PAYROLL_YEAR);
+  setGlobal('PAYMENTS_WB_NAME', PAYMENTS_WB_NAME);
+  setGlobal('PAYMENTS_WS_NAME', PAYMENTS_WS_NAME);
+
+  const firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
+  setGlobal('firstDay', firstDay);
 
   infoLogger.info(`Commission run begins ${firstDay.toDateString()}`);
   if (config.updateTalenox === false) {
@@ -839,8 +868,12 @@ async function main() {
   emitProgressAndInfo("Loading environment configuration");
   const envConfig = processEnv();
   const DATA_DIR = envConfig.DATA_DIR;
-  LOGS_DIR = envConfig.LOGS_DIR;
-  PAYMENTS_DIR = envConfig.PAYMENTS_DIR;
+  const LOGS_DIR = envConfig.LOGS_DIR;
+  const PAYMENTS_DIR = envConfig.PAYMENTS_DIR;
+
+  // Set global variables for use in other functions
+  setGlobal('LOGS_DIR', LOGS_DIR);
+  setGlobal('PAYMENTS_DIR', PAYMENTS_DIR);
 
   assert(isValidDirectory(DATA_DIR));
 
