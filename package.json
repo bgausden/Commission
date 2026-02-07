@@ -7,6 +7,10 @@
     "type": "module",
     "scripts": {
         "test": "./node_modules/.bin/vitest --run",
+        "test:regression": "./node_modules/.bin/vitest --run regression.spec.ts",
+        "create-baseline": "npx tsx scripts/createBaseline.ts",
+        "update-baseline": "npx tsx scripts/updateBaseline.ts",
+        "list-baselines": "npx tsx scripts/listBaselines.ts",
         "postinstall": "node-config-ts && npm run setup:xlsx-types",
         "setup:xlsx-types": "node scripts/create-xlsx-types.js",
         "build": "node scripts/build.js",
