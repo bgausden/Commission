@@ -1,5 +1,63 @@
 # Development Log - Commission Calculator
 
+## 2026-02-07: Test Suite Review and Verification
+
+### Overview
+
+Reviewed `/update-config` endpoint test suite to ensure test descriptions accurately reflect test behavior, particularly for boolean coercion edge cases.
+
+**Key Findings**:
+
+- **Null vs Undefined coercion**: Confirmed tests correctly distinguish between:
+  - `null` values → sent as `{"field": null}` in JSON → `Boolean(null)` = `false`
+  - `undefined` values → omitted from JSON → `req.body.field` is `undefined` → `Boolean(undefined)` = `false`
+- **Test accuracy**: All test descriptions match their implementations
+- **Coverage validation**: 19 tests across 5 categories comprehensively cover:
+  - Successful updates (4 tests)
+  - Boolean coercion (5 tests - including null and undefined)
+  - Error handling (4 tests)
+  - Edge cases (4 tests)
+  - File system operations (2 tests)
+
+**Session context**: Brief review to verify test correctness, no code changes required.
+
+**Status**: All 19 tests confirmed accurate ✅
+
+---
+
+## 2026-02-03: January 2026 Payroll Configuration + Excel Comparison Tools
+
+### Overview
+
+Updated staff commission configurations for January 2026 payroll period and added utility scripts for comparing payment Excel files.
+
+**Changes**:
+
+- **Staff Configuration Updates**:
+  - Updated Tamara (033) commission rates: hurdle1Rate 14%→15.5%, hurdle2Rate 15%→16%, removed hurdle3
+  - Converted Sarahann (058) to contractor status with 50% flat rate (mbCommRate: 0.5, baseRate: 0.5, payViaTalenox: false, contractor: true)
+- **Payroll Period**: Updated from December 2025 to January 2026
+- **TypeScript Improvements**:
+  - Added type-safe global variable handling with `CustomGlobals` interface and `setGlobal()` function
+  - Initialized XLSX library with fs module
+  - Removed global comment in favor of proper type-safe globals
+- **New Utility Scripts**:
+  - `scripts/compareExcel.ts` - Cell-by-cell Excel file comparison tool
+  - `scripts/compareStaffPayments.ts` - Staff payment aggregation and comparison tool
+
+**Files touched**:
+
+- `config/staffHurdle.json`
+- `config/default.json`
+- `src/index.ts`
+- `src/globals.d.ts`
+- `scripts/compareExcel.ts` (new)
+- `scripts/compareStaffPayments.ts` (new)
+
+**Validation**: Compared regenerated payment files with Google Drive version - payments now match within HK$ 0.14 (minor rounding differences only)
+
+---
+
 ## 2025-01-20: Fix Global Variable Shadowing + Add CLAUDE.md
 
 ### Overview
