@@ -13,6 +13,7 @@ import {
 } from "./constants.js";
 
 import path from "node:path";
+import { mkdirSync } from "node:fs";
 import {
   resolveFromProjectRoot,
   resolveFromProjectRootIfRelative,
@@ -40,6 +41,10 @@ export function processEnv() {
   PAYMENTS_DIR = path.resolve(PAYMENTS_DIR);
   DATA_DIR = path.resolve(DATA_DIR);
   LOGS_DIR = path.resolve(LOGS_DIR);
+
+  mkdirSync(PAYMENTS_DIR, { recursive: true });
+  mkdirSync(DATA_DIR, { recursive: true });
+  mkdirSync(LOGS_DIR, { recursive: true });
 
   /* if (!!process.env.PAYMENTS_DIR && !fs.existsSync(process.env.PAYMENTS_DIR)) {
         const message = `DEFAULT_PAYMENTS_DIR '${process.env.DEFAULT_PAYMENTS_DIR}' is not a valid path`;

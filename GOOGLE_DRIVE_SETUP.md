@@ -32,14 +32,16 @@ If the month subfolder already exists **and contains files**, the upload is skip
    - Name: `commission-uploader` (or similar)
    - Click through to finish — no roles needed at project level
 5. Click the service account → **Keys** tab → **Add Key** → JSON
-6. Download the JSON key file — store it somewhere safe **outside the repo**, e.g. `~/.secrets/commission-gdrive-key.json`
+6. Download the JSON key file — store it somewhere safe **outside the repo**, e.g. `~/.secrets/commission-488916-e52ad9d61061.json`
 
-### Step 2 — Share the Drive folder with the service account
+### Step 2 — Add the service account to the Shared Drive
+
+> **Important:** The Talenox folder must be inside a **Shared Drive** (not someone's My Drive). Service accounts have no personal storage quota, so uploads to a My Drive folder will fail with a quota error.
 
 1. Open the key file and copy the `client_email` value (looks like `commission-uploader@lissome-commission.iam.gserviceaccount.com`)
-2. In Google Drive, navigate to **Lissome > HR > Talenox**
-3. Right-click the **Talenox** folder → Share
-4. Paste the service account email and grant **Editor** access
+2. In Google Drive, open the **HR** Shared Drive
+3. Click the gear icon → **Manage members**
+4. Paste the service account email and set the role to **Content Manager**
 5. Uncheck "Notify people" and confirm
 
 ### Step 3 — Add credentials to `.env`
@@ -47,8 +49,8 @@ If the month subfolder already exists **and contains files**, the upload is skip
 Open (or create) `.env` in the project root and add:
 
 ```
-GDRIVE_SERVICE_ACCOUNT_KEY=/Users/yourname/.secrets/commission-gdrive-key.json
-GDRIVE_TALENOX_FOLDER_ID=1-gRqG1vlvru7c7-Xn9JPfzsJG5almLnC
+GDRIVE_SERVICE_ACCOUNT_KEY=/Users/barryg/.secrets/commission-488916-e52ad9d61061.json
+GDRIVE_TALENOX_FOLDER_ID=1-gRqG1vlvru7c7-Xn9jPfzsJG5almLnC
 ```
 
 The folder ID is the string after `/folders/` in the Google Drive URL when you have the Talenox folder open.
@@ -86,7 +88,8 @@ WARN  Google Drive upload skipped: Drive folder 2026/202603 already exists and c
 | `GDRIVE_SERVICE_ACCOUNT_KEY is not set` | Missing entry in `.env` |
 | `GDRIVE_TALENOX_FOLDER_ID is not set` | Missing entry in `.env` |
 | `Failed to authenticate` | Key file path is wrong or file is corrupted |
-| `Failed to search for folder` | Service account email not shared on the Drive folder |
+| `Failed to search for folder` | Service account not added to the Shared Drive |
+| `Service Accounts do not have storage quota` | Talenox folder is in My Drive — move it to a Shared Drive |
 | Upload skipped with no warning | `uploadToGDrive` is `false` in `config/default.json` |
 
 ## Architecture Note

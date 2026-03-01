@@ -19,6 +19,7 @@ npm test               # Run test suite
 - Commission pooling for paired staff members
 - Contractor vs. employee handling
 - Talenox payroll API integration
+- Google Drive upload of run artifacts (configurable)
 - Regression testing with baseline snapshots
 
 ## Testing
@@ -49,5 +50,6 @@ Control whether log4js writes to stdout/stderr via `LOG4JS_CONSOLE`:
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Detailed architecture and development guide
+- [GOOGLE_DRIVE_SETUP.md](GOOGLE_DRIVE_SETUP.md) - Google Drive integration setup
 - [.github/copilot-instructions.md](.github/copilot-instructions.md) - AI agent instructions for this codebase
 - [test-fixtures/README.md](test-fixtures/README.md) - Test data documentation

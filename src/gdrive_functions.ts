@@ -81,22 +81,23 @@ export function buildArtifactList(
 // Imperative shell — all I/O, returns Result
 // ---------------------------------------------------------------------------
 
+async function attempt<T>(label: string, fn: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return ok(await fn());
+  } catch (e) {
+    return err(`${label}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
 export async function authenticate(): Promise<Result<drive_v3.Drive>> {
   const keyFile = process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
   if (!keyFile) {
     return err("GDRIVE_SERVICE_ACCOUNT_KEY is not set in environment");
   }
-
-  try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile,
-      scopes: ["https://www.googleapis.com/auth/drive"],
-    });
-    const drive = google.drive({ version: "v3", auth });
-    return ok(drive);
-  } catch (e) {
-    return err(`Failed to authenticate with Google Drive: ${e instanceof Error ? e.message : String(e)}`);
-  }
+  return attempt("Failed to authenticate with Google Drive", async () => {
+    const auth = new google.auth.GoogleAuth({ keyFile, scopes: ["https://www.googleapis.com/auth/drive"] });
+    return google.drive({ version: "v3", auth });
+  });
 }
 
 export async function findFolder(
@@ -104,17 +105,18 @@ export async function findFolder(
   name: string,
   parentId: string,
 ): Promise<Result<string | null>> {
-  try {
-    const response = await drive.files.list({
+  const result = await attempt(`Failed to search for folder '${name}'`, () =>
+    drive.files.list({
       q: `mimeType='application/vnd.google-apps.folder' and name='${name}' and '${parentId}' in parents and trashed=false`,
       fields: "files(id)",
       pageSize: 1,
-    });
-    const files = response.data.files ?? [];
-    return ok(files.length > 0 ? (files[0].id ?? null) : null);
-  } catch (e) {
-    return err(`Failed to search for folder '${name}': ${e instanceof Error ? e.message : String(e)}`);
-  }
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    }),
+  );
+  if (!result.ok) return result;
+  const files = result.value.data.files ?? [];
+  return ok(files.length > 0 ? (files[0].id ?? null) : null);
 }
 
 export async function getOrCreateFolder(
@@ -124,42 +126,36 @@ export async function getOrCreateFolder(
 ): Promise<Result<string>> {
   const findResult = await findFolder(drive, name, parentId);
   if (!findResult.ok) return findResult;
+  if (findResult.value !== null) return ok(findResult.value);
 
-  if (findResult.value !== null) {
-    return ok(findResult.value);
-  }
-
-  try {
-    const response = await drive.files.create({
-      requestBody: {
-        name,
-        mimeType: "application/vnd.google-apps.folder",
-        parents: [parentId],
-      },
+  const result = await attempt(`Failed to create folder '${name}'`, () =>
+    drive.files.create({
+      requestBody: { name, mimeType: "application/vnd.google-apps.folder", parents: [parentId] },
       fields: "id",
-    });
-    const id = response.data.id;
-    if (!id) return err(`Created folder '${name}' but received no ID`);
-    return ok(id);
-  } catch (e) {
-    return err(`Failed to create folder '${name}': ${e instanceof Error ? e.message : String(e)}`);
-  }
+      supportsAllDrives: true,
+    }),
+  );
+  if (!result.ok) return result;
+  const id = result.value.data.id;
+  if (!id) return err(`Created folder '${name}' but received no ID`);
+  return ok(id);
 }
 
 export async function folderHasFiles(
   drive: drive_v3.Drive,
   folderId: string,
 ): Promise<Result<boolean>> {
-  try {
-    const response = await drive.files.list({
+  const result = await attempt("Failed to check folder contents", () =>
+    drive.files.list({
       q: `'${folderId}' in parents and trashed=false`,
       fields: "files(id)",
       pageSize: 1,
-    });
-    return ok((response.data.files ?? []).length > 0);
-  } catch (e) {
-    return err(`Failed to check folder contents: ${e instanceof Error ? e.message : String(e)}`);
-  }
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    }),
+  );
+  if (!result.ok) return result;
+  return ok((result.value.data.files ?? []).length > 0);
 }
 
 export async function uploadFile(
@@ -167,24 +163,18 @@ export async function uploadFile(
   folderId: string,
   artifact: DriveArtifact,
 ): Promise<Result<string>> {
-  try {
-    const response = await drive.files.create({
-      requestBody: {
-        name: artifact.remoteName,
-        parents: [folderId],
-      },
-      media: {
-        mimeType: artifact.mimeType,
-        body: createReadStream(artifact.localPath),
-      },
+  const result = await attempt(`Failed to upload '${artifact.remoteName}'`, () =>
+    drive.files.create({
+      requestBody: { name: artifact.remoteName, parents: [folderId] },
+      media: { mimeType: artifact.mimeType, body: createReadStream(artifact.localPath) },
       fields: "id",
-    });
-    const id = response.data.id;
-    if (!id) return err(`Uploaded '${artifact.remoteName}' but received no file ID`);
-    return ok(id);
-  } catch (e) {
-    return err(`Failed to upload '${artifact.remoteName}': ${e instanceof Error ? e.message : String(e)}`);
-  }
+      supportsAllDrives: true,
+    }),
+  );
+  if (!result.ok) return result;
+  const id = result.value.data.id;
+  if (!id) return err(`Uploaded '${artifact.remoteName}' but received no file ID`);
+  return ok(id);
 }
 
 export async function uploadRunArtifacts(
