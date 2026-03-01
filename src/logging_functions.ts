@@ -37,7 +37,13 @@ function isFileAppender(appender: unknown): asserts appender is FileAppender {
   );
 }
 
-export async function initLogs() {
+export interface LogPaths {
+  commissionLog: string;
+  contractorLog: string;
+  debugLog: string;
+}
+
+export async function initLogs(): Promise<LogPaths> {
   /**
    * Loads the log4js configuration from a file and returns it.
    * Necessary because we want to dynamically name the log files
@@ -217,6 +223,12 @@ export async function initLogs() {
   debugLogAppender.filename = path.join(LOGS_DIR, initialDebugLogFileName);
 
   configure(log4jsConfig);
+
+  return {
+    commissionLog: commissionAppender.filename,
+    contractorLog: contractorAppender.filename,
+    debugLog: debugLogAppender.filename,
+  };
 }
 
 export const commissionLogger = getLogger("commission");

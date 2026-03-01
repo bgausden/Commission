@@ -5,6 +5,7 @@ declare module "node-config-ts" {
     PAYROLL_WB_FILENAME: string
     missingStaffAreFatal: boolean
     updateTalenox: boolean
+    uploadToGDrive: boolean
   }
   export const config: Config
   export type Config = IConfig

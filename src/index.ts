@@ -70,12 +70,18 @@ import {
   shutdownLogging,
   initLogs,
 } from "./logging_functions.js";
+import {
+  buildArtifactList,
+  buildFolderHierarchy,
+  uploadRunArtifacts,
+} from "./gdrive_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
 import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE, defaultStaffID } from "./constants.js";
 import path from "node:path";
 import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
+import { resolveFromProjectRoot } from "./projectRoot.js";
 import assert from "node:assert";
 import { existsSync, readdirSync } from "node:fs";
 import * as fs from "node:fs";
@@ -838,7 +844,7 @@ function processPayrollExcelData(
 
 async function main() {
   emitProgress("Initializing logs");
-  await initLogs();
+  const logPaths = await initLogs();
 
   // Now that log4js is configured, mirror the first progress marker into logs.
   infoLogger.info("Initializing logs");
@@ -940,7 +946,26 @@ async function main() {
   emitProgressAndInfo("Writing payment spreadsheet");
   writePaymentsWorkBook(payments);
 
-  /* 
+  if (config.uploadToGDrive) {
+    emitProgressAndInfo("Uploading artifacts to Google Drive");
+    const hierarchy = buildFolderHierarchy(PAYROLL_YEAR, PAYROLL_MONTH);
+    const artifacts = buildArtifactList(
+      payrollWorkbookPath,
+      path.join(PAYMENTS_DIR, PAYMENTS_WB_NAME),
+      logPaths.commissionLog,
+      logPaths.contractorLog,
+      logPaths.debugLog,
+      resolveFromProjectRoot(DEFAULT_STAFF_HURDLES_FILE),
+    );
+    const driveResult = await uploadRunArtifacts(artifacts, hierarchy);
+    if (!driveResult.ok) {
+      warnLogger.warn(`Google Drive upload skipped: ${driveResult.error}`);
+    } else {
+      infoLogger.info(`Artifacts uploaded to Google Drive: ${hierarchy.year}/${hierarchy.month}`);
+    }
+  }
+
+  /*
     If configuration permits updating Talenox, create a new payroll and push into it the adhoc payments for service commission, tips and product commission.
     */
 

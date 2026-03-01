@@ -620,6 +620,7 @@ export function createApp() {
           PAYROLL_WB_FILENAME: "payroll.xlsx",
           missingStaffAreFatal: true,
           updateTalenox: false,
+          uploadToGDrive: false,
         };
       }
       if (error instanceof Error) {
