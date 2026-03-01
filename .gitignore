@@ -23,3 +23,5 @@ data/old/*
 config/env/production.json
 vendor/**/*
 test-baselines/
+config/staffHurdle.json
+other_source/staff.json
