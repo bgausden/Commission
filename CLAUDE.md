@@ -103,9 +103,45 @@ Centralized via `getValidatedStaffHurdle()` in `utility_functions.ts`:
 
 Uses **Vitest** (not Jest). Test files: `src/**/*.spec.ts`
 
+### Test Setup
 - Mock filesystem uses `memfs` for file I/O tests
 - Reset `global.staffHurdles` in `beforeEach()` to prevent test pollution
 - Mock both `node-config-ts` and `logging_functions.js` to control behavior
+
+### Regression Testing
+
+```bash
+npm run test:regression     # Run regression tests
+npm run create-baseline -- baseline-name  # Create test baseline
+npm run update-baseline -- baseline-name  # Update existing baseline
+npm run list-baselines      # List available baselines
+```
+
+**Test fixtures**: `test-fixtures/sample-payments.xlsx` contains anonymized payment data for testing. The regression test automatically:
+1. Looks for the most recent file in `payments/`
+2. Falls back to `test-fixtures/sample-payments.xlsx` if no payments files exist
+3. Staff names in fixtures are anonymized ("Staff A", "Staff B", etc.)
+
+**Updating test fixtures**:
+```bash
+cp "payments/Talenox Payments YYYYMM.xlsx" test-fixtures/sample-payments.xlsx
+npm run anonymize-fixtures  # Replace real names with generic labels
+```
+
+## Dependencies
+
+### xlsx (Vendored)
+
+**Important**: This project uses a **vendored** version of xlsx at `vendor/xlsx-0.20.3/`, NOT the npm package.
+
+**Why vendored**: Ensures version stability and consistent behavior across environments.
+
+**Configuration**:
+- Vitest alias: `vitest.config.ts` maps `'xlsx'` imports to `src/vendor-xlsx.mjs`
+- Wrapper module: `src/vendor-xlsx.mjs` configures xlsx with Node.js `fs` module
+- TypeScript: `@types/xlsx` installed for type definitions
+
+**Do not** install xlsx from npm - use the vendored version.
 
 ## Key Conventions
 
@@ -113,3 +149,4 @@ Uses **Vitest** (not Jest). Test files: `src/**/*.spec.ts`
 - **Commission rounding**: `Math.round(value * 100) / 100`
 - **Logging**: Multiple loggers (`commissionLogger`, `contractorLogger`, `debugLogger`, etc.). Always call `shutdownLogging()` before process exit
 - **File archiving**: `moveFilesToOldSubDir()` archives old files to `old/` with gzip compression
+- **Excel processing**: Use vendored xlsx (`import XLSX from 'xlsx'` - resolves via Vitest alias)

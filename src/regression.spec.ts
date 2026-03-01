@@ -6,6 +6,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { readdir, stat } from 'fs/promises';
 import type { BaselineMetadata } from './regression.types.js';
 import { parsePaymentsExcel } from '../scripts/parsers/parsePaymentsExcel.js';
 import { parseCommissionLog } from '../scripts/parsers/parseCommissionLog.js';
@@ -21,6 +22,50 @@ const PROJECT_ROOT = join(__dirname, '..');
  */
 const BASELINE_NAME = process.env.BASELINE_NAME || 'dec-2025-baseline';
 const BASELINE_DIR = join(PROJECT_ROOT, 'test-baselines', BASELINE_NAME);
+
+/**
+ * Find the most recent payments Excel file, or fall back to sample
+ */
+async function findMostRecentPaymentsFile(): Promise<string | null> {
+  const paymentsDir = join(PROJECT_ROOT, 'payments');
+  const sampleFile = join(PROJECT_ROOT, 'test-fixtures', 'sample-payments.xlsx');
+  
+  try {
+    const files = await readdir(paymentsDir);
+    const xlsxFiles = files.filter(f => 
+      f.startsWith('Talenox Payments') && f.endsWith('.xlsx') && !f.startsWith('.')
+    );
+    
+    if (xlsxFiles.length === 0) {
+      // Fall back to sample file if no real payments files exist
+      if (await fileExists(sampleFile)) {
+        console.log('⚠️  No payments files found, using sample file');
+        return sampleFile;
+      }
+      return null;
+    }
+    
+    // Get file stats and sort by modification time (most recent first)
+    const filesWithStats = await Promise.all(
+      xlsxFiles.map(async (file) => {
+        const filePath = join(paymentsDir, file);
+        const stats = await stat(filePath);
+        return { file, path: filePath, mtime: stats.mtime };
+      })
+    );
+    
+    filesWithStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+    
+    return filesWithStats[0].path;
+  } catch {
+    // Fall back to sample file on error
+    if (await fileExists(sampleFile)) {
+      console.log('⚠️  Error reading payments directory, using sample file');
+      return sampleFile;
+    }
+    return null;
+  }
+}
 
 describe('Regression Tests', () => {
   let metadata: BaselineMetadata;
@@ -92,11 +137,13 @@ describe('Regression Tests', () => {
 
   describe('Parser Functionality', () => {
     it('should parse payments Excel file', async () => {
-      const paymentsFile = join(PROJECT_ROOT, 'payments', 'Talenox Payments 202601.xlsx');
-      if (!await fileExists(paymentsFile)) {
-        console.log('⚠️  Test payments file not found, skipping');
+      const paymentsFile = await findMostRecentPaymentsFile();
+      if (!paymentsFile) {
+        console.log('⚠️  No payments files found, skipping');
         return;
       }
+
+      console.log(`Using payments file: ${paymentsFile}`);
 
       const staffPayments = await parsePaymentsExcel(paymentsFile);
 

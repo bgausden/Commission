@@ -2,9 +2,12 @@ node_modules/
 .DS_Store
 *.xls
 *.xlsx
+!test-fixtures/*.xlsx
 .fuse_hidden*
 uploads/
 dist/
+scripts/**/*.js
+scripts/**/*.js.map
 commission.log
 contractors.log
 .env

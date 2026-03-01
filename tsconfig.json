@@ -65,15 +65,17 @@
     ],
     "exclude": [
         "node_modules",
+        "dist",
         "staffHurdle.json",
         "other_source",
         "scripts",
-        "jest.config.js.old",
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts",
     ],
-    "typeAcquisition": {
-        "enable": true,
-        "exclude": [
-            "xlsx"
-        ]
-    }
+    // "typeAcquisition": {
+    //     "enable": true,
+    //     "exclude": [
+    //         "xlsx"
+    //     ]
+    // }
 }

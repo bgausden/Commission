@@ -113,6 +113,29 @@ describe("parseFilename", () => {
 
 **Mock filesystem**: Uses `memfs` for file I/O tests (see `__mocks__/fs.cjs`).
 
+### Regression Testing
+
+Comprehensive baseline testing system for validating commission calculations:
+
+```bash
+npm run test:regression                       # Run regression tests
+npm run create-baseline -- baseline-name      # Create new baseline
+npm run update-baseline -- baseline-name      # Update existing baseline
+npm run list-baselines                        # List all baselines
+npm run anonymize-fixtures                    # Anonymize test data
+```
+
+**Test fixtures**: `test-fixtures/sample-payments.xlsx` contains anonymized payment data. The regression test automatically:
+1. Uses the most recent file from `payments/` if available
+2. Falls back to `test-fixtures/sample-payments.xlsx` if no payments files exist
+3. All staff names in fixtures are anonymized ("Staff A", "Staff B", etc.)
+
+**Updating test fixtures**:
+```bash
+cp "payments/Talenox Payments YYYYMM.xlsx" test-fixtures/sample-payments.xlsx
+npm run anonymize-fixtures
+```
+
 ### Testing Staff ID Validation
 
 Comprehensive validation tests in [src/utility_functions.validation.spec.ts](../src/utility_functions.validation.spec.ts):
@@ -207,8 +230,15 @@ Key functions:
 
 ### Excel Processing
 
-- Uses `xlsx` library (`XLSX.readFile`, `XLSX.utils.sheet_to_json`)
-- Mindbody report format assumptions:
+**Important**: This project uses a **vendored** version of xlsx at `vendor/xlsx-0.20.3/`, NOT the npm package.
+
+- **Vendored xlsx**: Ensures version stability
+- **Vitest alias**: `vitest.config.ts` maps `'xlsx'` to `src/vendor-xlsx.mjs`
+- **Wrapper module**: `src/vendor-xlsx.mjs` configures xlsx with Node.js `fs` module
+- **Do not** install xlsx from npm - use the vendored version
+- Uses `XLSX.readFile`, `XLSX.utils.sheet_to_json` for Excel operations
+
+Mindbody report format assumptions:
   - Staff blocks start with `"Staff ID #: <ID>"`
   - Revenue per service in column found by searching for `"Rev. per Session"`
   - Totals row starts with `"Total for "`
