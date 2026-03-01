@@ -2,151 +2,47 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Decisions and Constraints
 
-TypeScript-based commission calculator for salon staff that reads Mindbody payroll reports (Excel), calculates tiered commissions with custom pay rates, integrates with Talenox payroll API, and generates payment spreadsheets.
+### xlsx is vendored — do not install from npm
 
-**Entry points**: `src/index.ts` (CLI processor), `src/server.ts` (web UI on port 3000)
+This project uses a vendored copy of xlsx at `vendor/xlsx-0.20.3/`, not the npm package. The npm package is intentionally absent to ensure version stability.
 
-## Commands
+- Vitest alias in `vitest.config.ts` maps `'xlsx'` imports to `src/vendor-xlsx.mjs`
+- `src/vendor-xlsx.mjs` is the wrapper that configures xlsx with Node.js `fs`
+- `@types/xlsx` is installed for type definitions only
 
-```bash
-# Build
-npm run build              # Compiles TypeScript, copies config files to dist/
+**Do not run `npm install xlsx`.**
 
-# Run
-npm run run:tsx            # Process commissions via tsx
-npm run server:tsx         # Start web UI server on port 3000
+### ESM imports require `.js` extension
 
-# Test
-npm test                   # Run Vitest test suite
-npm run test:debug         # Run tests with Vitest debugger
+This is an ESM project (`"type": "module"`). All relative imports must use `.js` even when the source file is `.ts`. TypeScript resolves these correctly at compile time.
 
-# Debug
-npm run server:debug:tsx   # Debug web server (breakpoint on first line)
-DEBUG=* npm run run:tsx    # Enable all debug output
-DEBUG=talenox_functions:* npm run run:tsx  # Debug Talenox API calls only
+### ESLint global declarations
+
+Files that use `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR`, etc. must include a comment at the top to satisfy ESLint:
+
+```ts
+/* global PAYROLL_MONTH, PAYROLL_YEAR */
 ```
 
-**Logging control** via `LOG4JS_CONSOLE` env var: `on` (default), `errors` (only errors to console), `off` (file logs only)
+The full set of globals is declared in `src/globals.d.ts`.
 
-## Architecture
+### Always call `shutdownLogging()` before process exit
 
-### Core Workflow (`src/index.ts` main function)
+log4js buffers writes. Any code path that exits the process must call `shutdownLogging()` first or log entries will be lost.
 
-1. Parse Excel filename → extract payroll month/year (`parseFilename.ts`)
-2. Load `config/staffHurdle.json` → commission tiers, custom rates, contractor status
-3. Fetch Talenox employees via API (`talenox_functions.ts`)
-4. Parse Mindbody Excel report → extract service revenue, tips, product commissions per staff
-5. Calculate commissions using tiered hurdles (base → hurdle1 → hurdle2 → hurdle3)
-6. Apply commission pooling for paired staff members
-7. Generate payments Excel + push to Talenox (if `config.updateTalenox === true`)
+### `updateTalenox: false` is a dry-run safety flag
 
-### Key Modules
+`config/default.json` contains `updateTalenox`. When `false`, commissions are calculated and the payments Excel is generated but nothing is pushed to the Talenox API. Leave this `false` unless running a real payroll.
 
-| Module | Purpose |
-|--------|---------|
-| `src/index.ts` | CLI orchestrator, Excel parsing, commission calculations |
-| `src/server.ts`, `src/serverApp.ts` | Express web UI for config/file upload |
-| `src/talenox_functions.ts` | Talenox API: fetch employees, create payroll, upload payments |
-| `src/utility_functions.ts` | Staff validation, file operations |
-| `src/logging_functions.ts` | log4js setup with multiple loggers |
-| `src/staffHurdles.ts` | Loads staff config into globals |
+### Test fixtures use anonymized staff names
 
-### Global State Pattern
+`test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names.
 
-Uses TypeScript global declarations (`src/globals.d.ts`) set in `index.ts`:
-- `global.staffHurdles` - Commission config from JSON
-- `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR` - From parsed filename
-- `global.PAYMENTS_DIR`, `global.LOGS_DIR` - Output directories
+To update fixtures after a real payroll run:
 
-Add `/* global PAYROLL_MONTH, PAYROLL_YEAR */` comment in files using globals to satisfy ESLint.
-
-## Configuration Files
-
-### `config/staffHurdle.json`
-
-Per-staff commission structure:
-```json
-{
-  "012": {
-    "staffName": "Kate",
-    "baseRate": 0,
-    "hurdle1Level": 30000, "hurdle1Rate": 0.11,
-    "hurdle2Level": 50000, "hurdle2Rate": 0.13,
-    "hurdle3Level": 75000, "hurdle3Rate": 0.15,
-    "contractor": false,
-    "payViaTalenox": true,
-    "poolsWith": ["019"],
-    "customPayRates": [{ "Extensions": 0.15 }]
-  },
-  "000": { ... }  // Default fallback
-}
-```
-
-### `config/default.json`
-
-- `PAYROLL_WB_FILENAME`: Excel file to process
-- `missingStaffAreFatal`: Throw error if staff not in staffHurdle.json
-- `updateTalenox`: Push payments to Talenox API (false for dry runs)
-
-## Staff ID Validation
-
-Centralized via `getValidatedStaffHurdle()` in `utility_functions.ts`:
-
-1. Returns staff config if exists in `staffHurdle.json`
-2. If missing and `config.missingStaffAreFatal === true` → throws error
-3. If missing and `config.missingStaffAreFatal === false` → warns, returns default "000"
-4. Always throws if default "000" is missing
-
-## Testing
-
-Uses **Vitest** (not Jest). Test files: `src/**/*.spec.ts`
-
-### Test Setup
-- Mock filesystem uses `memfs` for file I/O tests
-- Reset `global.staffHurdles` in `beforeEach()` to prevent test pollution
-- Mock both `node-config-ts` and `logging_functions.js` to control behavior
-
-### Regression Testing
-
-```bash
-npm run test:regression     # Run regression tests
-npm run create-baseline -- baseline-name  # Create test baseline
-npm run update-baseline -- baseline-name  # Update existing baseline
-npm run list-baselines      # List available baselines
-```
-
-**Test fixtures**: `test-fixtures/sample-payments.xlsx` contains anonymized payment data for testing. The regression test automatically:
-1. Looks for the most recent file in `payments/`
-2. Falls back to `test-fixtures/sample-payments.xlsx` if no payments files exist
-3. Staff names in fixtures are anonymized ("Staff A", "Staff B", etc.)
-
-**Updating test fixtures**:
 ```bash
 cp "payments/Talenox Payments YYYYMM.xlsx" test-fixtures/sample-payments.xlsx
-npm run anonymize-fixtures  # Replace real names with generic labels
+npm run anonymize-fixtures
 ```
-
-## Dependencies
-
-### xlsx (Vendored)
-
-**Important**: This project uses a **vendored** version of xlsx at `vendor/xlsx-0.20.3/`, NOT the npm package.
-
-**Why vendored**: Ensures version stability and consistent behavior across environments.
-
-**Configuration**:
-- Vitest alias: `vitest.config.ts` maps `'xlsx'` imports to `src/vendor-xlsx.mjs`
-- Wrapper module: `src/vendor-xlsx.mjs` configures xlsx with Node.js `fs` module
-- TypeScript: `@types/xlsx` installed for type definitions
-
-**Do not** install xlsx from npm - use the vendored version.
-
-## Key Conventions
-
-- **ESM modules**: Always use `.js` extension in imports
-- **Commission rounding**: `Math.round(value * 100) / 100`
-- **Logging**: Multiple loggers (`commissionLogger`, `contractorLogger`, `debugLogger`, etc.). Always call `shutdownLogging()` before process exit
-- **File archiving**: `moveFilesToOldSubDir()` archives old files to `old/` with gzip compression
-- **Excel processing**: Use vendored xlsx (`import XLSX from 'xlsx'` - resolves via Vitest alias)

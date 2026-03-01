@@ -213,7 +213,7 @@ Multiple log4js loggers:
 ### Type System Patterns
 
 - Uses type aliases extensively: `TStaffID`, `TCommMap`, `TTalenoxInfoStaffMap`
-- Zod schemas for validation ([src/staffHurdleSchema.json](../src/staffHurdleSchema.json))
+- Zod schemas for validation ([src/staffHurdleSchema.ts](../src/staffHurdleSchema.ts))
 - Avoid `any` (eslint warns, not errors)
 
 ## Integration Points
