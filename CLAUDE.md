@@ -36,6 +36,18 @@ log4js buffers writes. Any code path that exits the process must call `shutdownL
 
 `config/default.json` contains `updateTalenox`. When `false`, commissions are calculated and the payments Excel is generated but nothing is pushed to the Talenox API. Leave this `false` unless running a real payroll.
 
+### Regression tests auto-discover the oldest baseline
+
+`regression.spec.ts` does not hardcode a baseline name. On each run it scans `test-baselines/`, reads `metadata.json` from each subdirectory, and selects the entry with the earliest `createdDate`. Set `BASELINE_NAME` to override:
+
+```bash
+BASELINE_NAME=dec-2025-baseline npm run test:regression
+```
+
+`test-baselines/` is gitignored. Tests skip gracefully (not fail) when no baseline exists.
+
+The discovery logic lives in `scripts/utils/baselineUtils.ts` (`findOldestBaseline`).
+
 ### Test fixtures use anonymized staff names
 
 `test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names.

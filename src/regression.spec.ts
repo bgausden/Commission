@@ -8,20 +8,29 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { readdir, stat } from 'fs/promises';
 import type { BaselineMetadata } from './regression.types.js';
+import type { Result } from './types.js';
 import { parsePaymentsExcel } from '../scripts/parsers/parsePaymentsExcel.js';
 import { parseCommissionLog } from '../scripts/parsers/parseCommissionLog.js';
-import { compareStaffPayments, compareCommissionData, generateDiffReport } from '../scripts/comparison/compareBaseline.js';
+import { compareStaffPayments, generateDiffReport } from '../scripts/comparison/compareBaseline.js';
 import { readJSON, fileExists } from '../scripts/utils/fileUtils.js';
+import { findOldestBaseline } from '../scripts/utils/baselineUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..');
+const BASELINES_ROOT = join(PROJECT_ROOT, 'test-baselines');
 
 /**
- * Test configuration
+ * Resolved baseline state loaded during beforeAll.
+ * If no baseline is available, ok is false and error explains why.
  */
-const BASELINE_NAME = process.env.BASELINE_NAME || 'dec-2025-baseline';
-const BASELINE_DIR = join(PROJECT_ROOT, 'test-baselines', BASELINE_NAME);
+type LoadedBaseline = {
+  name: string;
+  dir: string;
+  metadata: BaselineMetadata;
+};
+
+let baselineResult: Result<LoadedBaseline>;
 
 /**
  * Find the most recent payments Excel file, or fall back to sample
@@ -29,13 +38,13 @@ const BASELINE_DIR = join(PROJECT_ROOT, 'test-baselines', BASELINE_NAME);
 async function findMostRecentPaymentsFile(): Promise<string | null> {
   const paymentsDir = join(PROJECT_ROOT, 'payments');
   const sampleFile = join(PROJECT_ROOT, 'test-fixtures', 'sample-payments.xlsx');
-  
+
   try {
     const files = await readdir(paymentsDir);
-    const xlsxFiles = files.filter(f => 
+    const xlsxFiles = files.filter(f =>
       f.startsWith('Talenox Payments') && f.endsWith('.xlsx') && !f.startsWith('.')
     );
-    
+
     if (xlsxFiles.length === 0) {
       // Fall back to sample file if no real payments files exist
       if (await fileExists(sampleFile)) {
@@ -44,7 +53,7 @@ async function findMostRecentPaymentsFile(): Promise<string | null> {
       }
       return null;
     }
-    
+
     // Get file stats and sort by modification time (most recent first)
     const filesWithStats = await Promise.all(
       xlsxFiles.map(async (file) => {
@@ -53,9 +62,9 @@ async function findMostRecentPaymentsFile(): Promise<string | null> {
         return { file, path: filePath, mtime: stats.mtime };
       })
     );
-    
+
     filesWithStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-    
+
     return filesWithStats[0].path;
   } catch {
     // Fall back to sample file on error
@@ -68,41 +77,49 @@ async function findMostRecentPaymentsFile(): Promise<string | null> {
 }
 
 describe('Regression Tests', () => {
-  let metadata: BaselineMetadata;
-  let baselineExists: boolean;
-
   beforeAll(async () => {
-    // Check if baseline exists
-    const metadataPath = join(BASELINE_DIR, 'metadata.json');
-    baselineExists = await fileExists(metadataPath);
-    
-    if (baselineExists) {
-      metadata = await readJSON<BaselineMetadata>(metadataPath);
+    // Resolve the baseline name: explicit env var takes precedence, otherwise
+    // auto-discover the oldest available baseline so tests always run against
+    // something known rather than a hardcoded name that may not exist.
+    const nameResult: Result<string> = process.env.BASELINE_NAME
+      ? { ok: true, value: process.env.BASELINE_NAME }
+      : await findOldestBaseline(BASELINES_ROOT);
+
+    if (!nameResult.ok) {
+      baselineResult = nameResult;
+      return;
     }
+
+    const name = nameResult.value;
+    const dir = join(BASELINES_ROOT, name);
+    const metadataPath = join(dir, 'metadata.json');
+
+    if (!await fileExists(metadataPath)) {
+      baselineResult = { ok: false, error: `Baseline "${name}" exists but has no metadata.json` };
+      return;
+    }
+
+    const metadata = await readJSON<BaselineMetadata>(metadataPath);
+    baselineResult = { ok: true, value: { name, dir, metadata } };
   });
 
   describe('Baseline Prerequisites', () => {
     it('should have a valid baseline directory', async () => {
-      if (!baselineExists) {
-        console.log(`\n⚠️  Baseline "${BASELINE_NAME}" does not exist.`);
-        console.log(`   Run: npm run create-baseline -- ${BASELINE_NAME}\n`);
+      if (!baselineResult.ok) {
+        console.log(`\n⚠️  No baseline available: ${baselineResult.error}`);
+        console.log(`   Run: npm run create-baseline -- <name>\n`);
+        return; // Vitest treats early return as pass — absence of a baseline is not a failure
       }
-      
-      // Skip test if baseline doesn't exist (not a test failure)
-      if (!baselineExists) {
-        return; // Vitest treats early return in test as pass
-      }
-      
-      expect(baselineExists).toBe(true);
+
+      expect(baselineResult.ok).toBe(true);
     });
 
     it('should have valid metadata', async () => {
-      if (!baselineExists) {
-        return; // Skip if baseline doesn't exist
-      }
+      if (!baselineResult.ok) return;
+      const { name, metadata } = baselineResult.value;
 
       expect(metadata).toBeDefined();
-      expect(metadata.baselineName).toBe(BASELINE_NAME);
+      expect(metadata.baselineName).toBe(name);
       expect(metadata.commitSHA).toBeDefined();
       expect(metadata.sourceFile).toBeDefined();
       expect(metadata.staffIds).toBeInstanceOf(Array);
@@ -110,28 +127,26 @@ describe('Regression Tests', () => {
     });
 
     it('should have source file in baseline', async () => {
-      if (!baselineExists) return;
+      if (!baselineResult.ok) return;
+      const { dir, metadata } = baselineResult.value;
 
-      const sourcePath = join(BASELINE_DIR, 'source', metadata.sourceFile);
-      const exists = await fileExists(sourcePath);
-      expect(exists).toBe(true);
+      const sourcePath = join(dir, 'source', metadata.sourceFile);
+      expect(await fileExists(sourcePath)).toBe(true);
     });
 
     it('should have config files in baseline', async () => {
-      if (!baselineExists) return;
+      if (!baselineResult.ok) return;
+      const { dir } = baselineResult.value;
 
-      const staffHurdlePath = join(BASELINE_DIR, 'config', 'staffHurdle.json');
-      const defaultConfigPath = join(BASELINE_DIR, 'config', 'default.json');
-
-      expect(await fileExists(staffHurdlePath)).toBe(true);
-      expect(await fileExists(defaultConfigPath)).toBe(true);
+      expect(await fileExists(join(dir, 'config', 'staffHurdle.json'))).toBe(true);
+      expect(await fileExists(join(dir, 'config', 'default.json'))).toBe(true);
     });
 
     it('should have output files in baseline', async () => {
-      if (!baselineExists) return;
+      if (!baselineResult.ok) return;
+      const { dir } = baselineResult.value;
 
-      const outputsDir = join(BASELINE_DIR, 'outputs');
-      expect(await fileExists(outputsDir)).toBe(true);
+      expect(await fileExists(join(dir, 'outputs'))).toBe(true);
     });
   });
 

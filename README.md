@@ -31,6 +31,21 @@ npm run create-baseline -- baseline-name  # Create test baseline
 npm run anonymize-fixtures  # Anonymize test fixture data
 ```
 
+### Regression Baselines
+
+Regression tests auto-discover the oldest available baseline in `test-baselines/` (sorted by `createdDate` in each baseline's `metadata.json`). To target a specific baseline:
+
+```bash
+BASELINE_NAME=dec-2025-baseline npm run test:regression
+```
+
+Baselines are gitignored — create one locally before regression tests will do anything meaningful:
+
+```bash
+npm run create-baseline -- <name>
+npm run list-baselines          # show available baselines
+```
+
 ### Test Fixtures
 
 The `test-fixtures/` directory contains anonymized sample data for testing. The regression test automatically uses the most recent payments file from `payments/`, falling back to the anonymized sample if needed.
