@@ -42,6 +42,7 @@
         "fixed-width-string": "^2.0.0",
         "log4js": "^6.3.0",
         "node-config-ts": "^3.3.1",
+        "xlsx": "file:vendor/xlsx-0.20.3.tgz",
         "zod": "^3.22.4"
     },
     "devDependencies": {

@@ -3,7 +3,10 @@
  */
 
 import XLSX from 'xlsx';
+import * as fs from 'node:fs';
 import type { StaffPayment } from '../../src/regression.types.js';
+
+XLSX.set_fs(fs);
 import { sortByStaffId } from '../utils/staffUtils.js';
 
 /**

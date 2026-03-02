@@ -7,13 +7,13 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { readdir, stat } from 'fs/promises';
-import type { BaselineMetadata } from './regression.types.js';
-import type { Result } from './types.js';
-import { parsePaymentsExcel } from '../scripts/parsers/parsePaymentsExcel.js';
-import { parseCommissionLog } from '../scripts/parsers/parseCommissionLog.js';
-import { compareStaffPayments, generateDiffReport } from '../scripts/comparison/compareBaseline.js';
-import { readJSON, fileExists } from '../scripts/utils/fileUtils.js';
-import { findOldestBaseline } from '../scripts/utils/baselineUtils.js';
+import type { BaselineMetadata } from '../src/regression.types.js';
+import type { Result } from '../src/types.js';
+import { parsePaymentsExcel } from './parsers/parsePaymentsExcel.js';
+import { parseCommissionLog } from './parsers/parseCommissionLog.js';
+import { compareStaffPayments, generateDiffReport } from './comparison/compareBaseline.js';
+import { readJSON, fileExists } from './utils/fileUtils.js';
+import { findOldestBaseline } from './utils/baselineUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -157,6 +157,7 @@ describe('Regression Tests', () => {
         console.log('⚠️  No payments files found, skipping');
         return;
       }
+      //const paymentsFile = join(paymentsDir, paymentFiles[paymentFiles.length - 1]);
 
       console.log(`Using payments file: ${paymentsFile}`);
 
