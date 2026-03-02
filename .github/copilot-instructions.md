@@ -16,7 +16,7 @@ Files using `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR`, etc. must include a c
 /* global PAYROLL_MONTH, PAYROLL_YEAR */
 ```
 
-Full set declared in [src/globals.d.ts](../src/globals.d.ts). Without this comment ESLint reports undefined variable errors.
+Full set declared in [src/globals.ts](../src/globals.ts). Without this comment ESLint reports undefined variable errors.
 
 ### `updateTalenox: false` is a dry-run safety flag
 
