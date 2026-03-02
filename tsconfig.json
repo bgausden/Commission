@@ -71,11 +71,6 @@
         "scripts",
         "src/**/*.spec.ts",
         "src/**/*.test.ts",
-    ],
-    // "typeAcquisition": {
-    //     "enable": true,
-    //     "exclude": [
-    //         "xlsx"
-    //     ]
-    // }
+        "vendor",
+    ]
 }

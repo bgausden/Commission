@@ -7,11 +7,11 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { readdir, stat } from 'fs/promises';
-import type { BaselineMetadata } from './regression.types.js';
-import { parsePaymentsExcel } from '../scripts/parsers/parsePaymentsExcel.js';
-import { parseCommissionLog } from '../scripts/parsers/parseCommissionLog.js';
-import { compareStaffPayments, compareCommissionData, generateDiffReport } from '../scripts/comparison/compareBaseline.js';
-import { readJSON, fileExists } from '../scripts/utils/fileUtils.js';
+import type { BaselineMetadata } from '../src/regression.types.js';
+import { parsePaymentsExcel } from './parsers/parsePaymentsExcel.js';
+import { parseCommissionLog } from './parsers/parseCommissionLog.js';
+import { compareStaffPayments, compareCommissionData, generateDiffReport } from './comparison/compareBaseline.js';
+import { readJSON, fileExists } from './utils/fileUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,7 +75,7 @@ describe('Regression Tests', () => {
     // Check if baseline exists
     const metadataPath = join(BASELINE_DIR, 'metadata.json');
     baselineExists = await fileExists(metadataPath);
-    
+
     if (baselineExists) {
       metadata = await readJSON<BaselineMetadata>(metadataPath);
     }
@@ -87,12 +87,12 @@ describe('Regression Tests', () => {
         console.log(`\n⚠️  Baseline "${BASELINE_NAME}" does not exist.`);
         console.log(`   Run: npm run create-baseline -- ${BASELINE_NAME}\n`);
       }
-      
+
       // Skip test if baseline doesn't exist (not a test failure)
       if (!baselineExists) {
         return; // Vitest treats early return in test as pass
       }
-      
+
       expect(baselineExists).toBe(true);
     });
 
@@ -142,6 +142,7 @@ describe('Regression Tests', () => {
         console.log('⚠️  No payments files found, skipping');
         return;
       }
+      //const paymentsFile = join(paymentsDir, paymentFiles[paymentFiles.length - 1]);
 
       console.log(`Using payments file: ${paymentsFile}`);
 
