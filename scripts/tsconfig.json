@@ -1,15 +1,16 @@
 {
-    "extends": "../tsconfig.json",
     "compilerOptions": {
-        "rootDir": "..",
+        "target": "ESNext",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "lib": ["ESNext"],
+        "strict": true,
         "noEmit": true,
-        "lib": [
-            "ESNext",
-            "DOM",
-        ],
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "types": ["node", "vitest/globals"],
+        "forceConsistentCasingInFileNames": true
     },
-    "include": [
-        "./**/*.ts"
-    ],
-    "exclude": []
+    "include": ["**/*.ts"]
 }

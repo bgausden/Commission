@@ -4,5 +4,10 @@
     "search.useIgnoreFiles": false,
     "terminal.integrated.env.osx": {
         "RIPGREP_CONFIG_PATH": "${workspaceFolder}/.ripgreprc"
-    }
+    },
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "typescript.tsconfig.paths": [
+        "./tsconfig.json",
+        "./tsconfig.scripts.json"
+    ]
 }
