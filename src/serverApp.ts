@@ -332,8 +332,8 @@ export function createApp() {
   });
 
   app.get("/staff-hurdle-config", (_req: Request, res: Response) => {
-    const staffHurdleConfig = loadStaffHurdles();
-    res.json(staffHurdleConfig);
+    const staffHurdles = loadStaffHurdles();
+    res.json(Object.fromEntries(staffHurdles));
   });
 
   app.post("/update-staff-hurdle", (req: Request, res: Response) => {
@@ -341,15 +341,15 @@ export function createApp() {
 
     if (!result.success) {
       return res.status(400).json({
-        message: "Invalid staff hurdle config",
+        message: "Invalid staff hurdle",
         errors: result.error.issues,
       });
     }
 
-    saveStaffHurdles(result.data);
+    saveStaffHurdles(new Map(Object.entries(result.data)) as TStaffHurdles);
     res
       .status(200)
-      .json({ message: "Staff hurdle config updated successfully" });
+      .json({ message: "Staff hurdles updated successfully" });
   });
 
   app.get("/run-commission/status/:jobId", (req: Request, res: Response) => {
@@ -738,11 +738,12 @@ export function createApp() {
 
   function loadStaffHurdles(): TStaffHurdles {
     const data = fs.readFileSync(STAFF_HURDLE_FILE_PATH, "utf8");
-    return JSON.parse(data);
+    const parsed = staffHurdleSchema.parse(JSON.parse(data));
+    return new Map(Object.entries(parsed)) as TStaffHurdles;
   }
 
-  function saveStaffHurdles(config: TStaffHurdles): void {
-    fs.writeFileSync(STAFF_HURDLE_FILE_PATH, JSON.stringify(config, null, 4));
+  function saveStaffHurdles(staffHurdles: TStaffHurdles): void {
+    fs.writeFileSync(STAFF_HURDLE_FILE_PATH, JSON.stringify(Object.fromEntries(staffHurdles), null, 4));
   }
 
   return app;

@@ -18,7 +18,7 @@ import {
   TALENOX_ADHOC_PAYMENT_ENDPOINT,
   TALENOX_API_TOKEN,
 } from "./talenox_constants.js";
-import { isContractor } from "./utility_functions.js";
+import { isContractor, isValidStaffID } from "./utility_functions.js";
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment.js";
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems.js";
 import {
@@ -49,7 +49,7 @@ export function createAdHocPayments(
   staffMap: TTalenoxInfoStaffMap,
 ): ITalenoxPayment[] {
   const emptyTalenoxPayment: ITalenoxPayment = {
-    staffID: "",
+    staffID: "000",
     staffName: "",
     type: "Others",
     amount: 0,
@@ -163,7 +163,7 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
   const result = (await response.json()) as ITalenoxStaffInfo[];
   const staffMap = new Map<TStaffID, Partial<ITalenoxStaffInfo>>();
   result.forEach((staffInfo) => {
-    if (staffInfo.employee_id === "") {
+    if (staffInfo.employee_id === "") { // may not have been set in Talenox, but we require it to map to our staffHurdle config, so we throw an error if it's missing
       talenoxDebug(
         "getTalenoxEmployees",
         "error: %s %O",
@@ -172,7 +172,9 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
       );
       throw new Error("Empty employee_id returned from Talenox API");
     }
-    staffMap.set(staffInfo.employee_id, {
+    const staffID=staffInfo.employee_id;
+    isValidStaffID(staffID)
+    staffMap.set(staffID, {
       first_name: staffInfo.first_name,
       last_name: staffInfo.last_name,
       resign_date: staffInfo.resign_date,
@@ -195,7 +197,7 @@ export async function createPayroll(
 
   const employee_ids: TStaffID[] = [];
   staffMap.forEach((staffInfo, staffID) => {
-    if (staffID === "") {
+    if (staffID as string === "") {
       talenoxDebug("createPayroll", "error: %s %s", "staffID is empty", staffInfo);
       throw new Error(
         `staffID is empty for ${staffInfo.first_name} ${staffInfo.last_name}`,

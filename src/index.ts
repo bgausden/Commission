@@ -1,3 +1,4 @@
+// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 /* TODO add support for hourly wage staff:
 Gausden, ElizabethStaff ID #: 048 									
@@ -51,7 +52,7 @@ import {
   isContractor,
   moveFilesToOldSubDir,
   isValidDirectory,
-  getValidatedStaffHurdle,
+  getStaffHurdle,
 } from "./utility_functions.js";
 //import { initDebug, log, warn, error } from "./debug_functions.js"
 import {
@@ -74,6 +75,7 @@ import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
 import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import Decimal from "decimal.js";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
@@ -198,9 +200,9 @@ function getStaffIDAndName(
   const regex = new RegExp(`^.*,.*${STAFF_ID_HASH}`);
   if (regex.test(testString as string)) {
     /* Split the name and ID string into an array ["Surname, Firstname", ID] */
-    const staffInfo: string[] | undefined =
+    const staffInfo: [string, TStaffID] | undefined =
       testString !== undefined
-        ? (testString as string).split(STAFF_ID_HASH)
+        ? ((testString as string).split(STAFF_ID_HASH) as [string, TStaffID])
         : undefined;
     if (staffInfo !== undefined) {
       if (staffInfo[staffIDIndex].trim() === "") {
@@ -215,7 +217,8 @@ function getStaffIDAndName(
         /* Everything OK, split the name in staffInfo[0] into Surname and First Name */
         firstName: staffInfo[staffNameIndex].split(",")[firstNameIndex].trim(),
         lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
-        staffID: staffInfo[staffIDIndex].trim(),
+        //staffID: staffInfo[staffIDIndex].trim(),
+        staffID: staffInfo[staffIDIndex],
       };
     } else {
       return null;
@@ -258,8 +261,9 @@ export function getServiceRevenues(
   >();
   let serviceRevenue = 0;
   let customRate = NaN;
-  const sh = getValidatedStaffHurdle(staffID, "Mindbody payroll report");
-  const customPayRates = sh?.customPayRates ?? [];
+  const sh = getStaffHurdle(staffID, "Mindbody payroll report");
+  // const customPayRates = sh.customPayRates || [];
+  const customPayRates = sh.fold((sh) => sh.customPayRates || [], () => [])
   let servName: TServiceName = GENERAL_SERV_REVENUE;
   for (let i = numSearchRows; i >= 1; i--) {
     /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
@@ -400,10 +404,18 @@ function calcGeneralServiceCommission(
   serviceRev: TServiceRevenue,
 ): number {
   // Get staff commission configuration with centralized validation
-  const staffCommConfig = getValidatedStaffHurdle(
+  const staffCommConfig = getStaffHurdle(
     staffID,
     "commission calculation",
-  ) as StaffCommConfig;
+  ).fold(
+    (sh) => sh satisfies StaffCommConfig,
+    () => {
+      errorLogger.error(
+        `Fatal: No staffHurdle found for staffID ${staffID} while calculating commission. Aborting.`,
+      );
+      throw new Error(`No staffHurdle found for staffID ${staffID}`);
+    },
+  );
 
   // Extract and validate hurdle configuration
   const baseRate = stripToNumeric(staffCommConfig.baseRate);
@@ -641,7 +653,7 @@ function getConfiguredPoolMembers(
 function collectPools(staffHurdle: TStaffHurdles): TStaffID[][] {
   const pools: TStaffID[][] = [];
 
-  for (const [staffID, hurdle] of Object.entries(staffHurdle)) {
+  for (const [staffID, hurdle] of staffHurdle) {
     const poolMembers = getConfiguredPoolMembers(staffID, hurdle);
     if (!poolMembers) {
       continue;
@@ -1476,7 +1488,7 @@ async function main() {
 }
 
 //initDebug()
-main()
+if (process.argv[1] === fileURLToPath(import.meta.url)) main()
   .then(async () => {
     debugLogger.debug("Done!");
     await shutdownLogging();
@@ -1497,6 +1509,7 @@ main()
       errorLogger.error(
         `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
       );
+      // eslint-disable-next-line no-console
       console.error(
         `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
       );

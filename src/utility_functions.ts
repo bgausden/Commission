@@ -20,6 +20,7 @@ import { TStaffID } from "./types.js";
 import assert from "node:assert";
 import { DEFAULT_OLD_DIR, defaultStaffID } from "./constants.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
+import { Option } from "./option.js";
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === "number") {
@@ -52,51 +53,51 @@ export function stripToNumeric(n: unknown): number {
 }
 
 /**
- * Validates and retrieves staff hurdle configuration with consistent fallback behavior.
+ * Retrieves staff hurdle configuration with fallback behavior.
+ * Returns Option to handle cases where staff ID doesn't exist.
  *
- * @param staffID - The staff ID to validate
- * @param context - Description of where validation is being called (for better error messages)
- * @returns StaffHurdle configuration (either for staffID or default "000")
- * @throws Error if staffID missing and config.missingStaffAreFatal=true OR if default "000" doesn't exist
+ * @param staffID - The staff ID to look up
+ * @param context - Description of call site (for error messages)
+ * @returns Option<StaffHurdle> (contains value or None)
+ * @throws Error if missingStaffAreFatal and ID missing, or if default "000" missing
  */
-export function getValidatedStaffHurdle(
+export function getStaffHurdle(
   staffID: TStaffID,
   context: string,
-): StaffHurdle {
-  // First: Try to get staff's actual configuration
-  if (staffHurdles[staffID]) {
-    return staffHurdles[staffID];
-  }
+): Option<StaffHurdle> {
+  const hurdle = staffHurdles.get(staffID);
+  if (hurdle) return Option.some(hurdle);
 
-  // Second: Staff not found - check if this is fatal
+  const message = `Staff ID ${staffID} found in ${context} but is missing from staffHurdle.json`;
   if (config.missingStaffAreFatal) {
-    const message = `Staff ID ${staffID} found in ${context} but is missing from staffHurdle.json`;
     errorLogger.error(`Fatal: ${message}`);
     throw new Error(message);
   }
 
-  // Third: Fall back to default with warning
   warnLogger.warn(
     `Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`,
   );
 
-  // Fourth: Ensure default exists (fatal if missing)
-  if (!staffHurdles[defaultStaffID]) {
-    const message = `Default staff ID ${defaultStaffID} is missing from staffHurdle.json. Cannot process staff ${staffID}.`;
-    errorLogger.error(`Fatal: ${message}`);
-    throw new Error(message);
+  const defaultHurdle = staffHurdles.get(defaultStaffID);
+  if (defaultHurdle) {
+    return Option.some(defaultHurdle);
   }
 
-  return staffHurdles[defaultStaffID];
+  const defaultMsg = `Default staff ID ${defaultStaffID} is missing from staffHurdle.json. Cannot process staff ${staffID}.`;
+  errorLogger.error(`Fatal: ${defaultMsg}`);
+  throw new Error(defaultMsg);
 }
 
 export function isPayViaTalenox(staffID: TStaffID): boolean {
-  const sh = getValidatedStaffHurdle(staffID, "payroll Talenox check");
-
-  if (!("payViaTalenox" in sh)) {
-    throw new Error(`${staffID} has no payViaTalenox property.`);
-  }
-  return sh.payViaTalenox ? true : false;
+  const sh = getStaffHurdle(staffID, "payroll Talenox check");
+  return sh.fold(
+    (sh) => sh.payViaTalenox ? true : false,
+    () => {
+      const message = `staffHurdle for staffID ${staffID} is missing. Cannot determine payViaTalenox.`;
+      errorLogger.error(message);
+      throw new Error(message);
+    },
+  );
 }
 
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
@@ -106,12 +107,16 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-  return getValidatedStaffHurdle(staffID, "contractor status check").contractor;
-}
+  const sh = getStaffHurdle(staffID, "contractor status check");
 
-export function getStaffHurdle(staffID: string) {
-  assert(staffID in staffHurdles);
-  return staffHurdles[staffID];
+  return sh.fold(
+    (sh) => sh.contractor,
+    () => {
+      const message = `staffHurdle for staffID ${staffID} is missing 'contractor' key. Aborting.`;
+      errorLogger.error(message);
+      throw new Error(message);
+    },
+  );
 }
 
 export function assertLog4JsConfig(
@@ -251,4 +256,10 @@ export function getMostRecentlyModifiedFiles(dir: string, count = 3) {
 export function loadJsonFromFile<T>(filepath: string): T {
   const fileContent = readFileSync(filepath, "utf-8");
   return JSON.parse(fileContent) as T;
+}
+
+export function isValidStaffID(staffID: unknown): asserts staffID is TStaffID {
+  if (typeof staffID !== "string" || !/^[0-9]{3}$/.test(staffID)) {
+    throw new assert.AssertionError({ message: `Invalid staffID: ${staffID}`, expected: "string of 3 digits", actual: staffID });
+  }
 }

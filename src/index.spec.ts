@@ -10,7 +10,7 @@ import type {
   TStaffHurdles,
 } from "./types.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
-import { createAdHocPayments } from "./talenox_functions.js";
+import { Option } from "./option.js";
 
 // Mock dependencies
 vi.mock("./logging_functions.js", () => ({
@@ -27,31 +27,32 @@ vi.mock("./logging_functions.js", () => ({
 vi.mock("./utility_functions.js", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("./utility_functions.js")>();
+  const mockStaffHurdle = {
+    staffName: "Kate",
+    baseRate: 0,
+    hurdle1Level: 30000,
+    hurdle1Rate: 0.11,
+    hurdle2Level: 50000,
+    hurdle2Rate: 0.15,
+    contractor: false,
+    payViaTalenox: true,
+    customPayRates: [{ Extensions: 0.15 }],
+  };
+  const defaultStaffHurdle = {
+    staffName: "Default",
+    baseRate: 0,
+    hurdle1Level: 20000,
+    hurdle1Rate: 0.1,
+    contractor: false,
+    payViaTalenox: true,
+  };
   return {
     ...actual,
-    isContractor: vi.fn(() => false),
-    getValidatedStaffHurdle: vi.fn((staffID: string) => {
+    getStaffHurdle: vi.fn((staffID: string) => {
       if (staffID === "012") {
-        return {
-          staffName: "Kate",
-          baseRate: 0,
-          hurdle1Level: 30000,
-          hurdle1Rate: 0.11,
-          hurdle2Level: 50000,
-          hurdle2Rate: 0.15,
-          contractor: false,
-          payViaTalenox: true,
-          customPayRates: [{ Extensions: 0.15 }],
-        };
+        return Option.some(mockStaffHurdle);
       }
-      return {
-        staffName: "Default",
-        baseRate: 0,
-        hurdle1Level: 20000,
-        hurdle1Rate: 0.1,
-        contractor: false,
-        payViaTalenox: true,
-      };
+      return Option.some(defaultStaffHurdle);
     }),
   };
 });
@@ -788,7 +789,7 @@ describe("calculateStaffCommission", () => {
     expect(result.productCommission).toBe(75);
     expect(result.totalServiceRevenue).toBe(48000); // 40000 + 8000
     // Real implementation calculates using actual hurdle config (0.11 rate on revenue > 30000)
-    expect(result.generalServiceCommission).toBe(2000); // Uses mocked getValidatedStaffHurdle
+    expect(result.generalServiceCommission).toBe(2000); // Uses mocked getStaffHurdle
     expect(result.customRateCommission).toBe(1200); // 8000 * 0.15
     expect(result.totalServiceCommission).toBe(3200); // 2000 + 1200
   });
