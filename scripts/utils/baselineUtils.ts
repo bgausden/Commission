@@ -4,7 +4,7 @@
 
 import { readdir } from 'fs/promises';
 import { join } from 'path';
-import { readJSON } from './fileUtils.js';
+import { readJSON } from '../../src/fileUtils.js';
 import type { Result } from '../../src/types.js';
 import { ok, err } from '../../src/types.js';
 

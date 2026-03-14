@@ -15,7 +15,7 @@ import {
   generateDiffReport,
 } from "./comparison/compareBaseline.js";
 import { findOldestBaseline } from "./utils/baselineUtils.js";
-import { fileExists, readJSON } from "./utils/fileUtils.js";
+import { fileExists, readJSON } from "../src/fileUtils.js";
 import {
   createRegressionSandbox,
   discoverRegressionOutputs,

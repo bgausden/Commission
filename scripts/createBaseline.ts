@@ -18,7 +18,7 @@ import {
   writeJSON,
   computeChecksum,
   fileExists,
-} from "./utils/fileUtils.js";
+} from "../src/fileUtils.js";
 import {
   getCurrentBranch,
   getCommitSHA,

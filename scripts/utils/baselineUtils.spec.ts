@@ -3,10 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdir, writeFile, rm } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
-import { findOldestBaseline } from "../scripts/utils/baselineUtils.js";
+import { mkdir, writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { findOldestBaseline } from "./baselineUtils.js";
 
 describe("findOldestBaseline", () => {
   let tempDir: string;
