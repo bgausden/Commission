@@ -1,6 +1,8 @@
 // TODO find a way to limit this to the actual services defined in Mindbody (get from Services REST API)
 // export type TServiceType = string <-- overlaps with TServiceName?
 
+import {TStaffID} from "./types.js";
+
 export type CustomPayRate = { [name: string]: number | undefined };
 
 export interface StaffHurdle {
@@ -14,7 +16,7 @@ export interface StaffHurdle {
   hurdle2Rate?: number;
   hurdle3Level?: number;
   hurdle3Rate?: number;
-  poolsWith?: string[];
+  poolsWith?: TStaffID[];
   contractor: boolean;
   payViaTalenox: boolean;
   customPayRates?: CustomPayRate[];

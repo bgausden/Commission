@@ -57,16 +57,25 @@ export type TCommComponents = {
   customRateCommissions: TCommComponentCustomRateCommissions;
   totalServiceCommission: TServiceCommission;
 };
-export type TCommMap = Map<TStaffName, TCommComponents>;
-export type TStaffID = string;
+export type TCommMap = Map<TStaffID, TCommComponents>;
+
+type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+type ThreeDigitString = `${Digit}${Digit}${Digit}`
+export type TStaffID = ThreeDigitString;
 
 // TODO: make this a singleton
 export type TStaffMap = Map<TStaffID, IStaffNames>;
 export type TTalenoxInfoStaffMap = Map<TStaffID, Partial<ITalenoxStaffInfo>>;
 
-export type TStaffHurdles = {
-  [staffID: string]: StaffHurdle;
-};
+/* export type TStaffHurdles = {
+  [key in TStaffID]: StaffHurdle;
+}; // Requires every staffID to be present, which is not the case in reality
+ */
+
+/* export type TStaffHurdles = Partial<Record<TStaffID, StaffHurdle>>;
+ */
+
+export type TStaffHurdles = Map<TStaffID, StaffHurdle>;
 
 export type TServiceName = string;
 export type TServiceCustomRate = number | null;
