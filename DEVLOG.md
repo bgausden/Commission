@@ -1,5 +1,114 @@
 # Development Log - Commission Calculator
 
+## 2026-03-14: TypeScript RC Upgrade + Type System Strengthening
+
+### Overview
+
+Major type system hardening pass and upgrade to TypeScript 6.0 RC. The main goals were to make staff ID handling type-safe at the compiler level, replace the plain-object `TStaffHurdles` with a `Map`, and model optional lookups with an `Option<T>` monad instead of returning a value-or-undefined.
+
+### Changes
+
+- **`Option<T>` monad** (`src/option.ts`): New functional type with `Some`/`None` variants, `fold`, `map`, `flatMap`, `getOrElse`, and static helpers (`isSome`, `isNone`, `fromNullable`). Eliminates implicit nullable returns.
+
+- **Branded `TStaffID`** (`src/types.ts`): Changed from `string` to `ThreeDigitString` (a template-literal type). Prevents arbitrary strings being passed where a staff ID is expected.
+
+- **`TStaffHurdles` as `Map`** (`src/types.ts`): Replaced `{ [staffID: string]: StaffHurdle }` with `Map<TStaffID, StaffHurdle>`. Map semantics (`.get()`, `.set()`) are more explicit than index access and make missing-key handling obvious.
+
+- **`TCommMap` key type corrected** (`src/types.ts`): Was keyed by `TStaffName`, now correctly keyed by `TStaffID`.
+
+- **Interface fields made optional** (`src/IStaffCommConfig.ts`): All hurdle-related fields (`baseRate`, `hurdle1Level`, etc.) marked optional to reflect that not all staff have every tier.
+
+- **`poolsWith` typed as `TStaffID[]`** (`src/IStaffHurdle.ts`): Was `string[]`; now enforces that pooled staff IDs are valid staff IDs.
+
+- **`getStaffHurdle` returns `Option<StaffHurdle>`** (`src/utility_functions.ts`): Replaces `getValidatedStaffHurdle` which returned a `StaffHurdle` with implicit fallback to the `000` default. New function returns `Option.some(hurdle)` when found, falls back to the `000` default (also wrapped in `Option.some`), or throws if `missingStaffAreFatal` or if the `000` default is itself missing.
+
+- **`loadStaffHurdles` produces a `Map`** (`src/staffHurdles.ts`): Reads JSON, converts to `Map<TStaffID, StaffHurdle>`, trimming whitespace from keys on ingest.
+
+- **`serverApp.ts` updated** for Map-based `TStaffHurdles`: `loadStaffHurdles`/`saveStaffHurdles` now convert between `Map` and plain object for JSON serialisation.
+
+- **TypeScript 6.0 RC** (`package.json`): Upgraded from `^5.7.2` to `^6.0.1-rc`. `@types/node` bumped to `^25.5.0`.
+
+- **Split tsconfigs** (`tsconfig.json`, `tsconfig.scripts.json`, `scripts/tsconfig.json`): `src/` and `scripts/` now have separate tsconfig roots so spec files are included in type-checking without polluting the production build.
+
+- **`fileUtils` consolidated into `src/`** (`src/fileUtils.ts`): Moved from `scripts/utils/fileUtils.ts` so it can be shared by both `src/` and `scripts/` without cross-boundary relative imports. All script consumers updated.
+
+- **`scripts/utils/baselineUtils.spec.ts`** (new): Unit tests for `findOldestBaseline`, relocated from `src/baselineUtils.spec.ts`.
+
+### Files touched
+
+`src/option.ts` (new), `src/types.ts`, `src/IStaffHurdle.ts`, `src/IStaffCommConfig.ts`, `src/constants.ts`, `src/staffHurdles.ts`, `src/utility_functions.ts`, `src/serverApp.ts`, `src/talenox_functions.ts`, `src/index.ts`, `src/index.spec.ts`, `src/utility_functions.validation.spec.ts`, `src/fileUtils.ts` (new, moved from scripts), `scripts/utils/fileUtils.ts` (deleted), `scripts/utils/baselineUtils.spec.ts` (new), `src/baselineUtils.spec.ts` (deleted), `scripts/createBaseline.ts`, `scripts/listBaselines.ts`, `scripts/regression.spec.ts`, `scripts/updateBaseline.ts`, `scripts/utils/baselineUtils.ts`, `scripts/compareExcel.ts`, `tsconfig.json`, `tsconfig.scripts.json` (new), `scripts/tsconfig.json` (new), `package.json`, `.vscode/settings.json`
+
+---
+
+## 2026-03-02: February 2026 Payroll Configuration
+
+### Overview
+
+Applied February 2026 payroll configuration, which had been lost during branch merges, and pinned the vendored xlsx package.
+
+**Changes**:
+
+- Restored correct `staffHurdle.json` entries for February 2026 payroll
+- Re-pinned vendored xlsx-0.20.3 after it was inadvertently dropped in merge
+
+**Files touched**: `config/staffHurdle.json`, `config/default.json`, `vendor/`
+
+---
+
+## 2026-03-01: Google Drive Integration + Test Infrastructure Enhancements
+
+### Overview
+
+Several independent improvements landed together: Google Drive upload of commission run artifacts, enhancements to the regression test infrastructure (vendored xlsx, baseline auto-discovery, PII cleanup), and documentation trimming.
+
+### Changes
+
+- **Google Drive integration** (`src/gdrive_functions.ts`, new guide in `docs/`): Commission run artifacts (payment Excel, commission log) are automatically uploaded to a configured Google Drive folder after a successful run. Supports shared drives. Directories are created on first use.
+
+- **Vendored xlsx tracked in repo** (`vendor/xlsx-0.20.3/`): Source of the vendored xlsx library is now committed so diffs are auditable.
+
+- **Baseline auto-discovery** (`scripts/utils/baselineUtils.ts` → `findOldestBaseline`): Regression tests no longer hardcode a baseline name. On each run, the oldest baseline by `createdDate` in `test-baselines/` is selected automatically. Override with `BASELINE_NAME` env var.
+
+- **`test-baselines/` gitignored**: Baseline directories contain generated output and should not be tracked.
+
+- **PII cleanup**: Removed accidentally-tracked files containing staff names/data; added them to `.gitignore`.
+
+- **xlsx vendor enhanced** (`src/vendor-xlsx.mjs`): Initialised xlsx with Node.js `fs` module for file operations.
+
+- **Docs trimmed**: `CLAUDE.md` reduced to decisions and constraints only; Copilot instructions trimmed to non-obvious constraints.
+
+### Files touched
+
+`src/gdrive_functions.ts` (new), `src/index.ts`, `vendor/xlsx-0.20.3/` (new), `scripts/utils/baselineUtils.ts`, `scripts/regression.spec.ts`, `.gitignore`, `CLAUDE.md`, `docs/google-drive-setup.md` (new)
+
+---
+
+## 2026-02-07: Regression Testing Infrastructure
+
+### Overview
+
+Added a full regression testing pipeline to catch output regressions between payroll runs.
+
+### Changes
+
+- **Baseline creation** (`scripts/createBaseline.ts`): Runs the commission calculator against a known input, captures the payment Excel and commission log, and stores them as a named baseline with metadata (git SHA, branch, date).
+
+- **Baseline comparison** (`scripts/comparison/compareBaseline.ts`): Parses both baseline and current output, diffs staff-by-staff payment amounts, and generates a human-readable diff report.
+
+- **Parsers** (`scripts/parsers/`): `parsePaymentsExcel.ts` and `parseCommissionLog.ts` extract structured data from the two output artefacts.
+
+- **`fileUtils`** (`scripts/utils/fileUtils.ts`): Shared async file helpers (checksum, copy, JSON read/write, directory creation, existence check).
+
+- **Regression spec** (`scripts/regression.spec.ts`): Vitest spec that auto-discovers the oldest baseline, runs the current code, and asserts no regressions. Skips gracefully when no baseline exists.
+
+- **Vitest globals fix**: Added `globals: true` and `environment: "node"` to `vitest.config.ts` to resolve startup errors in the Vitest VS Code extension.
+
+### Files touched
+
+`scripts/createBaseline.ts` (new), `scripts/updateBaseline.ts` (new), `scripts/listBaselines.ts` (new), `scripts/comparison/compareBaseline.ts` (new), `scripts/parsers/parsePaymentsExcel.ts` (new), `scripts/parsers/parseCommissionLog.ts` (new), `scripts/utils/fileUtils.ts` (new), `scripts/regression.spec.ts` (new), `vitest.config.ts`, `src/regression.types.ts` (new)
+
+---
+
 ## 2026-02-07: Test Suite Review and Verification
 
 ### Overview

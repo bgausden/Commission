@@ -38,11 +38,11 @@ All new features and bug fixes must be developed on a separate branch. Do not im
 
 ### `staffHurdle.json` default fallback
 
-Staff ID `"000"` is the fallback entry used when a staff member appears in the Mindbody report but has no entry in `config/staffHurdle.json`. Behaviour is controlled by `config.missingStaffAreFatal`:
+Staff ID `"000"` is the fallback entry used when a staff member appears in the Mindbody report but has no entry in `config/staffHurdle.json`. `getStaffHurdle()` returns `Option<StaffHurdle>`. Behaviour is controlled by `config.missingStaffAreFatal`:
 
-1. Staff ID found → use their config directly
+1. Staff ID found → `Option.some(hurdle)`
 2. Staff ID missing + `missingStaffAreFatal: true` → throw error
-3. Staff ID missing + `missingStaffAreFatal: false` → warn and return `"000"` config
+3. Staff ID missing + `missingStaffAreFatal: false` → warn and return `Option.some("000" config)`
 4. `"000"` itself missing → always throws regardless of config
 
 ### Mindbody Excel format assumptions
