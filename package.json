@@ -20,10 +20,7 @@
         "server": "node dist/server.js",
         "server:tsx": "npx tsx src/server.ts",
         "server:debug:tsx": "npx tsx --inspect-brk src/server.ts",
-        "test:tsx": "npx tsx --test src/**/*.spec.ts",
-        "test:debug:tsx": "npx tsx --inspect-brk --test src/**/*.spec.ts",
         "test:debug": "npx vitest --inspect-brk",
-        "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts",
         "lint": "eslint src scripts"
     },
     "repository": {
@@ -58,10 +55,9 @@
         "eslint": "^9.17.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.2.1",
-        "expect": "^29.7.0",
         "memfs": "^4.13.0",
         "tsx": "^4.16.0",
-        "typescript": "^6.0.1-rc",
+        "typescript": "^6.0.2",
         "vitest": "^4.0.18"
     }
 }
