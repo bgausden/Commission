@@ -1,6 +1,6 @@
 {
-    "PAYROLL_WB_FILENAME": "Payroll Report 2-1-2026 - 2-28-2026.xlsx",
+    "PAYROLL_WB_FILENAME": "Payroll Report 3-1-2026 - 3-31-2026.xlsx",
     "missingStaffAreFatal": true,
-    "updateTalenox": false,
-    "uploadToGDrive": false
+    "updateTalenox": true,
+    "uploadToGDrive": true
 }
