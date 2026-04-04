@@ -551,6 +551,15 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
   XLSX.writeFile(paymentsWB, `${PAYMENTS_DIR}/${PAYMENTS_WB_NAME}`);
 }
 
+/**
+ * Split an amount evenly across members, distributing remainder cents
+ * to the first members (by array order).
+ *
+ * Example: $100 split 3 ways → [33.34, 33.33, 33.33]
+ *
+ * Note: Pool members are sorted by staffID in collectPools(),
+ * so staff with lower IDs receive any remainder cents.
+ */
 function splitAmountAcrossMembers(
   amount: number,
   memberCount: number,
@@ -580,6 +589,33 @@ function amountToCents(amount: number): number {
   return Math.round(amount * 100);
 }
 
+type PoolTotals = {
+  totalServiceRevenue: number;
+  tips: number;
+  productCommission: number;
+  generalServiceCommission: number;
+};
+
+type PoolAggregate = {
+  numericTotals: PoolTotals;
+  customRateCommissions: Record<string, number>;
+};
+
+type PoolShares = {
+  numericShares: {
+    totalServiceRevenue: number[];
+    tips: number[];
+    productCommission: number[];
+    generalServiceCommission: number[];
+  };
+  customRateShares: Record<string, number[]>;
+};
+
+type PooledStaffEntry = {
+  staffID: TStaffID;
+  comm: TCommComponents;
+};
+
 function assertUniquePoolMembers(
   poolMembers: TStaffID[],
   context: string,
@@ -607,296 +643,357 @@ function assertDistributedShares(
   );
 }
 
+function getRequiredCommComponents(
+  commMap: TCommMap,
+  staffID: TStaffID,
+  detail?: string,
+): TCommComponents {
+  const comm = commMap.get(staffID);
+  assert(
+    comm,
+    detail
+      ? `No commMap entry for ${staffID} ${detail}. This should never happen.`
+      : `No commMap entry for ${staffID}. This should never happen.`,
+  );
+  return comm;
+}
+
+function createEmptyPoolTotals(): PoolTotals {
+  return {
+    totalServiceRevenue: 0,
+    tips: 0,
+    productCommission: 0,
+    generalServiceCommission: 0,
+  };
+}
+
+function getConfiguredPoolMembers(
+  staffID: TStaffID,
+  hurdle: StaffHurdle,
+): TStaffID[] | null {
+  if (!hurdle.poolsWith || hurdle.poolsWith.length === 0) {
+    return null;
+  }
+
+  const poolMembers = [...hurdle.poolsWith, staffID];
+  assertUniquePoolMembers(poolMembers, `Pooling config for ${staffID}`);
+  return poolMembers.sort();
+}
+
+function collectPools(staffHurdle: TStaffHurdles): TStaffID[][] {
+  const pools: TStaffID[][] = [];
+
+  for (const [staffID, hurdle] of Object.entries(staffHurdle)) {
+    const poolMembers = getConfiguredPoolMembers(staffID, hurdle);
+    if (!poolMembers) {
+      continue;
+    }
+
+    let foundPoolMembers: TStaffID[] | undefined;
+    for (const existingPool of pools) {
+      if (!existingPool.includes(staffID)) {
+        continue;
+      }
+
+      if (foundPoolMembers) {
+        assert(
+          eqSet(existingPool, foundPoolMembers),
+          `${staffID} appears in multiple pool definitions.`,
+        );
+        continue;
+      }
+
+      foundPoolMembers = existingPool;
+    }
+
+    if (foundPoolMembers) {
+      if (!eqSet(foundPoolMembers, poolMembers)) {
+        throw new Error(
+          `Pooling config for ${staffID} appears to be incorrect.`,
+        );
+      }
+      continue;
+    }
+
+    pools.push(poolMembers);
+  }
+
+  return pools;
+}
+
+function aggregatePool(
+  poolMembers: TStaffID[],
+  commMap: TCommMap,
+): PoolAggregate {
+  const numericTotals = createEmptyPoolTotals();
+  const customRateCommissions: Record<string, number> = {};
+
+  for (const poolMember of poolMembers) {
+    const commMapElement = getRequiredCommComponents(commMap, poolMember);
+
+    numericTotals.totalServiceRevenue += commMapElement.totalServiceRevenue;
+    numericTotals.tips += commMapElement.tips;
+    numericTotals.productCommission += commMapElement.productCommission;
+    numericTotals.generalServiceCommission +=
+      commMapElement.generalServiceCommission;
+
+    for (const [serviceName, amount] of Object.entries(
+      commMapElement.customRateCommissions,
+    )) {
+      customRateCommissions[serviceName] =
+        (customRateCommissions[serviceName] ?? 0) + amount;
+    }
+  }
+
+  return { numericTotals, customRateCommissions };
+}
+
+function splitPoolAggregate(
+  aggregate: PoolAggregate,
+  poolMembers: TStaffID[],
+): PoolShares {
+  const { numericTotals, customRateCommissions } = aggregate;
+  const memberCount = poolMembers.length;
+  const poolLabel = poolMembers.join(", ");
+
+  const numericShares = {
+    totalServiceRevenue: splitAmountAcrossMembers(
+      numericTotals.totalServiceRevenue,
+      memberCount,
+    ),
+    tips: splitAmountAcrossMembers(numericTotals.tips, memberCount),
+    productCommission: splitAmountAcrossMembers(
+      numericTotals.productCommission,
+      memberCount,
+    ),
+    generalServiceCommission: splitAmountAcrossMembers(
+      numericTotals.generalServiceCommission,
+      memberCount,
+    ),
+  };
+
+  assertDistributedShares(
+    numericShares.totalServiceRevenue,
+    memberCount,
+    numericTotals.totalServiceRevenue,
+    `totalServiceRevenue pool ${poolLabel}`,
+  );
+  assertDistributedShares(
+    numericShares.tips,
+    memberCount,
+    numericTotals.tips,
+    `tips pool ${poolLabel}`,
+  );
+  assertDistributedShares(
+    numericShares.productCommission,
+    memberCount,
+    numericTotals.productCommission,
+    `productCommission pool ${poolLabel}`,
+  );
+  assertDistributedShares(
+    numericShares.generalServiceCommission,
+    memberCount,
+    numericTotals.generalServiceCommission,
+    `generalServiceCommission pool ${poolLabel}`,
+  );
+
+  const customRateShares: Record<string, number[]> = {};
+  for (const [serviceName, amount] of Object.entries(customRateCommissions)) {
+    const shares = splitAmountAcrossMembers(amount, memberCount);
+    assertDistributedShares(
+      shares,
+      memberCount,
+      amount,
+      `${serviceName} custom rate commission pool ${poolLabel}`,
+    );
+    customRateShares[serviceName] = shares;
+  }
+
+  return { numericShares, customRateShares };
+}
+
+function createPooledCustomRateCommissions(
+  customRateShares: PoolShares["customRateShares"],
+  index: number,
+): TCommComponents["customRateCommissions"] {
+  const pooledCustomRateCommissions: TCommComponents["customRateCommissions"] =
+    {};
+
+  for (const [serviceName, shares] of Object.entries(customRateShares)) {
+    const share = shares[index];
+    if (share !== 0) {
+      pooledCustomRateCommissions[serviceName] = share;
+    }
+  }
+
+  return pooledCustomRateCommissions;
+}
+
+function createPooledCommission(
+  shares: PoolShares,
+  index: number,
+): TCommComponents {
+  const customRateCommissions = createPooledCustomRateCommissions(
+    shares.customRateShares,
+    index,
+  );
+  const customRateCommission = sumCustomRateCommissions(customRateCommissions);
+  const generalServiceCommission =
+    shares.numericShares.generalServiceCommission[index];
+
+  return {
+    totalServiceRevenue: shares.numericShares.totalServiceRevenue[index],
+    tips: shares.numericShares.tips[index],
+    productCommission: shares.numericShares.productCommission[index],
+    generalServiceCommission,
+    customRateCommissions,
+    customRateCommission,
+    totalServiceCommission: generalServiceCommission + customRateCommission,
+  };
+}
+
+function applyPoolShares(
+  commMap: TCommMap,
+  poolMembers: TStaffID[],
+  shares: PoolShares,
+): PooledStaffEntry[] {
+  return poolMembers.map((staffID, index) => {
+    const pooledComm = createPooledCommission(shares, index);
+    commMap.set(staffID, pooledComm);
+    return { staffID, comm: pooledComm };
+  });
+}
+
+function formatPoolStaffName(
+  talenoxStaff: TTalenoxInfoStaffMap,
+  staffID: TStaffID,
+): string {
+  return `${talenoxStaff.get(staffID)?.last_name ?? "<Last Name>"}, ${
+    talenoxStaff.get(staffID)?.first_name ?? "<First Name>"
+  }`;
+}
+
+function logPoolShares(
+  poolMembers: TStaffID[],
+  aggregate: PoolAggregate,
+  pooledEntries: PooledStaffEntry[],
+  talenoxStaff: TTalenoxInfoStaffMap,
+): void {
+  const memberList = poolMembers
+    .map((member) => `${member} ${formatPoolStaffName(talenoxStaff, member)}`)
+    .join(", ");
+
+  infoLogger.info("=======================================");
+  infoLogger.info("Pooling Calculations");
+  infoLogger.info("=======================================");
+
+  for (const { staffID, comm } of pooledEntries) {
+    const staffName = formatPoolStaffName(talenoxStaff, staffID);
+    infoLogger.info(`Pooling for ${staffID} ${staffName}`);
+    infoLogger.info(
+      `Pool contains ${poolMembers.length} members: ${memberList}`,
+    );
+    infoLogger.info(
+      `totalServiceRevenue: Aggregate value is ${aggregate.numericTotals.totalServiceRevenue}. 1/${poolMembers.length} share = ${comm.totalServiceRevenue}`,
+    );
+    infoLogger.info(
+      `tips: Aggregate value is ${aggregate.numericTotals.tips}. 1/${poolMembers.length} share = ${comm.tips}`,
+    );
+    infoLogger.info(
+      `productCommission: Aggregate value is ${aggregate.numericTotals.productCommission}. 1/${poolMembers.length} share = ${comm.productCommission}`,
+    );
+    infoLogger.info(
+      `generalServiceCommission: Aggregate value is ${aggregate.numericTotals.generalServiceCommission}. 1/${poolMembers.length} share = ${comm.generalServiceCommission}`,
+    );
+    for (const [serviceName, amount] of Object.entries(
+      aggregate.customRateCommissions,
+    )) {
+      infoLogger.info(
+        `${serviceName} custom rate commission: Aggregate value is ${amount}. 1/${poolMembers.length} share = ${comm.customRateCommissions[serviceName] ?? 0}`,
+      );
+    }
+    infoLogger.info(
+      `customRateCommission recomputed as ${comm.customRateCommission}`,
+    );
+    infoLogger.info(
+      `totalServiceCommission recomputed as ${comm.totalServiceCommission}`,
+    );
+    infoLogger.info("--------------");
+  }
+}
+
+function assertPoolAggregatePreserved(
+  poolMembers: TStaffID[],
+  aggregate: PoolAggregate,
+  commMap: TCommMap,
+): void {
+  const pooledAggregate = aggregatePool(poolMembers, commMap);
+  const poolLabel = poolMembers.join(", ");
+
+  assert(
+    amountToCents(pooledAggregate.numericTotals.totalServiceRevenue) ===
+      amountToCents(aggregate.numericTotals.totalServiceRevenue),
+    `Pooled totalServiceRevenue drifted for pool ${poolLabel}.`,
+  );
+  assert(
+    amountToCents(pooledAggregate.numericTotals.tips) ===
+      amountToCents(aggregate.numericTotals.tips),
+    `Pooled tips drifted for pool ${poolLabel}.`,
+  );
+  assert(
+    amountToCents(pooledAggregate.numericTotals.productCommission) ===
+      amountToCents(aggregate.numericTotals.productCommission),
+    `Pooled productCommission drifted for pool ${poolLabel}.`,
+  );
+  assert(
+    amountToCents(pooledAggregate.numericTotals.generalServiceCommission) ===
+      amountToCents(aggregate.numericTotals.generalServiceCommission),
+    `Pooled generalServiceCommission drifted for pool ${poolLabel}.`,
+  );
+  assert(
+    eqSet(
+      Object.keys(pooledAggregate.customRateCommissions),
+      Object.keys(aggregate.customRateCommissions),
+    ),
+    `Pooled custom rate commission services drifted for pool ${poolLabel}.`,
+  );
+
+  for (const [serviceName, amount] of Object.entries(
+    aggregate.customRateCommissions,
+  )) {
+    assert(
+      amountToCents(pooledAggregate.customRateCommissions[serviceName] ?? 0) ===
+        amountToCents(amount),
+      `${serviceName} pooled custom rate commission drifted for pool ${poolLabel}.`,
+    );
+  }
+}
+
 export function doPooling(
   commMap: TCommMap,
   staffHurdle: TStaffHurdles,
   talenoxStaff: TTalenoxInfoStaffMap,
-): void {
-  let poolCounter = 0;
-  const pools = new Map<number, TStaffID[]>();
-  Object.entries(staffHurdle).forEach((element) => {
-    const [staffID, hurdle] = element;
-    const poolingWith = hurdle.poolsWith;
-    if (poolingWith && poolingWith.length > 0) {
-      let foundPoolID: number | undefined;
-      let foundPoolMembers: TStaffID[] | undefined;
-      for (const pool of pools) {
-        const [poolID, poolingStaff] = pool;
-        if (poolingStaff.includes(staffID)) {
-          if (foundPoolID) {
-            if (foundPoolMembers && !eqSet(poolingStaff, foundPoolMembers)) {
-              // Already appear in another pool. Something's broken
-              throw new Error(`${staffID} appears to be a member of two `);
-            }
-          } else {
-            // make sure this pool contains everyone we think we pool with
-            // if not, the staffHurdle.json is incorrect
-            poolingWith.push(staffID);
-            assertUniquePoolMembers(
-              poolingWith,
-              `Pooling config for ${staffID}`,
-            );
-            if (eqSet(poolingStaff, poolingWith)) {
-              foundPoolID = poolID;
-              foundPoolMembers = poolingStaff;
-            } else {
-              throw new Error(
-                `Pooling config for ${staffID} appears to be incorrect.`,
-              );
-            }
-          }
-        }
-      }
-      // Now set the pool if !foundPoolID
-      if (foundPoolID === undefined) {
-        poolingWith.push(staffID);
-        assertUniquePoolMembers(poolingWith, `Pooling config for ${staffID}`);
-        pools.set(poolCounter, poolingWith);
-        poolCounter += 1;
-      }
-    }
-  });
-  // Now actually allocate revenues across the pools
-  for (const pool of pools) {
-    const [_poolId, unorderedPoolMembers] = pool;
-    const poolMembers = [...unorderedPoolMembers].sort();
+): TCommMap {
+  const pools = collectPools(staffHurdle);
+
+  // Clone the commission map to avoid mutating the input
+  const pooledCommMap = new Map(commMap);
+
+  for (const poolMembers of pools) {
     assert(poolMembers.length > 1, `Pool must contain at least 2 members.`);
     assertUniquePoolMembers(poolMembers, `Pool ${poolMembers.join(", ")}`);
-    const aggregateComm = {
-      totalServiceRevenue: 0,
-      tips: 0,
-      productCommission: 0,
-      generalServiceCommission: 0,
-    };
-    const aggregateCustomRateCommissions: Record<string, number> = {};
-    for (const poolMember of poolMembers) {
-      const commMapElement = commMap.get(poolMember);
-      if (!commMapElement) {
-        throw new Error(
-          `No commMap entry for ${poolMember}. This should never happen.`,
-        );
-      }
+    const aggregate = aggregatePool(poolMembers, pooledCommMap);
+    const shares = splitPoolAggregate(aggregate, poolMembers);
+    const pooledEntries = applyPoolShares(pooledCommMap, poolMembers, shares);
 
-      aggregateComm.totalServiceRevenue += commMapElement.totalServiceRevenue;
-      aggregateComm.tips += commMapElement.tips;
-      aggregateComm.productCommission += commMapElement.productCommission;
-      aggregateComm.generalServiceCommission +=
-        commMapElement.generalServiceCommission;
-
-      for (const [serviceName, amount] of Object.entries(
-        commMapElement.customRateCommissions,
-      )) {
-        aggregateCustomRateCommissions[serviceName] =
-          (aggregateCustomRateCommissions[serviceName] ?? 0) + amount;
-      }
-    }
-
-    const pooledNumericShares = {
-      totalServiceRevenue: splitAmountAcrossMembers(
-        aggregateComm.totalServiceRevenue,
-        poolMembers.length,
-      ),
-      tips: splitAmountAcrossMembers(aggregateComm.tips, poolMembers.length),
-      productCommission: splitAmountAcrossMembers(
-        aggregateComm.productCommission,
-        poolMembers.length,
-      ),
-      generalServiceCommission: splitAmountAcrossMembers(
-        aggregateComm.generalServiceCommission,
-        poolMembers.length,
-      ),
-    };
-
-    assertDistributedShares(
-      pooledNumericShares.totalServiceRevenue,
-      poolMembers.length,
-      aggregateComm.totalServiceRevenue,
-      `totalServiceRevenue pool ${poolMembers.join(", ")}`,
-    );
-    assertDistributedShares(
-      pooledNumericShares.tips,
-      poolMembers.length,
-      aggregateComm.tips,
-      `tips pool ${poolMembers.join(", ")}`,
-    );
-    assertDistributedShares(
-      pooledNumericShares.productCommission,
-      poolMembers.length,
-      aggregateComm.productCommission,
-      `productCommission pool ${poolMembers.join(", ")}`,
-    );
-    assertDistributedShares(
-      pooledNumericShares.generalServiceCommission,
-      poolMembers.length,
-      aggregateComm.generalServiceCommission,
-      `generalServiceCommission pool ${poolMembers.join(", ")}`,
-    );
-
-    const pooledCustomShares = Object.fromEntries(
-      Object.entries(aggregateCustomRateCommissions).map(
-        ([serviceName, amount]) => [
-          serviceName,
-          splitAmountAcrossMembers(amount, poolMembers.length),
-        ],
-      ),
-    );
-
-    for (const [serviceName, shares] of Object.entries(pooledCustomShares)) {
-      assertDistributedShares(
-        shares,
-        poolMembers.length,
-        aggregateCustomRateCommissions[serviceName] ?? 0,
-        `${serviceName} custom rate commission pool ${poolMembers.join(", ")}`,
-      );
-    }
-
-    // divide the aggregate values across the pool members by updating their commComponents entries
-    // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
-    infoLogger.info("=======================================");
-    infoLogger.info("Pooling Calculations");
-    infoLogger.info("=======================================");
-
-    poolMembers.forEach((poolMember, index) => {
-      const staffName = `${
-        talenoxStaff.get(poolMember)?.last_name ?? "<Last Name>"
-      }, ${talenoxStaff.get(poolMember)?.first_name ?? "<First Name>"}`;
-      infoLogger.info(`Pooling for ${poolMember} ${staffName}`);
-      const memberList = poolMembers
-        .map(
-          (member) =>
-            `${member} ${
-              talenoxStaff.get(member)?.last_name ?? "<Last Name>"
-            } ${talenoxStaff.get(member)?.first_name ?? "<First Name>"}`,
-        )
-        .join(", ");
-      infoLogger.info(
-        `Pool contains ${poolMembers.length} members: ${memberList}`,
-      );
-
-      const comm = commMap.get(poolMember);
-      assert(
-        comm,
-        `No commMap entry for ${poolMember} ${staffName}. This should never happen.`,
-      );
-
-      comm.totalServiceRevenue = pooledNumericShares.totalServiceRevenue[index];
-      comm.tips = pooledNumericShares.tips[index];
-      comm.productCommission = pooledNumericShares.productCommission[index];
-      comm.generalServiceCommission =
-        pooledNumericShares.generalServiceCommission[index];
-
-      const pooledCustomRateCommissions: TCommComponents["customRateCommissions"] =
-        {};
-      for (const [serviceName, shares] of Object.entries(pooledCustomShares)) {
-        const share = shares[index];
-        if (share !== 0) {
-          pooledCustomRateCommissions[serviceName] = share;
-        }
-      }
-
-      comm.customRateCommissions = pooledCustomRateCommissions;
-      comm.customRateCommission = sumCustomRateCommissions(
-        pooledCustomRateCommissions,
-      );
-      comm.totalServiceCommission =
-        comm.generalServiceCommission + comm.customRateCommission;
-
-      infoLogger.info(
-        `totalServiceRevenue: Aggregate value is ${aggregateComm.totalServiceRevenue}. 1/${poolMembers.length} share = ${comm.totalServiceRevenue}`,
-      );
-      infoLogger.info(
-        `tips: Aggregate value is ${aggregateComm.tips}. 1/${poolMembers.length} share = ${comm.tips}`,
-      );
-      infoLogger.info(
-        `productCommission: Aggregate value is ${aggregateComm.productCommission}. 1/${poolMembers.length} share = ${comm.productCommission}`,
-      );
-      infoLogger.info(
-        `generalServiceCommission: Aggregate value is ${aggregateComm.generalServiceCommission}. 1/${poolMembers.length} share = ${comm.generalServiceCommission}`,
-      );
-      for (const [serviceName, amount] of Object.entries(
-        aggregateCustomRateCommissions,
-      )) {
-        infoLogger.info(
-          `${serviceName} custom rate commission: Aggregate value is ${amount}. 1/${poolMembers.length} share = ${comm.customRateCommissions[serviceName] ?? 0}`,
-        );
-      }
-      infoLogger.info(
-        `customRateCommission recomputed as ${comm.customRateCommission}`,
-      );
-      infoLogger.info(
-        `totalServiceCommission recomputed as ${comm.totalServiceCommission}`,
-      );
-      infoLogger.info("--------------");
-    });
-
-    const pooledComm = {
-      totalServiceRevenue: 0,
-      tips: 0,
-      productCommission: 0,
-      generalServiceCommission: 0,
-    };
-    const pooledCustomRateCommissions: Record<string, number> = {};
-    for (const poolMember of poolMembers) {
-      const commMapElement = commMap.get(poolMember);
-      assert(
-        commMapElement,
-        `No commMap entry for ${poolMember}. This should never happen.`,
-      );
-
-      pooledComm.totalServiceRevenue += commMapElement.totalServiceRevenue;
-      pooledComm.tips += commMapElement.tips;
-      pooledComm.productCommission += commMapElement.productCommission;
-      pooledComm.generalServiceCommission +=
-        commMapElement.generalServiceCommission;
-
-      for (const [serviceName, amount] of Object.entries(
-        commMapElement.customRateCommissions,
-      )) {
-        pooledCustomRateCommissions[serviceName] =
-          (pooledCustomRateCommissions[serviceName] ?? 0) + amount;
-      }
-    }
-
-    assert(
-      amountToCents(pooledComm.totalServiceRevenue) ===
-        amountToCents(aggregateComm.totalServiceRevenue),
-      `Pooled totalServiceRevenue drifted for pool ${poolMembers.join(", ")}.`,
-    );
-    assert(
-      amountToCents(pooledComm.tips) === amountToCents(aggregateComm.tips),
-      `Pooled tips drifted for pool ${poolMembers.join(", ")}.`,
-    );
-    assert(
-      amountToCents(pooledComm.productCommission) ===
-        amountToCents(aggregateComm.productCommission),
-      `Pooled productCommission drifted for pool ${poolMembers.join(", ")}.`,
-    );
-    assert(
-      amountToCents(pooledComm.generalServiceCommission) ===
-        amountToCents(aggregateComm.generalServiceCommission),
-      `Pooled generalServiceCommission drifted for pool ${poolMembers.join(", ")}.`,
-    );
-    assert(
-      eqSet(
-        Object.keys(pooledCustomRateCommissions),
-        Object.keys(aggregateCustomRateCommissions),
-      ),
-      `Pooled custom rate commission services drifted for pool ${poolMembers.join(", ")}.`,
-    );
-    for (const [serviceName, amount] of Object.entries(
-      aggregateCustomRateCommissions,
-    )) {
-      assert(
-        amountToCents(pooledCustomRateCommissions[serviceName] ?? 0) ===
-          amountToCents(amount),
-        `${serviceName} pooled custom rate commission drifted for pool ${poolMembers.join(", ")}.`,
-      );
-    }
+    logPoolShares(poolMembers, aggregate, pooledEntries, talenoxStaff);
+    assertPoolAggregatePreserved(poolMembers, aggregate, pooledCommMap);
   }
   infoLogger.info("");
   infoLogger.info("=======================================");
   infoLogger.info("");
-  return;
+
+  return pooledCommMap;
 }
 
 /**
@@ -1286,11 +1383,11 @@ async function main() {
 
   // Apply pooling logic to commission map
   emitProgressAndInfo("Applying pooling rules");
-  doPooling(commMap, staffHurdles, talenoxStaff);
+  const pooledCommMap = doPooling(commMap, staffHurdles, talenoxStaff);
 
   // Create payment spreadsheet and upload to Talenox
   emitProgressAndInfo("Creating Talenox payment entries");
-  const payments = createAdHocPayments(commMap, talenoxStaff);
+  const payments = createAdHocPayments(pooledCommMap, talenoxStaff);
 
   emitProgressAndInfo("Archiving old payment spreadsheets");
   await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);

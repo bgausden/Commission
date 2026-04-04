@@ -908,9 +908,13 @@ describe("doPooling", () => {
       ],
     ]);
 
-    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+    const pooledCommMap = doPooling(
+      commMap,
+      buildPoolConfig(["011", "012"]),
+      talenoxStaff,
+    );
 
-    expect(commMap.get("011")).toEqual({
+    expect(pooledCommMap.get("011")).toEqual({
       totalServiceRevenue: 9000,
       totalServiceCommission: 3050,
       tips: 0,
@@ -922,7 +926,7 @@ describe("doPooling", () => {
       },
       generalServiceCommission: 2000,
     });
-    expect(commMap.get("012")).toEqual({
+    expect(pooledCommMap.get("012")).toEqual({
       totalServiceRevenue: 9000,
       totalServiceCommission: 3050,
       tips: 0,
@@ -934,8 +938,8 @@ describe("doPooling", () => {
       },
       generalServiceCommission: 2000,
     });
-    expectDerivedTotals(commMap.get("011")!);
-    expectDerivedTotals(commMap.get("012")!);
+    expectDerivedTotals(pooledCommMap.get("011")!);
+    expectDerivedTotals(pooledCommMap.get("012")!);
   });
 
   it("should split pooled custom rate services deterministically when cents do not divide evenly", () => {
@@ -978,24 +982,29 @@ describe("doPooling", () => {
       ],
     ]);
 
-    doPooling(commMap, buildPoolConfig(["011", "012", "013"]), talenoxStaff);
+    const pooledCommMap = doPooling(
+      commMap,
+      buildPoolConfig(["011", "012", "013"]),
+      talenoxStaff,
+    );
 
-    expect(commMap.get("011")?.customRateCommissions).toEqual({
+    expect(pooledCommMap.get("011")?.customRateCommissions).toEqual({
       Extensions: 33.34,
     });
-    expect(commMap.get("012")?.customRateCommissions).toEqual({
+    expect(pooledCommMap.get("012")?.customRateCommissions).toEqual({
       Extensions: 33.33,
     });
-    expect(commMap.get("013")?.customRateCommissions).toEqual({
+    expect(pooledCommMap.get("013")?.customRateCommissions).toEqual({
       Extensions: 33.33,
     });
-    expect(commMap.get("011")?.customRateCommission).toBe(33.34);
-    expect(commMap.get("012")?.customRateCommission).toBe(33.33);
-    expect(commMap.get("013")?.customRateCommission).toBe(33.33);
+    expect(pooledCommMap.get("011")?.customRateCommission).toBe(33.34);
+    expect(pooledCommMap.get("012")?.customRateCommission).toBe(33.33);
+    expect(pooledCommMap.get("013")?.customRateCommission).toBe(33.33);
     expect(
       ["011", "012", "013"].reduce(
         (sum, staffID) =>
-          sum + (commMap.get(staffID)?.customRateCommissions.Extensions ?? 0),
+          sum +
+          (pooledCommMap.get(staffID)?.customRateCommissions.Extensions ?? 0),
         0,
       ),
     ).toBe(100);
@@ -1029,7 +1038,11 @@ describe("doPooling", () => {
       ],
     ]);
 
-    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+    const pooledCommMap = doPooling(
+      commMap,
+      buildPoolConfig(["011", "012"]),
+      talenoxStaff,
+    );
 
     const expectedEach = {
       totalServiceRevenue: 12000,
@@ -1044,10 +1057,10 @@ describe("doPooling", () => {
       generalServiceCommission: 2000,
     };
 
-    expect(commMap.get("011")).toEqual(expectedEach);
-    expect(commMap.get("012")).toEqual(expectedEach);
-    expectDerivedTotals(commMap.get("011")!);
-    expectDerivedTotals(commMap.get("012")!);
+    expect(pooledCommMap.get("011")).toEqual(expectedEach);
+    expect(pooledCommMap.get("012")).toEqual(expectedEach);
+    expectDerivedTotals(pooledCommMap.get("011")!);
+    expectDerivedTotals(pooledCommMap.get("012")!);
   });
 
   it("should leave non-pooled staff unchanged", () => {
@@ -1088,9 +1101,13 @@ describe("doPooling", () => {
       ["099", originalSolo],
     ]);
 
-    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+    const pooledCommMap = doPooling(
+      commMap,
+      buildPoolConfig(["011", "012"]),
+      talenoxStaff,
+    );
 
-    expect(commMap.get("099")).toEqual(originalSolo);
+    expect(pooledCommMap.get("099")).toEqual(originalSolo);
   });
 
   it("should emit Talenox custom-rate payment rows from pooled custom rate values", () => {
@@ -1121,8 +1138,12 @@ describe("doPooling", () => {
       ],
     ]);
 
-    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
-    const payments = createAdHocPayments(commMap, talenoxStaff);
+    const pooledCommMap = doPooling(
+      commMap,
+      buildPoolConfig(["011", "012"]),
+      talenoxStaff,
+    );
+    const payments = createAdHocPayments(pooledCommMap, talenoxStaff);
 
     const pooledCustomPayments = payments
       .filter(
@@ -1153,5 +1174,53 @@ describe("doPooling", () => {
       },
       { staffID: "012", remarks: "Extensions at custom rate.", amount: 600 },
     ]);
+  });
+
+  it("should ignore staff with empty poolsWith array", () => {
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 10000,
+          totalServiceCommission: 4500,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 1500,
+          customRateCommissions: { Extensions: 1500 },
+          generalServiceCommission: 3000,
+        },
+      ],
+    ]);
+
+    // buildPoolConfig with single member creates poolsWith: []
+    const pooledCommMap = doPooling(
+      commMap,
+      buildPoolConfig(["011"]),
+      talenoxStaff,
+    );
+
+    // Staff should remain unchanged since no pool was created
+    expect(pooledCommMap.get("011")).toEqual(commMap.get("011"));
+  });
+
+  it("should throw when pool member not in commMap", () => {
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 10000,
+          totalServiceCommission: 4500,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 1500,
+          customRateCommissions: { Extensions: 1500 },
+          generalServiceCommission: 3000,
+        },
+      ],
+    ]);
+
+    expect(() =>
+      doPooling(commMap, buildPoolConfig(["011", "999"]), talenoxStaff),
+    ).toThrow(/No commMap entry for 999/);
   });
 });
