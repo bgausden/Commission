@@ -576,6 +576,37 @@ function sumCustomRateCommissions(
   );
 }
 
+function amountToCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
+function assertUniquePoolMembers(
+  poolMembers: TStaffID[],
+  context: string,
+): void {
+  assert(
+    new Set(poolMembers).size === poolMembers.length,
+    `${context} contains duplicate pool members: ${poolMembers.join(", ")}`,
+  );
+}
+
+function assertDistributedShares(
+  shares: number[],
+  memberCount: number,
+  expectedTotal: number,
+  context: string,
+): void {
+  assert(
+    shares.length === memberCount,
+    `${context} produced ${shares.length} shares for ${memberCount} members.`,
+  );
+  assert(
+    amountToCents(shares.reduce((sum, share) => sum + share, 0)) ===
+      amountToCents(expectedTotal),
+    `${context} shares sum to ${shares.reduce((sum, share) => sum + share, 0)}, expected ${expectedTotal}.`,
+  );
+}
+
 export function doPooling(
   commMap: TCommMap,
   staffHurdle: TStaffHurdles,
@@ -601,6 +632,10 @@ export function doPooling(
             // make sure this pool contains everyone we think we pool with
             // if not, the staffHurdle.json is incorrect
             poolingWith.push(staffID);
+            assertUniquePoolMembers(
+              poolingWith,
+              `Pooling config for ${staffID}`,
+            );
             if (eqSet(poolingStaff, poolingWith)) {
               foundPoolID = poolID;
               foundPoolMembers = poolingStaff;
@@ -615,6 +650,7 @@ export function doPooling(
       // Now set the pool if !foundPoolID
       if (foundPoolID === undefined) {
         poolingWith.push(staffID);
+        assertUniquePoolMembers(poolingWith, `Pooling config for ${staffID}`);
         pools.set(poolCounter, poolingWith);
         poolCounter += 1;
       }
@@ -624,6 +660,8 @@ export function doPooling(
   for (const pool of pools) {
     const [_poolId, unorderedPoolMembers] = pool;
     const poolMembers = [...unorderedPoolMembers].sort();
+    assert(poolMembers.length > 1, `Pool must contain at least 2 members.`);
+    assertUniquePoolMembers(poolMembers, `Pool ${poolMembers.join(", ")}`);
     const aggregateComm = {
       totalServiceRevenue: 0,
       tips: 0,
@@ -669,6 +707,31 @@ export function doPooling(
       ),
     };
 
+    assertDistributedShares(
+      pooledNumericShares.totalServiceRevenue,
+      poolMembers.length,
+      aggregateComm.totalServiceRevenue,
+      `totalServiceRevenue pool ${poolMembers.join(", ")}`,
+    );
+    assertDistributedShares(
+      pooledNumericShares.tips,
+      poolMembers.length,
+      aggregateComm.tips,
+      `tips pool ${poolMembers.join(", ")}`,
+    );
+    assertDistributedShares(
+      pooledNumericShares.productCommission,
+      poolMembers.length,
+      aggregateComm.productCommission,
+      `productCommission pool ${poolMembers.join(", ")}`,
+    );
+    assertDistributedShares(
+      pooledNumericShares.generalServiceCommission,
+      poolMembers.length,
+      aggregateComm.generalServiceCommission,
+      `generalServiceCommission pool ${poolMembers.join(", ")}`,
+    );
+
     const pooledCustomShares = Object.fromEntries(
       Object.entries(aggregateCustomRateCommissions).map(
         ([serviceName, amount]) => [
@@ -677,6 +740,15 @@ export function doPooling(
         ],
       ),
     );
+
+    for (const [serviceName, shares] of Object.entries(pooledCustomShares)) {
+      assertDistributedShares(
+        shares,
+        poolMembers.length,
+        aggregateCustomRateCommissions[serviceName] ?? 0,
+        `${serviceName} custom rate commission pool ${poolMembers.join(", ")}`,
+      );
+    }
 
     // divide the aggregate values across the pool members by updating their commComponents entries
     // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
@@ -756,6 +828,70 @@ export function doPooling(
       );
       infoLogger.info("--------------");
     });
+
+    const pooledComm = {
+      totalServiceRevenue: 0,
+      tips: 0,
+      productCommission: 0,
+      generalServiceCommission: 0,
+    };
+    const pooledCustomRateCommissions: Record<string, number> = {};
+    for (const poolMember of poolMembers) {
+      const commMapElement = commMap.get(poolMember);
+      assert(
+        commMapElement,
+        `No commMap entry for ${poolMember}. This should never happen.`,
+      );
+
+      pooledComm.totalServiceRevenue += commMapElement.totalServiceRevenue;
+      pooledComm.tips += commMapElement.tips;
+      pooledComm.productCommission += commMapElement.productCommission;
+      pooledComm.generalServiceCommission +=
+        commMapElement.generalServiceCommission;
+
+      for (const [serviceName, amount] of Object.entries(
+        commMapElement.customRateCommissions,
+      )) {
+        pooledCustomRateCommissions[serviceName] =
+          (pooledCustomRateCommissions[serviceName] ?? 0) + amount;
+      }
+    }
+
+    assert(
+      amountToCents(pooledComm.totalServiceRevenue) ===
+        amountToCents(aggregateComm.totalServiceRevenue),
+      `Pooled totalServiceRevenue drifted for pool ${poolMembers.join(", ")}.`,
+    );
+    assert(
+      amountToCents(pooledComm.tips) === amountToCents(aggregateComm.tips),
+      `Pooled tips drifted for pool ${poolMembers.join(", ")}.`,
+    );
+    assert(
+      amountToCents(pooledComm.productCommission) ===
+        amountToCents(aggregateComm.productCommission),
+      `Pooled productCommission drifted for pool ${poolMembers.join(", ")}.`,
+    );
+    assert(
+      amountToCents(pooledComm.generalServiceCommission) ===
+        amountToCents(aggregateComm.generalServiceCommission),
+      `Pooled generalServiceCommission drifted for pool ${poolMembers.join(", ")}.`,
+    );
+    assert(
+      eqSet(
+        Object.keys(pooledCustomRateCommissions),
+        Object.keys(aggregateCustomRateCommissions),
+      ),
+      `Pooled custom rate commission services drifted for pool ${poolMembers.join(", ")}.`,
+    );
+    for (const [serviceName, amount] of Object.entries(
+      aggregateCustomRateCommissions,
+    )) {
+      assert(
+        amountToCents(pooledCustomRateCommissions[serviceName] ?? 0) ===
+          amountToCents(amount),
+        `${serviceName} pooled custom rate commission drifted for pool ${poolMembers.join(", ")}.`,
+      );
+    }
   }
   infoLogger.info("");
   infoLogger.info("=======================================");
