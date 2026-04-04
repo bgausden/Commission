@@ -999,11 +999,11 @@ export function calculateStaffCommission(
   if (servicesRevenues) {
     servicesRevenues.forEach((customRateEntry, serviceName) => {
       if (serviceName !== GENERAL_SERV_REVENUE) {
-        const customServiceRevenue =
+        const customServiceCommission =
           customRateEntry.serviceRevenue * Number(customRateEntry.customRate);
         commComponents.customRateCommissions[serviceName] =
-          customServiceRevenue;
-        totalCustomServiceCommission += customServiceRevenue;
+          customServiceCommission;
+        totalCustomServiceCommission += customServiceCommission;
       }
     });
     commComponents.customRateCommission = totalCustomServiceCommission;
