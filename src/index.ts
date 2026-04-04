@@ -10,19 +10,14 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 /* TODO fix rounding for pay calculated from custom pay rates
 Extensions - Application:   28152.000000000004
 */
-// TODO fix catching staff missing from staffhurdle.json
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
-// TODO place payments spreadsheets into a "payments" folder
-// TODO remove --experimental-json-modules in favour of approach in logging_functions. ts --> const log4jsConfig: Configuration = JSON.parse(await readFile(new URL(`./${log4jsConfigFile}`, import.meta.url), { encoding: 'utf-8' }))
-// TODO create debug log (in addition to displaying debug in console)
-// TODO remove ts-ignore from logging_functions.ts ✓
 // TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
-// TODO make filename for staffHurdle.json a constant
-// TODO remove dependency on ncp for copying files
 // TODO warn if google upload is enabled but GDRIVE_SERVICE_ACCOUNT_KEY or GDRIVE_TALENOX_FOLDER_ID env vars are missing
 // TODO expose google upload in web UI with toggle and fields for env vars
 // TODO log in debug and GUI when skipping google upload due to missing env vars
 // TODO don't overwrite .debug file when running commission multiple times in a day - append timestamp to filename
+// TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
+// TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
 
 import { config } from "node-config-ts";
 // import prettyjson from "prettyjson"
@@ -556,7 +551,32 @@ function writePaymentsWorkBook(payments: ITalenoxPayment[]): void {
   XLSX.writeFile(paymentsWB, `${PAYMENTS_DIR}/${PAYMENTS_WB_NAME}`);
 }
 
-function doPooling(
+function splitAmountAcrossMembers(
+  amount: number,
+  memberCount: number,
+): number[] {
+  if (memberCount <= 0) return [];
+
+  const totalCents = Math.round(amount * 100);
+  const baseShare = Math.trunc(totalCents / memberCount);
+  const remainder = totalCents % memberCount;
+
+  return Array.from({ length: memberCount }, (_value, index) => {
+    const cents = baseShare + (index < remainder ? 1 : 0);
+    return cents / 100;
+  });
+}
+
+function sumCustomRateCommissions(
+  customRateCommissions: TCommComponents["customRateCommissions"],
+): number {
+  return Object.values(customRateCommissions).reduce(
+    (sum, amount) => sum + amount,
+    0,
+  );
+}
+
+export function doPooling(
   commMap: TCommMap,
   staffHurdle: TStaffHurdles,
   talenoxStaff: TTalenoxInfoStaffMap,
@@ -602,44 +622,69 @@ function doPooling(
   });
   // Now actually allocate revenues across the pools
   for (const pool of pools) {
-    const [_poolId, poolMembers] = pool;
-    const aggregateComm: TCommComponents = {
+    const [_poolId, unorderedPoolMembers] = pool;
+    const poolMembers = [...unorderedPoolMembers].sort();
+    const aggregateComm = {
       totalServiceRevenue: 0,
-      totalServiceCommission: 0,
       tips: 0,
       productCommission: 0,
-      customRateCommission: 0,
-      customRateCommissions: {},
       generalServiceCommission: 0,
     };
+    const aggregateCustomRateCommissions: Record<string, number> = {};
     for (const poolMember of poolMembers) {
-      for (const [aggregatePropName, aggregatePropValue] of Object.entries(
-        aggregateComm,
+      const commMapElement = commMap.get(poolMember);
+      if (!commMapElement) {
+        throw new Error(
+          `No commMap entry for ${poolMember}. This should never happen.`,
+        );
+      }
+
+      aggregateComm.totalServiceRevenue += commMapElement.totalServiceRevenue;
+      aggregateComm.tips += commMapElement.tips;
+      aggregateComm.productCommission += commMapElement.productCommission;
+      aggregateComm.generalServiceCommission +=
+        commMapElement.generalServiceCommission;
+
+      for (const [serviceName, amount] of Object.entries(
+        commMapElement.customRateCommissions,
       )) {
-        const commMapElement = commMap.get(poolMember);
-        if (commMapElement) {
-          const commMapValue = commMapElement[aggregatePropName];
-          if (
-            typeof aggregatePropValue === "number" &&
-            typeof commMapValue === "number"
-          ) {
-            aggregateComm[aggregatePropName] =
-              aggregatePropValue + commMapValue;
-          }
-        } else {
-          throw new Error(
-            `No commMap entry for ${poolMember}. This should never happen.`,
-          );
-        }
+        aggregateCustomRateCommissions[serviceName] =
+          (aggregateCustomRateCommissions[serviceName] ?? 0) + amount;
       }
     }
+
+    const pooledNumericShares = {
+      totalServiceRevenue: splitAmountAcrossMembers(
+        aggregateComm.totalServiceRevenue,
+        poolMembers.length,
+      ),
+      tips: splitAmountAcrossMembers(aggregateComm.tips, poolMembers.length),
+      productCommission: splitAmountAcrossMembers(
+        aggregateComm.productCommission,
+        poolMembers.length,
+      ),
+      generalServiceCommission: splitAmountAcrossMembers(
+        aggregateComm.generalServiceCommission,
+        poolMembers.length,
+      ),
+    };
+
+    const pooledCustomShares = Object.fromEntries(
+      Object.entries(aggregateCustomRateCommissions).map(
+        ([serviceName, amount]) => [
+          serviceName,
+          splitAmountAcrossMembers(amount, poolMembers.length),
+        ],
+      ),
+    );
+
     // divide the aggregate values across the pool members by updating their commComponents entries
     // Question: do we want to add pool_* variants of the comm components so we can see the before/after?
     infoLogger.info("=======================================");
     infoLogger.info("Pooling Calculations");
     infoLogger.info("=======================================");
 
-    for (const poolMember of poolMembers) {
+    poolMembers.forEach((poolMember, index) => {
       const staffName = `${
         talenoxStaff.get(poolMember)?.last_name ?? "<Last Name>"
       }, ${talenoxStaff.get(poolMember)?.first_name ?? "<First Name>"}`;
@@ -655,29 +700,62 @@ function doPooling(
       infoLogger.info(
         `Pool contains ${poolMembers.length} members: ${memberList}`,
       );
-      for (const [aggregatePropName, aggregatePropValue] of Object.entries(
-        aggregateComm,
-      )) {
-        const comm = commMap.get(poolMember);
-        assert(
-          comm,
-          `No commMap entry for ${poolMember} ${staffName}. This should never happen.`,
-        );
 
-        if (typeof aggregatePropValue === "number") {
-          comm[aggregatePropName] =
-            Math.round((aggregatePropValue * 100) / poolMembers.length) / 100;
-          const aggregateCommString =
-            typeof comm[aggregatePropName] === "number"
-              ? comm[aggregatePropName].toString()
-              : JSON.stringify(comm[aggregatePropName]);
-          infoLogger.info(
-            `${aggregatePropName}: Aggregate value is ${aggregatePropValue}. 1/${poolMembers.length} share = ${aggregateCommString}`,
-          );
+      const comm = commMap.get(poolMember);
+      assert(
+        comm,
+        `No commMap entry for ${poolMember} ${staffName}. This should never happen.`,
+      );
+
+      comm.totalServiceRevenue = pooledNumericShares.totalServiceRevenue[index];
+      comm.tips = pooledNumericShares.tips[index];
+      comm.productCommission = pooledNumericShares.productCommission[index];
+      comm.generalServiceCommission =
+        pooledNumericShares.generalServiceCommission[index];
+
+      const pooledCustomRateCommissions: TCommComponents["customRateCommissions"] =
+        {};
+      for (const [serviceName, shares] of Object.entries(pooledCustomShares)) {
+        const share = shares[index];
+        if (share !== 0) {
+          pooledCustomRateCommissions[serviceName] = share;
         }
       }
+
+      comm.customRateCommissions = pooledCustomRateCommissions;
+      comm.customRateCommission = sumCustomRateCommissions(
+        pooledCustomRateCommissions,
+      );
+      comm.totalServiceCommission =
+        comm.generalServiceCommission + comm.customRateCommission;
+
+      infoLogger.info(
+        `totalServiceRevenue: Aggregate value is ${aggregateComm.totalServiceRevenue}. 1/${poolMembers.length} share = ${comm.totalServiceRevenue}`,
+      );
+      infoLogger.info(
+        `tips: Aggregate value is ${aggregateComm.tips}. 1/${poolMembers.length} share = ${comm.tips}`,
+      );
+      infoLogger.info(
+        `productCommission: Aggregate value is ${aggregateComm.productCommission}. 1/${poolMembers.length} share = ${comm.productCommission}`,
+      );
+      infoLogger.info(
+        `generalServiceCommission: Aggregate value is ${aggregateComm.generalServiceCommission}. 1/${poolMembers.length} share = ${comm.generalServiceCommission}`,
+      );
+      for (const [serviceName, amount] of Object.entries(
+        aggregateCustomRateCommissions,
+      )) {
+        infoLogger.info(
+          `${serviceName} custom rate commission: Aggregate value is ${amount}. 1/${poolMembers.length} share = ${comm.customRateCommissions[serviceName] ?? 0}`,
+        );
+      }
+      infoLogger.info(
+        `customRateCommission recomputed as ${comm.customRateCommission}`,
+      );
+      infoLogger.info(
+        `totalServiceCommission recomputed as ${comm.totalServiceCommission}`,
+      );
       infoLogger.info("--------------");
-    }
+    });
   }
   infoLogger.info("");
   infoLogger.info("=======================================");

@@ -3,10 +3,14 @@ import type {
   HurdleConfig,
   HurdleBreakdown,
   StaffPayrollData,
+  TCommComponents,
+  TCommMap,
   TTalenoxInfoStaffMap,
   TServRevenueMap,
+  TStaffHurdles,
 } from "./types.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
+import { createAdHocPayments } from "./talenox_functions.js";
 
 // Mock dependencies
 vi.mock("./logging_functions.js", () => ({
@@ -21,9 +25,11 @@ vi.mock("./logging_functions.js", () => ({
 }));
 
 vi.mock("./utility_functions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./utility_functions.js")>();
+  const actual =
+    await importOriginal<typeof import("./utility_functions.js")>();
   return {
     ...actual,
+    isContractor: vi.fn(() => false),
     getValidatedStaffHurdle: vi.fn((staffID: string) => {
       if (staffID === "012") {
         return {
@@ -56,7 +62,46 @@ import {
   extractStaffPayrollData,
   calculateStaffCommission,
   getServiceRevenues,
+  doPooling,
 } from "./index.js";
+
+function cloneCommMap(entries: [string, TCommComponents][]): TCommMap {
+  return new Map(
+    entries.map(([staffID, comm]) => [
+      staffID,
+      {
+        ...comm,
+        customRateCommissions: { ...comm.customRateCommissions },
+      },
+    ]),
+  );
+}
+
+function buildPoolConfig(poolMembers: string[]): TStaffHurdles {
+  const config: TStaffHurdles = {};
+  for (const staffID of poolMembers) {
+    config[staffID] = {
+      staffName: `Staff ${staffID}`,
+      baseRate: 0,
+      contractor: false,
+      payViaTalenox: true,
+      poolsWith: poolMembers.filter((member) => member !== staffID),
+    };
+  }
+  return config;
+}
+
+function expectDerivedTotals(comm: TCommComponents): void {
+  expect(comm.customRateCommission).toBe(
+    Object.values(comm.customRateCommissions).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    ),
+  );
+  expect(comm.totalServiceCommission).toBe(
+    comm.generalServiceCommission + comm.customRateCommission,
+  );
+}
 
 describe("calculateTieredCommission", () => {
   describe("Basic Hurdle Scenarios", () => {
@@ -691,7 +736,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 100,
       productCommission: 50,
-      servicesRevenues: new Map([["General Services", { serviceRevenue: 35000, customRate: null }]]),
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 35000, customRate: null }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -710,7 +757,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 0,
       productCommission: 0,
-      servicesRevenues: new Map([["Extensions", { serviceRevenue: 10000, customRate: 0.15 }]]),
+      servicesRevenues: new Map([
+        ["Extensions", { serviceRevenue: 10000, customRate: 0.15 }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -770,7 +819,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 0,
       productCommission: 0,
-      servicesRevenues: new Map([["General Services", { serviceRevenue: 0, customRate: null }]]),
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 0, customRate: null }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -787,7 +838,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Kate Smith",
       tips: 0,
       productCommission: 0,
-      servicesRevenues: new Map([["Extensions", { serviceRevenue: 10000, customRate: 0.15 }]]),
+      servicesRevenues: new Map([
+        ["Extensions", { serviceRevenue: 10000, customRate: 0.15 }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -802,7 +855,9 @@ describe("calculateStaffCommission", () => {
       staffName: "Rex Wong",
       tips: 250,
       productCommission: 125,
-      servicesRevenues: new Map([["General Services", { serviceRevenue: 35000, customRate: null }]]),
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 35000, customRate: null }],
+      ]),
     };
 
     const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
@@ -810,5 +865,293 @@ describe("calculateStaffCommission", () => {
     expect(result.tips).toBe(250);
     expect(result.productCommission).toBe(125);
     // Tips and product commission are separate from service commissions
+  });
+});
+
+describe("doPooling", () => {
+  let talenoxStaff: TTalenoxInfoStaffMap;
+
+  beforeEach(() => {
+    talenoxStaff = new Map([
+      ["011", { first_name: "Ari", last_name: "Chan" }],
+      ["012", { first_name: "Anson", last_name: "Lee" }],
+      ["013", { first_name: "Mia", last_name: "Wong" }],
+      ["099", { first_name: "Solo", last_name: "Ng" }],
+    ]);
+  });
+
+  it("should pool custom rate commissions per service across members with different service keys", () => {
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 10000,
+          totalServiceCommission: 4500,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 1500,
+          customRateCommissions: { Extensions: 1500 },
+          generalServiceCommission: 3000,
+        },
+      ],
+      [
+        "012",
+        {
+          totalServiceRevenue: 8000,
+          totalServiceCommission: 1600,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 600,
+          customRateCommissions: { "Color Treatment": 600 },
+          generalServiceCommission: 1000,
+        },
+      ],
+    ]);
+
+    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+
+    expect(commMap.get("011")).toEqual({
+      totalServiceRevenue: 9000,
+      totalServiceCommission: 3050,
+      tips: 0,
+      productCommission: 0,
+      customRateCommission: 1050,
+      customRateCommissions: {
+        Extensions: 750,
+        "Color Treatment": 300,
+      },
+      generalServiceCommission: 2000,
+    });
+    expect(commMap.get("012")).toEqual({
+      totalServiceRevenue: 9000,
+      totalServiceCommission: 3050,
+      tips: 0,
+      productCommission: 0,
+      customRateCommission: 1050,
+      customRateCommissions: {
+        Extensions: 750,
+        "Color Treatment": 300,
+      },
+      generalServiceCommission: 2000,
+    });
+    expectDerivedTotals(commMap.get("011")!);
+    expectDerivedTotals(commMap.get("012")!);
+  });
+
+  it("should split pooled custom rate services deterministically when cents do not divide evenly", () => {
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 0,
+          totalServiceCommission: 100,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 100,
+          customRateCommissions: { Extensions: 100 },
+          generalServiceCommission: 0,
+        },
+      ],
+      [
+        "012",
+        {
+          totalServiceRevenue: 0,
+          totalServiceCommission: 0,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 0,
+          customRateCommissions: {},
+          generalServiceCommission: 0,
+        },
+      ],
+      [
+        "013",
+        {
+          totalServiceRevenue: 0,
+          totalServiceCommission: 0,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 0,
+          customRateCommissions: {},
+          generalServiceCommission: 0,
+        },
+      ],
+    ]);
+
+    doPooling(commMap, buildPoolConfig(["011", "012", "013"]), talenoxStaff);
+
+    expect(commMap.get("011")?.customRateCommissions).toEqual({
+      Extensions: 33.34,
+    });
+    expect(commMap.get("012")?.customRateCommissions).toEqual({
+      Extensions: 33.33,
+    });
+    expect(commMap.get("013")?.customRateCommissions).toEqual({
+      Extensions: 33.33,
+    });
+    expect(commMap.get("011")?.customRateCommission).toBe(33.34);
+    expect(commMap.get("012")?.customRateCommission).toBe(33.33);
+    expect(commMap.get("013")?.customRateCommission).toBe(33.33);
+    expect(
+      ["011", "012", "013"].reduce(
+        (sum, staffID) =>
+          sum + (commMap.get(staffID)?.customRateCommissions.Extensions ?? 0),
+        0,
+      ),
+    ).toBe(100);
+  });
+
+  it("should pool general, custom rate, product commission and tips together while preserving derived totals", () => {
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 15000,
+          totalServiceCommission: 4400,
+          tips: 500,
+          productCommission: 300,
+          customRateCommission: 1200,
+          customRateCommissions: { Extensions: 1200 },
+          generalServiceCommission: 3200,
+        },
+      ],
+      [
+        "012",
+        {
+          totalServiceRevenue: 9000,
+          totalServiceCommission: 1200,
+          tips: 100,
+          productCommission: 100,
+          customRateCommission: 400,
+          customRateCommissions: { "Color Treatment": 400 },
+          generalServiceCommission: 800,
+        },
+      ],
+    ]);
+
+    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+
+    const expectedEach = {
+      totalServiceRevenue: 12000,
+      totalServiceCommission: 2800,
+      tips: 300,
+      productCommission: 200,
+      customRateCommission: 800,
+      customRateCommissions: {
+        Extensions: 600,
+        "Color Treatment": 200,
+      },
+      generalServiceCommission: 2000,
+    };
+
+    expect(commMap.get("011")).toEqual(expectedEach);
+    expect(commMap.get("012")).toEqual(expectedEach);
+    expectDerivedTotals(commMap.get("011")!);
+    expectDerivedTotals(commMap.get("012")!);
+  });
+
+  it("should leave non-pooled staff unchanged", () => {
+    const originalSolo = {
+      totalServiceRevenue: 5000,
+      totalServiceCommission: 950,
+      tips: 40,
+      productCommission: 80,
+      customRateCommission: 250,
+      customRateCommissions: { Keratin: 250 },
+      generalServiceCommission: 700,
+    };
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 10000,
+          totalServiceCommission: 4500,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 1500,
+          customRateCommissions: { Extensions: 1500 },
+          generalServiceCommission: 3000,
+        },
+      ],
+      [
+        "012",
+        {
+          totalServiceRevenue: 8000,
+          totalServiceCommission: 1600,
+          tips: 0,
+          productCommission: 0,
+          customRateCommission: 600,
+          customRateCommissions: { "Color Treatment": 600 },
+          generalServiceCommission: 1000,
+        },
+      ],
+      ["099", originalSolo],
+    ]);
+
+    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+
+    expect(commMap.get("099")).toEqual(originalSolo);
+  });
+
+  it("should emit Talenox custom-rate payment rows from pooled custom rate values", () => {
+    const commMap = cloneCommMap([
+      [
+        "011",
+        {
+          totalServiceRevenue: 15000,
+          totalServiceCommission: 4400,
+          tips: 500,
+          productCommission: 300,
+          customRateCommission: 1200,
+          customRateCommissions: { Extensions: 1200 },
+          generalServiceCommission: 3200,
+        },
+      ],
+      [
+        "012",
+        {
+          totalServiceRevenue: 9000,
+          totalServiceCommission: 1200,
+          tips: 100,
+          productCommission: 100,
+          customRateCommission: 400,
+          customRateCommissions: { "Color Treatment": 400 },
+          generalServiceCommission: 800,
+        },
+      ],
+    ]);
+
+    doPooling(commMap, buildPoolConfig(["011", "012"]), talenoxStaff);
+    const payments = createAdHocPayments(commMap, talenoxStaff);
+
+    const pooledCustomPayments = payments
+      .filter(
+        (payment) =>
+          payment.remarks === "Extensions at custom rate." ||
+          payment.remarks === "Color Treatment at custom rate.",
+      )
+      .map((payment) => ({
+        staffID: payment.staffID,
+        remarks: payment.remarks,
+        amount: payment.amount,
+      }))
+      .sort((a, b) =>
+        `${a.staffID}:${a.remarks}`.localeCompare(`${b.staffID}:${b.remarks}`),
+      );
+
+    expect(pooledCustomPayments).toEqual([
+      {
+        staffID: "011",
+        remarks: "Color Treatment at custom rate.",
+        amount: 200,
+      },
+      { staffID: "011", remarks: "Extensions at custom rate.", amount: 600 },
+      {
+        staffID: "012",
+        remarks: "Color Treatment at custom rate.",
+        amount: 200,
+      },
+      { staffID: "012", remarks: "Extensions at custom rate.", amount: 600 },
+    ]);
   });
 });
