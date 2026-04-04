@@ -2,16 +2,22 @@
  * File system utilities for regression testing
  */
 
-import { readFile, writeFile, copyFile as fsCopyFile, mkdir, stat } from 'fs/promises';
-import { createHash } from 'crypto';
-import { dirname } from 'path';
+import {
+  readFile,
+  writeFile,
+  copyFile as fsCopyFile,
+  mkdir,
+  stat,
+} from "fs/promises";
+import { createHash } from "crypto";
+import { dirname } from "path";
 
 /**
  * Compute SHA-256 checksum of a file
  */
 export async function computeChecksum(filePath: string): Promise<string> {
   const content = await readFile(filePath);
-  const hash = createHash('sha256').update(content).digest('hex');
+  const hash = createHash("sha256").update(content).digest("hex");
   return `sha256:${hash}`;
 }
 
@@ -31,7 +37,7 @@ export async function ensureDir(dirPath: string): Promise<void> {
     await mkdir(dirPath, { recursive: true });
   } catch (error) {
     // Ignore error if directory already exists
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
       throw error;
     }
   }
@@ -41,17 +47,20 @@ export async function ensureDir(dirPath: string): Promise<void> {
  * Read and parse JSON file
  */
 export async function readJSON<T>(filePath: string): Promise<T> {
-  const content = await readFile(filePath, 'utf-8');
+  const content = await readFile(filePath, "utf-8");
   return JSON.parse(content) as T;
 }
 
 /**
  * Write object to JSON file with pretty formatting
  */
-export async function writeJSON(filePath: string, data: unknown): Promise<void> {
+export async function writeJSON(
+  filePath: string,
+  data: unknown,
+): Promise<void> {
   await ensureDir(dirname(filePath));
   const content = JSON.stringify(data, null, 2);
-  await writeFile(filePath, content, 'utf-8');
+  await writeFile(filePath, content, "utf-8");
 }
 
 /**
