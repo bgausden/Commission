@@ -86,10 +86,13 @@ async function updateBaseline(baselineName: string): Promise<void> {
     if (stderr) {
       console.error(stderr);
     }
-  } catch (error: any) {
-    console.error("Commission calculation failed:", error.message);
-    if (error.stdout) console.log(error.stdout);
-    if (error.stderr) console.error(error.stderr);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Commission calculation failed:", error.message);
+    }
+    const execError = error as { stdout?: string; stderr?: string };
+    if (execError.stdout) console.log(execError.stdout);
+    if (execError.stderr) console.error(execError.stderr);
     throw new Error("Commission calculation failed");
   }
 
