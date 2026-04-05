@@ -44,9 +44,18 @@ log4js buffers writes asynchronously. `shutdownLogging()` returns a `Promise<voi
 BASELINE_NAME=dec-2025-baseline npm run test:regression
 ```
 
-`test-baselines/` is gitignored. Tests skip gracefully (not fail) when no baseline exists.
+`test-baselines/` is gitignored. Regression tests fail with a clear error when no baseline exists.
 
 The discovery logic lives in `scripts/utils/baselineUtils.ts` (`findOldestBaseline`).
+
+### Baseline assembly from archived artifacts
+
+Use `npm run assemble-baseline -- ...` to build a baseline directly from archived artifacts without rerunning historical payrolls.
+
+- Supports auto-discovery from `data[/old]`, `payments[/old]`, and `logs[/old]`
+- Requires matching `commission-*` and `contractor-*` run logs
+- `--preflight` validates availability without writing files
+- `--force` requires confirmation; use `--confirm-force` for non-interactive runs
 
 ### Test fixtures use anonymized staff names
 

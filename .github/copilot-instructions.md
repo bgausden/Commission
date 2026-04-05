@@ -16,7 +16,7 @@ Files using `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR`, etc. must include a c
 /* global PAYROLL_MONTH, PAYROLL_YEAR */
 ```
 
-Full set declared in [src/globals.ts](../src/globals.ts). Without this comment ESLint reports undefined variable errors.
+Full set declared in [src/globals.d.ts](../src/globals.d.ts). Without this comment ESLint reports undefined variable errors.
 
 ### `updateTalenox: false` is a dry-run safety flag
 
@@ -63,7 +63,17 @@ Staff with a `poolsWith` array in `staffHurdle.json` share total revenue equally
 BASELINE_NAME=dec-2025-baseline npm run test:regression
 ```
 
-`test-baselines/` is gitignored. Tests skip gracefully when no baseline exists.
+`test-baselines/` is gitignored. Regression tests fail with a clear error when no baseline exists.
+
+### Baseline assembly from saved artifacts
+
+Use `npm run assemble-baseline -- ...` to create baselines from archived run artifacts instead of hand-rolling directory contents.
+
+- Supports `.gz` and plain artifacts in `data[/old]`, `payments[/old]`, `logs[/old]`
+- Requires matching `commission-*` and `contractor-*` logs for the same run key
+- `--preflight` validates artifact/config availability without writing files
+- `--force` overwrites an existing baseline and asks for confirmation
+- Use `--confirm-force` to auto-confirm (required in non-interactive terminals)
 
 ## Integration Points
 
@@ -83,7 +93,6 @@ Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments(
 ## Active TODOs ([src/index.ts](../src/index.ts))
 
 - Implement pooling for service/product commissions and tips
-- Remove `ncp` dependency in build script
 - Fix rounding for custom pay rates
 - Move `TALENOX_API_TOKEN` to env var
 

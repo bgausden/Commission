@@ -104,7 +104,7 @@ npm run create-baseline -- dec-2025-baseline <commit-sha>
 
 Omit the SHA to create the baseline from the current commit instead.
 
-`create-baseline` checks out the target commit, runs the commission calculation, captures the outputs (payments Excel + commission log) alongside the source data and config, then returns you to your original branch.
+`create-baseline` checks out the target commit, runs the commission calculation, captures the outputs (payments Excel + commission log + contractor log) alongside the source data and config, then returns you to your original branch.
 
 **Step 2 — Run the regression test**
 
@@ -135,6 +135,7 @@ Control whether log4js writes to stdout/stderr via `LOG4JS_CONSOLE`:
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Detailed architecture and development guide
+- [README.tsconfig.md](README.tsconfig.md) - Why multiple TypeScript configs exist and when to use each
 - [GOOGLE_DRIVE_SETUP.md](GOOGLE_DRIVE_SETUP.md) - Google Drive integration setup
 - [.github/copilot-instructions.md](.github/copilot-instructions.md) - AI agent instructions for this codebase
 - [test-fixtures/README.md](test-fixtures/README.md) - Test data documentation
