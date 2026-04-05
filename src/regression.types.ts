@@ -91,6 +91,4 @@ export interface ComparisonResult {
  */
 export interface ComparisonOptions {
   tolerance: number; // Tolerance for floating-point comparison (e.g., 0.01)
-  ignoreNewStaff: boolean; // If true, added staff don't affect test result
-  strictRemoval: boolean; // If true, removed staff cause test failure
 }
