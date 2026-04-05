@@ -1,0 +1,4 @@
+# Project ripgrep config — do not ignore VCS-tracked ignore rules
+# Activate with: export RIPGREP_CONFIG_PATH="$PWD/.ripgreprc"
+# or add to your shell profile for this project.
+--no-ignore-vcs
