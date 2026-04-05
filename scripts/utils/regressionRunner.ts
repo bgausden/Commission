@@ -234,7 +234,7 @@ export async function runCommissionInSandbox(
     PAYMENTS_DIR: sandbox.outputsDir,
     LOG4JS_CONSOLE: "errors",
     REGRESSION_OFFLINE: "1",
-    NODE_CONFIG_DIR: sandbox.configDir,
+    NODE_CONFIG_TS_DIR: sandbox.configDir,
     STAFF_HURDLE_FILE: join(sandbox.tempRoot, "staffHurdle.json"),
   };
 
