@@ -69,8 +69,8 @@
         "staffHurdle.json",
         "other_source",
         "scripts",
-        "src/**/*.spec.ts",
-        "src/**/*.test.ts",
+        // "src/**/*.spec.ts",
+        // "src/**/*.test.ts",
         "vendor",
     ]
 }
