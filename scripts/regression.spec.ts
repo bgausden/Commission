@@ -250,15 +250,12 @@ describe("Regression: fixed input must produce identical outputs to baseline", (
       contractorDiff.removed.length === 0;
 
     if (!paymentPassed) {
-      // eslint-disable-next-line no-console
       console.error(`\nPAYMENTS REGRESSION FAILED\n${paymentsReport}`);
     }
     if (!commissionPassed) {
-      // eslint-disable-next-line no-console
       console.error(`\nCOMMISSION REGRESSION FAILED\n${commissionReport}`);
     }
     if (!contractorPassed) {
-      // eslint-disable-next-line no-console
       console.error(`\nCONTRACTOR REGRESSION FAILED\n${contractorReport}`);
     }
 
