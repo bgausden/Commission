@@ -1,10 +1,10 @@
-import XLSX from 'xlsx';
+import XLSX from "xlsx";
 
 const file1 = process.argv[2];
 const file2 = process.argv[3];
 
 if (!file1 || !file2) {
-  console.error('Usage: tsx compareExcel.ts <file1> <file2>');
+  console.error("Usage: tsx compareExcel.ts <file1> <file2>");
   process.exit(1);
 }
 
@@ -19,10 +19,13 @@ let foundDifferences = false;
 const sheets1 = wb1.SheetNames;
 const sheets2 = wb2.SheetNames;
 
-if (sheets1.length !== sheets2.length || !sheets1.every((s, i) => s === sheets2[i])) {
-  console.log('❌ Sheet names differ:');
-  console.log('  File 1:', sheets1);
-  console.log('  File 2:', sheets2);
+if (
+  sheets1.length !== sheets2.length ||
+  !sheets1.every((s, i) => s === sheets2[i])
+) {
+  console.log("❌ Sheet names differ:");
+  console.log("  File 1:", sheets1);
+  console.log("  File 2:", sheets2);
   foundDifferences = true;
 }
 
@@ -37,13 +40,17 @@ for (const sheetName of sheets1) {
   const sheet1 = wb1.Sheets[sheetName];
   const sheet2 = wb2.Sheets[sheetName];
 
-  const data1 = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(sheet1, { header: 1, defval: '' });
-  const data2 = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(sheet2, { header: 1, defval: '' });
+  const data1 = XLSX.utils.sheet_to_json<
+    Array<string | number | boolean | null>
+  >(sheet1, { header: 1, defval: "" });
+  const data2 = XLSX.utils.sheet_to_json<
+    Array<string | number | boolean | null>
+  >(sheet2, { header: 1, defval: "" });
 
   const maxRows = Math.max(data1.length, data2.length);
   const maxCols = Math.max(
     ...data1.map((row) => row.length),
-    ...data2.map((row) => row.length)
+    ...data2.map((row) => row.length),
   );
 
   let sheetHasDiff = false;
@@ -53,8 +60,8 @@ for (const sheetName of sheets1) {
     const row2 = data2[r] || [];
 
     for (let c = 0; c < maxCols; c++) {
-      const cell1 = row1[c] ?? '';
-      const cell2 = row2[c] ?? '';
+      const cell1 = row1[c] ?? "";
+      const cell2 = row2[c] ?? "";
 
       if (cell1 !== cell2) {
         if (!sheetHasDiff) {
@@ -81,7 +88,7 @@ for (const sheetName of sheets2) {
 }
 
 if (!foundDifferences) {
-  console.log('✅ Files are identical');
+  console.log("✅ Files are identical");
 } else {
-  console.log('\n❌ Files have differences');
+  console.log("\n❌ Files have differences");
 }

@@ -163,7 +163,10 @@ function stripGzipSuffix(fileName: string): string {
     : fileName;
 }
 
-function getRunKeyFromLogName(fileName: string, prefix: "commission-" | "contractor-"): string | null {
+function getRunKeyFromLogName(
+  fileName: string,
+  prefix: "commission-" | "contractor-",
+): string | null {
   const plain = stripGzipSuffix(fileName);
   if (!plain.startsWith(prefix) || !plain.endsWith(".log")) {
     return null;
@@ -196,17 +199,25 @@ async function pickLatestFileByMtime(paths: string[]): Promise<string> {
   return withStats[0].path;
 }
 
-async function findSourceArtifact(month: number, year: number, explicitPath?: string): Promise<string> {
+async function findSourceArtifact(
+  month: number,
+  year: number,
+  explicitPath?: string,
+): Promise<string> {
   if (explicitPath) {
     return join(PROJECT_ROOT, explicitPath);
   }
 
   const roots = [join(PROJECT_ROOT, "data", "old"), join(PROJECT_ROOT, "data")];
-  const files = (await Promise.all(roots.map((root) => listFiles(root)))).flat();
+  const files = (
+    await Promise.all(roots.map((root) => listFiles(root)))
+  ).flat();
 
   const candidates = files.filter((filePath) => {
     const name = basename(filePath);
-    const match = name.match(/^Payroll Report (\d+)-\d+-(\d{4}) - (\d+)-\d+-(\d{4})\.xlsx(?:\.gz)?$/);
+    const match = name.match(
+      /^Payroll Report (\d+)-\d+-(\d{4}) - (\d+)-\d+-(\d{4})\.xlsx(?:\.gz)?$/,
+    );
     if (!match) {
       return false;
     }
@@ -229,18 +240,30 @@ async function findSourceArtifact(month: number, year: number, explicitPath?: st
   return pickLatestFileByMtime(candidates);
 }
 
-async function findPaymentsArtifact(month: number, year: number, explicitPath?: string): Promise<string> {
+async function findPaymentsArtifact(
+  month: number,
+  year: number,
+  explicitPath?: string,
+): Promise<string> {
   if (explicitPath) {
     return join(PROJECT_ROOT, explicitPath);
   }
 
   const yyyymm = `${year}${String(month).padStart(2, "0")}`;
-  const roots = [join(PROJECT_ROOT, "payments", "old"), join(PROJECT_ROOT, "payments")];
-  const files = (await Promise.all(roots.map((root) => listFiles(root)))).flat();
+  const roots = [
+    join(PROJECT_ROOT, "payments", "old"),
+    join(PROJECT_ROOT, "payments"),
+  ];
+  const files = (
+    await Promise.all(roots.map((root) => listFiles(root)))
+  ).flat();
 
   const candidates = files.filter((filePath) => {
     const name = basename(filePath);
-    return new RegExp(`^Talenox Payments ${yyyymm}\\.xlsx(?:\\.gz)?$`, "i").test(name);
+    return new RegExp(
+      `^Talenox Payments ${yyyymm}\\.xlsx(?:\\.gz)?$`,
+      "i",
+    ).test(name);
   });
 
   if (candidates.length === 0) {
@@ -258,7 +281,11 @@ async function findPaymentsArtifact(month: number, year: number, explicitPath?: 
   return pickLatestFileByMtime(candidates);
 }
 
-async function findLogArtifacts(runId?: string, explicitCommission?: string, explicitContractor?: string): Promise<{
+async function findLogArtifacts(
+  runId?: string,
+  explicitCommission?: string,
+  explicitContractor?: string,
+): Promise<{
   commissionPath: string;
   contractorPath: string;
   selectedRunId: string;
@@ -269,7 +296,9 @@ async function findLogArtifacts(runId?: string, explicitCommission?: string, exp
     const commissionKey = getRunKeyFromLogName(commissionName, "commission-");
     const contractorKey = getRunKeyFromLogName(contractorName, "contractor-");
     if (!commissionKey || !contractorKey || commissionKey !== contractorKey) {
-      throw new Error("Explicit --commission-log and --contractor-log must share the same run timestamp key");
+      throw new Error(
+        "Explicit --commission-log and --contractor-log must share the same run timestamp key",
+      );
     }
     return {
       commissionPath: join(PROJECT_ROOT, explicitCommission),
@@ -278,12 +307,19 @@ async function findLogArtifacts(runId?: string, explicitCommission?: string, exp
     };
   }
 
-  if ((explicitCommission && !explicitContractor) || (!explicitCommission && explicitContractor)) {
-    throw new Error("Provide both --commission-log and --contractor-log together, or neither");
+  if (
+    (explicitCommission && !explicitContractor) ||
+    (!explicitCommission && explicitContractor)
+  ) {
+    throw new Error(
+      "Provide both --commission-log and --contractor-log together, or neither",
+    );
   }
 
   const roots = [join(PROJECT_ROOT, "logs", "old"), join(PROJECT_ROOT, "logs")];
-  const files = (await Promise.all(roots.map((root) => listFiles(root)))).flat();
+  const files = (
+    await Promise.all(roots.map((root) => listFiles(root)))
+  ).flat();
 
   const commissionByKey = new Map<string, string[]>();
   const contractorByKey = new Map<string, string[]>();
@@ -306,7 +342,9 @@ async function findLogArtifacts(runId?: string, explicitCommission?: string, exp
     }
   }
 
-  const sharedKeys = [...commissionByKey.keys()].filter((key) => contractorByKey.has(key));
+  const sharedKeys = [...commissionByKey.keys()].filter((key) =>
+    contractorByKey.has(key),
+  );
   if (sharedKeys.length === 0) {
     throw new Error(
       [
@@ -349,8 +387,12 @@ async function findLogArtifacts(runId?: string, explicitCommission?: string, exp
     selectedKey = sharedKeys[0];
   }
 
-  const commissionPath = await pickLatestFileByMtime(commissionByKey.get(selectedKey) || []);
-  const contractorPath = await pickLatestFileByMtime(contractorByKey.get(selectedKey) || []);
+  const commissionPath = await pickLatestFileByMtime(
+    commissionByKey.get(selectedKey) || [],
+  );
+  const contractorPath = await pickLatestFileByMtime(
+    contractorByKey.get(selectedKey) || [],
+  );
 
   return {
     commissionPath,
@@ -359,7 +401,10 @@ async function findLogArtifacts(runId?: string, explicitCommission?: string, exp
   };
 }
 
-async function materializeArtifact(sourcePath: string, destinationPath: string): Promise<void> {
+async function materializeArtifact(
+  sourcePath: string,
+  destinationPath: string,
+): Promise<void> {
   await ensureDir(dirname(destinationPath));
   if (isArchivedGzip(sourcePath)) {
     const compressed = await readFile(sourcePath);
@@ -374,10 +419,17 @@ function toMaterializedName(filePath: string): string {
   return stripGzipSuffix(basename(filePath));
 }
 
-function parsePayrollFromSourceFileName(sourceName: string): { payrollMonth: number; payrollYear: number } {
-  const match = sourceName.match(/^Payroll Report (\d+)-\d+-(\d{4}) - (\d+)-\d+-(\d{4})\.xlsx$/);
+function parsePayrollFromSourceFileName(sourceName: string): {
+  payrollMonth: number;
+  payrollYear: number;
+} {
+  const match = sourceName.match(
+    /^Payroll Report (\d+)-\d+-(\d{4}) - (\d+)-\d+-(\d{4})\.xlsx$/,
+  );
   if (!match) {
-    throw new Error(`Could not parse payroll month/year from source filename: ${sourceName}`);
+    throw new Error(
+      `Could not parse payroll month/year from source filename: ${sourceName}`,
+    );
   }
 
   return {
@@ -390,7 +442,11 @@ async function writeConfigSnapshots(
   baselineConfigDir: string,
   sourceFileName: string,
   configCommit?: string,
-): Promise<{ staffHurdleChecksum: string; defaultChecksum: string; staffIds: string[] }> {
+): Promise<{
+  staffHurdleChecksum: string;
+  defaultChecksum: string;
+  staffIds: string[];
+}> {
   const staffHurdleOut = join(baselineConfigDir, "staffHurdle.json");
   const defaultOut = join(baselineConfigDir, "default.json");
 
@@ -431,12 +487,18 @@ async function writeConfigSnapshots(
       console.warn(
         `Warning: no staffHurdle.json found in commit ${configCommit}; using working tree config/staffHurdle.json`,
       );
-      await copyFile(join(PROJECT_ROOT, "config", "staffHurdle.json"), staffHurdleOut);
+      await copyFile(
+        join(PROJECT_ROOT, "config", "staffHurdle.json"),
+        staffHurdleOut,
+      );
     }
 
     await writeFile(defaultOut, defaultJson, "utf-8");
   } else {
-    await copyFile(join(PROJECT_ROOT, "config", "staffHurdle.json"), staffHurdleOut);
+    await copyFile(
+      join(PROJECT_ROOT, "config", "staffHurdle.json"),
+      staffHurdleOut,
+    );
     await copyFile(join(PROJECT_ROOT, "config", "default.json"), defaultOut);
   }
 
@@ -456,18 +518,26 @@ async function writeConfigSnapshots(
   };
 }
 
-async function assembleBaselineFromArtifacts(options: CliOptions): Promise<void> {
+async function assembleBaselineFromArtifacts(
+  options: CliOptions,
+): Promise<void> {
   console.log(`Assembling baseline from artifacts: ${options.baselineName}`);
   console.log("=".repeat(72));
 
-  const baselineDir = join(PROJECT_ROOT, "test-baselines", options.baselineName);
+  const baselineDir = join(
+    PROJECT_ROOT,
+    "test-baselines",
+    options.baselineName,
+  );
   if (await fileExists(baselineDir)) {
     if (!options.force) {
       throw new Error(
         `Baseline directory already exists: ${options.baselineName}. Re-run with --force to overwrite it.`,
       );
     }
-    console.log(`Overwriting existing baseline directory: test-baselines/${options.baselineName}`);
+    console.log(
+      `Overwriting existing baseline directory: test-baselines/${options.baselineName}`,
+    );
     await rm(baselineDir, { recursive: true, force: true });
   }
 
@@ -475,9 +545,21 @@ async function assembleBaselineFromArtifacts(options: CliOptions): Promise<void>
   await ensureDir(join(baselineDir, "config"));
   await ensureDir(join(baselineDir, "outputs"));
 
-  const sourcePath = await findSourceArtifact(options.month, options.year, options.sourceFile);
-  const paymentsPath = await findPaymentsArtifact(options.month, options.year, options.paymentsFile);
-  const logPair = await findLogArtifacts(options.runId, options.commissionLog, options.contractorLog);
+  const sourcePath = await findSourceArtifact(
+    options.month,
+    options.year,
+    options.sourceFile,
+  );
+  const paymentsPath = await findPaymentsArtifact(
+    options.month,
+    options.year,
+    options.paymentsFile,
+  );
+  const logPair = await findLogArtifacts(
+    options.runId,
+    options.commissionLog,
+    options.contractorLog,
+  );
 
   const selection: ArtifactSelection = {
     sourcePath,
@@ -499,15 +581,25 @@ async function assembleBaselineFromArtifacts(options: CliOptions): Promise<void>
 
   const sourceOut = join(baselineDir, "source", selection.sourceName);
   const paymentsOut = join(baselineDir, "outputs", selection.paymentsName);
-  const commissionOut = join(baselineDir, "outputs", selection.commissionLogName);
-  const contractorOut = join(baselineDir, "outputs", selection.contractorLogName);
+  const commissionOut = join(
+    baselineDir,
+    "outputs",
+    selection.commissionLogName,
+  );
+  const contractorOut = join(
+    baselineDir,
+    "outputs",
+    selection.contractorLogName,
+  );
 
   await materializeArtifact(selection.sourcePath, sourceOut);
   await materializeArtifact(selection.paymentsPath, paymentsOut);
   await materializeArtifact(selection.commissionLogPath, commissionOut);
   await materializeArtifact(selection.contractorLogPath, contractorOut);
 
-  const { payrollMonth, payrollYear } = parsePayrollFromSourceFileName(selection.sourceName);
+  const { payrollMonth, payrollYear } = parsePayrollFromSourceFileName(
+    selection.sourceName,
+  );
   if (payrollMonth !== options.month || payrollYear !== options.year) {
     throw new Error(
       `Source artifact payroll period (${payrollYear}-${String(payrollMonth).padStart(2, "0")}) does not match requested --year/--month (${options.year}-${String(options.month).padStart(2, "0")})`,
@@ -515,11 +607,12 @@ async function assembleBaselineFromArtifacts(options: CliOptions): Promise<void>
   }
 
   const sourceChecksum = await computeChecksum(sourceOut);
-  const { staffHurdleChecksum, defaultChecksum, staffIds } = await writeConfigSnapshots(
-    join(baselineDir, "config"),
-    selection.sourceName,
-    options.configCommit,
-  );
+  const { staffHurdleChecksum, defaultChecksum, staffIds } =
+    await writeConfigSnapshots(
+      join(baselineDir, "config"),
+      selection.sourceName,
+      options.configCommit,
+    );
 
   const currentCommit = options.commitSHA || (await getCommitSHA());
   const currentShortCommit = options.commitSHA
@@ -527,7 +620,9 @@ async function assembleBaselineFromArtifacts(options: CliOptions): Promise<void>
     : await getShortCommitSHA();
 
   const createdDate =
-    options.createdDate || parseRunKeyToDate(selection.selectedRunId)?.toISOString() || new Date().toISOString();
+    options.createdDate ||
+    parseRunKeyToDate(selection.selectedRunId)?.toISOString() ||
+    new Date().toISOString();
 
   const metadata: BaselineMetadata = {
     baselineName: options.baselineName,
@@ -598,7 +693,9 @@ function renderRelativePath(filePath: string): string {
   return filePath.replace(`${PROJECT_ROOT}/`, "");
 }
 
-async function validateConfigSnapshotSources(configCommit?: string): Promise<string[]> {
+async function validateConfigSnapshotSources(
+  configCommit?: string,
+): Promise<string[]> {
   const issues: string[] = [];
 
   if (!configCommit) {
@@ -616,10 +713,14 @@ async function validateConfigSnapshotSources(configCommit?: string): Promise<str
   const execFileAsync = promisify(execFile);
 
   try {
-    await execFileAsync("git", ["show", `${configCommit}:config/default.json`], {
-      cwd: PROJECT_ROOT,
-      maxBuffer: 10 * 1024 * 1024,
-    });
+    await execFileAsync(
+      "git",
+      ["show", `${configCommit}:config/default.json`],
+      {
+        cwd: PROJECT_ROOT,
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
   } catch {
     issues.push(
       `Missing config/default.json in commit ${configCommit}. Recovery: use a commit that contains that file or omit --config-commit to use working tree config/ files.`,
@@ -627,7 +728,10 @@ async function validateConfigSnapshotSources(configCommit?: string): Promise<str
   }
 
   let hasStaffHurdleInCommit = false;
-  for (const candidate of ["config/staffHurdle.json", "config/staffhurdle.json"]) {
+  for (const candidate of [
+    "config/staffHurdle.json",
+    "config/staffhurdle.json",
+  ]) {
     try {
       await execFileAsync("git", ["show", `${configCommit}:${candidate}`], {
         cwd: PROJECT_ROOT,
@@ -640,7 +744,10 @@ async function validateConfigSnapshotSources(configCommit?: string): Promise<str
     }
   }
 
-  if (!hasStaffHurdleInCommit && !(await fileExists(join(PROJECT_ROOT, "config", "staffHurdle.json")))) {
+  if (
+    !hasStaffHurdleInCommit &&
+    !(await fileExists(join(PROJECT_ROOT, "config", "staffHurdle.json")))
+  ) {
     issues.push(
       `No staff hurdle config found in commit ${configCommit}, and local config/staffHurdle.json is also missing. Recovery: restore local config/staffHurdle.json or use a commit that contains it.`,
     );
@@ -655,14 +762,20 @@ async function runPreflight(options: CliOptions): Promise<void> {
 
   const issues: string[] = [];
 
-  const baselineDir = join(PROJECT_ROOT, "test-baselines", options.baselineName);
+  const baselineDir = join(
+    PROJECT_ROOT,
+    "test-baselines",
+    options.baselineName,
+  );
   if (await fileExists(join(baselineDir, "metadata.json"))) {
     if (options.force) {
       console.log(
         `Info: baseline metadata exists at ${renderRelativePath(join(baselineDir, "metadata.json"))} and would be overwritten in assemble mode because --force is set.`,
       );
     } else {
-      console.log(`Warning: baseline metadata already exists at ${renderRelativePath(join(baselineDir, "metadata.json"))}`);
+      console.log(
+        `Warning: baseline metadata already exists at ${renderRelativePath(join(baselineDir, "metadata.json"))}`,
+      );
     }
   }
 
@@ -677,19 +790,31 @@ async function runPreflight(options: CliOptions): Promise<void> {
     | undefined;
 
   try {
-    sourcePath = await findSourceArtifact(options.month, options.year, options.sourceFile);
+    sourcePath = await findSourceArtifact(
+      options.month,
+      options.year,
+      options.sourceFile,
+    );
   } catch (error) {
     issues.push(error instanceof Error ? error.message : String(error));
   }
 
   try {
-    paymentsPath = await findPaymentsArtifact(options.month, options.year, options.paymentsFile);
+    paymentsPath = await findPaymentsArtifact(
+      options.month,
+      options.year,
+      options.paymentsFile,
+    );
   } catch (error) {
     issues.push(error instanceof Error ? error.message : String(error));
   }
 
   try {
-    logPair = await findLogArtifacts(options.runId, options.commissionLog, options.contractorLog);
+    logPair = await findLogArtifacts(
+      options.runId,
+      options.commissionLog,
+      options.contractorLog,
+    );
   } catch (error) {
     issues.push(error instanceof Error ? error.message : String(error));
   }
@@ -699,7 +824,10 @@ async function runPreflight(options: CliOptions): Promise<void> {
   if (sourcePath) {
     const sourceName = toMaterializedName(sourcePath);
     const parsed = parsePayrollFromSourceFileName(sourceName);
-    if (parsed.payrollMonth !== options.month || parsed.payrollYear !== options.year) {
+    if (
+      parsed.payrollMonth !== options.month ||
+      parsed.payrollYear !== options.year
+    ) {
       issues.push(
         `Resolved source artifact period ${parsed.payrollYear}-${String(parsed.payrollMonth).padStart(2, "0")} does not match requested ${options.year}-${String(options.month).padStart(2, "0")}.`,
       );
@@ -713,8 +841,12 @@ async function runPreflight(options: CliOptions): Promise<void> {
     console.log(`Payments artifact:    ${renderRelativePath(paymentsPath)}`);
   }
   if (logPair) {
-    console.log(`Commission artifact:  ${renderRelativePath(logPair.commissionPath)}`);
-    console.log(`Contractor artifact:  ${renderRelativePath(logPair.contractorPath)}`);
+    console.log(
+      `Commission artifact:  ${renderRelativePath(logPair.commissionPath)}`,
+    );
+    console.log(
+      `Contractor artifact:  ${renderRelativePath(logPair.contractorPath)}`,
+    );
     console.log(`Selected run key:     ${logPair.selectedRunId}`);
   }
   if (options.configCommit) {
@@ -753,7 +885,11 @@ async function requireConfirmation(options: CliOptions): Promise<void> {
     );
   }
 
-  const baselineDir = join(PROJECT_ROOT, "test-baselines", options.baselineName);
+  const baselineDir = join(
+    PROJECT_ROOT,
+    "test-baselines",
+    options.baselineName,
+  );
   const baselineExists = await fileExists(baselineDir);
 
   let prompt: string;
@@ -789,18 +925,42 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log("  --year <yyyy>");
     console.log("");
     console.log("Optional:");
-    console.log("  --preflight                   Validate required artifacts and config only (no file writes)");
-    console.log("  --force                       Overwrite an existing baseline directory");
-    console.log("  --confirm-force               Auto-confirm and skip interactive prompt");
-    console.log("  --run-id <YYYYMMDDTHHMMSS>    Pick specific commission/contractor pair");
-    console.log("  --config-commit <sha>         Snapshot config/*.json from git commit");
-    console.log("  --commit-sha <sha>            Value stored in metadata.commitSHA");
-    console.log("  --created-date <iso-date>     Value stored in metadata.createdDate");
-    console.log("  --description <text>          Metadata description override");
-    console.log("  --source-file <path>          Explicit source artifact path (relative to repo)");
-    console.log("  --payments-file <path>        Explicit payments artifact path (relative to repo)");
-    console.log("  --commission-log <path>       Explicit commission log path (relative to repo)");
-    console.log("  --contractor-log <path>       Explicit contractor log path (relative to repo)");
+    console.log(
+      "  --preflight                   Validate required artifacts and config only (no file writes)",
+    );
+    console.log(
+      "  --force                       Overwrite an existing baseline directory",
+    );
+    console.log(
+      "  --confirm-force               Auto-confirm and skip interactive prompt",
+    );
+    console.log(
+      "  --run-id <YYYYMMDDTHHMMSS>    Pick specific commission/contractor pair",
+    );
+    console.log(
+      "  --config-commit <sha>         Snapshot config/*.json from git commit",
+    );
+    console.log(
+      "  --commit-sha <sha>            Value stored in metadata.commitSHA",
+    );
+    console.log(
+      "  --created-date <iso-date>     Value stored in metadata.createdDate",
+    );
+    console.log(
+      "  --description <text>          Metadata description override",
+    );
+    console.log(
+      "  --source-file <path>          Explicit source artifact path (relative to repo)",
+    );
+    console.log(
+      "  --payments-file <path>        Explicit payments artifact path (relative to repo)",
+    );
+    console.log(
+      "  --commission-log <path>       Explicit commission log path (relative to repo)",
+    );
+    console.log(
+      "  --contractor-log <path>       Explicit contractor log path (relative to repo)",
+    );
     process.exit(0);
   }
 
