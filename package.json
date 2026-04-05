@@ -23,7 +23,8 @@
         "test:tsx": "npx tsx --test src/**/*.spec.ts",
         "test:debug:tsx": "npx tsx --inspect-brk --test src/**/*.spec.ts",
         "test:debug": "npx vitest --inspect-brk",
-        "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts"
+        "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts",
+        "lint": "eslint src scripts"
     },
     "repository": {
         "type": "git",
