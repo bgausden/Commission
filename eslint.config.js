@@ -59,7 +59,7 @@ export default [
             "prettier/prettier": [
                 "error",
                 {
-                    "endOfLine": "auto"
+                    "endOfLine": "lf"
                 }
             ],
             "no-unused-vars": "off",
