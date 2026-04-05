@@ -116,6 +116,7 @@ const setGlobal = <K extends keyof CustomGlobals>(
 };
 
 const PROGRESS_PREFIX = "__PROGRESS__ ";
+const REGRESSION_OFFLINE_MODE = process.env.REGRESSION_OFFLINE === "1";
 
 function emitProgress(step: string, detail?: string): void {
   // Structured marker for the web UI/server runner to parse.
@@ -1212,7 +1213,13 @@ function processPayrollExcelData(
               staffName = `${staffMapInfo.last_name ?? "<Last Name>"} ${staffMapInfo.first_name ?? "<First Name>"}`;
             } else {
               staffName = `${staffInfo.lastName ?? "<Last Name>"} ${staffInfo.firstName ?? "<First Name>"}`;
-              if (isPayViaTalenox(staffID)) {
+              if (REGRESSION_OFFLINE_MODE) {
+                talenoxStaff.set(staffID, {
+                  first_name: staffInfo.firstName,
+                  last_name: staffInfo.lastName,
+                });
+              }
+              if (isPayViaTalenox(staffID) && !REGRESSION_OFFLINE_MODE) {
                 const text = `${staffID ? staffID : "null"}${staffInfo.firstName ? " " + staffInfo.firstName : ""}${
                   staffInfo.lastName ? " " + staffInfo.lastName : ""
                 } in MB Payroll Report line ${rowIndex} not in Talenox.`;
@@ -1293,6 +1300,19 @@ async function main() {
   const PAYMENTS_WB_NAME = parsedFilename.PAYMENTS_WB_NAME;
   const PAYMENTS_WS_NAME = parsedFilename.PAYMENTS_WS_NAME;
 
+  if (REGRESSION_OFFLINE_MODE) {
+    if (config.updateTalenox) {
+      throw new Error(
+        "Regression offline mode requires config.updateTalenox=false.",
+      );
+    }
+    if (config.uploadToGDrive) {
+      throw new Error(
+        "Regression offline mode requires config.uploadToGDrive=false.",
+      );
+    }
+  }
+
   // Set global variables for use in other functions
   setGlobal("PAYROLL_MONTH", PAYROLL_MONTH);
   setGlobal("PAYROLL_YEAR", PAYROLL_YEAR);
@@ -1355,12 +1375,21 @@ async function main() {
   ]);
 
   emitProgressAndInfo("Loading staff hurdle configuration");
-  loadStaffHurdles(DEFAULT_STAFF_HURDLES_FILE);
+  loadStaffHurdles(process.env.STAFF_HURDLE_FILE ?? DEFAULT_STAFF_HURDLES_FILE);
 
-  infoLogger.info(`Requesting employees from Talenox`);
-  emitProgressAndInfo("Fetching employees from Talenox");
-  const talenoxStaff = await getTalenoxEmployees();
-  infoLogger.info(`Requesting employees complete`);
+  let talenoxStaff: TTalenoxInfoStaffMap;
+  if (REGRESSION_OFFLINE_MODE) {
+    emitProgressAndInfo(
+      "Using offline staff mode",
+      "Skipping Talenox employee fetch for regression replay",
+    );
+    talenoxStaff = new Map();
+  } else {
+    infoLogger.info(`Requesting employees from Talenox`);
+    emitProgressAndInfo("Fetching employees from Talenox");
+    talenoxStaff = await getTalenoxEmployees();
+    infoLogger.info(`Requesting employees complete`);
+  }
 
   emitProgressAndInfo(
     "Reading Mindbody payroll workbook",
@@ -1470,11 +1499,11 @@ async function main() {
 
 //initDebug()
 main()
-  .then(() => {
+  .then(async () => {
     debugLogger.debug("Done!");
-    shutdownLogging();
+    await shutdownLogging();
   })
-  .catch((error) => {
+  .catch(async (error) => {
     // Important: propagate failure to the process exit code.
     // Otherwise the web runner (and shell scripts) will treat failures as success.
     process.exitCode = 1;
@@ -1497,5 +1526,5 @@ main()
         `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
       );
     }
-    shutdownLogging();
+    await shutdownLogging();
   });
