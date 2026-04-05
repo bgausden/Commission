@@ -1,5 +1,4 @@
 import XLSX from 'xlsx';
-import { readFileSync } from 'fs';
 
 const file1 = process.argv[2];
 const file2 = process.argv[3];
@@ -38,13 +37,13 @@ for (const sheetName of sheets1) {
   const sheet1 = wb1.Sheets[sheetName];
   const sheet2 = wb2.Sheets[sheetName];
 
-  const data1 = XLSX.utils.sheet_to_json(sheet1, { header: 1, defval: '' });
-  const data2 = XLSX.utils.sheet_to_json(sheet2, { header: 1, defval: '' });
+  const data1 = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(sheet1, { header: 1, defval: '' });
+  const data2 = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(sheet2, { header: 1, defval: '' });
 
   const maxRows = Math.max(data1.length, data2.length);
   const maxCols = Math.max(
-    ...data1.map((row: any) => row.length),
-    ...data2.map((row: any) => row.length)
+    ...data1.map((row) => row.length),
+    ...data2.map((row) => row.length)
   );
 
   let sheetHasDiff = false;

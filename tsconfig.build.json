@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*.ts",
+    "config/**/*.d.ts"
+  ],
+  "exclude": [
+    "dist",
+    "staffHurdle.json",
+    "other_source",
+    "scripts",
+    "vendor",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts"
+  ]
+}

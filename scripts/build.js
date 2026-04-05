@@ -18,7 +18,7 @@ async function copyBuildArtifacts() {
   console.log(`Copied logging config template to ${DIST}`);
 }
 
-exec("node ./node_modules/typescript/bin/tsc -p tsconfig.json")
+exec("node ./node_modules/typescript/bin/tsc -p tsconfig.build.json")
   .then((result) => {
     if (result.stdout) console.log(result.stdout);
     if (result.stderr) console.log(result.stderr);
