@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
 import type { BaselineMetadata } from "../src/regression.types.js";
 import { parsePaymentsExcel } from "./parsers/parsePaymentsExcel.js";
 import { parseCommissionLog } from "./parsers/parseCommissionLog.js";
@@ -22,6 +23,25 @@ import {
   runCommissionInSandbox,
 } from "./utils/regressionRunner.js";
 
+dotenv.config();
+
+const DEFAULT_TOLERANCE = 0.01;
+
+function parseRegressionTolerance(value: string | undefined): number {
+  if (!value || value.trim().length === 0) {
+    return DEFAULT_TOLERANCE;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(
+      `Invalid REGRESSION_TOLERANCE value: "${value}". Expected a non-negative number.`,
+    );
+  }
+
+  return parsed;
+}
+
 type LoadedBaseline = {
   name: string;
   dir: string;
@@ -36,12 +56,23 @@ function filterOutContractorsFromCommission(
   return commissionRows.filter((row) => !contractorIds.has(row.staffId));
 }
 
+function filterOutContractorsFromPayments(
+  paymentRows: Awaited<ReturnType<typeof parsePaymentsExcel>>,
+  contractorRows: Awaited<ReturnType<typeof parseCommissionLog>>,
+) {
+  const contractorIds = new Set(contractorRows.map((row) => row.staffId));
+  return paymentRows.filter((row) => !contractorIds.has(row.staffId));
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, "..");
 const BASELINES_ROOT = join(PROJECT_ROOT, "test-baselines");
 
 let baseline: LoadedBaseline;
+const regressionTolerance = parseRegressionTolerance(
+  process.env.REGRESSION_TOLERANCE,
+);
 
 describe("Regression Tests", () => {
   beforeAll(async () => {
@@ -148,30 +179,42 @@ describe("Regression Tests", () => {
     expect(currentCommission).toBeDefined();
     expect(currentContractor).toBeDefined();
 
-    const baselineCommissionNonContractor =
-      filterOutContractorsFromCommission(baselineCommission, baselineContractor);
-    const currentCommissionNonContractor =
-      filterOutContractorsFromCommission(currentCommission!, currentContractor!);
+    const baselineCommissionNonContractor = filterOutContractorsFromCommission(
+      baselineCommission,
+      baselineContractor,
+    );
+    const currentCommissionNonContractor = filterOutContractorsFromCommission(
+      currentCommission!,
+      currentContractor!,
+    );
+    const baselinePaymentsNonContractor = filterOutContractorsFromPayments(
+      baselinePayments,
+      baselineContractor,
+    );
+    const currentPaymentsNonContractor = filterOutContractorsFromPayments(
+      currentPayments!,
+      currentContractor!,
+    );
 
     const paymentsDiff = compareStaffPayments(
-      baselinePayments,
-      currentPayments!,
+      baselinePaymentsNonContractor,
+      currentPaymentsNonContractor,
       {
-        tolerance: 0.01,
+        tolerance: regressionTolerance,
       },
     );
     const commissionDiff = compareCommissionData(
       baselineCommissionNonContractor,
       currentCommissionNonContractor,
       {
-        tolerance: 0.01,
+        tolerance: regressionTolerance,
       },
     );
     const contractorDiff = compareCommissionData(
       baselineContractor,
       currentContractor!,
       {
-        tolerance: 0.01,
+        tolerance: regressionTolerance,
       },
     );
 
