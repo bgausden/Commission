@@ -28,6 +28,14 @@ type LoadedBaseline = {
   metadata: BaselineMetadata;
 };
 
+function filterOutContractorsFromCommission(
+  commissionRows: Awaited<ReturnType<typeof parseCommissionLog>>,
+  contractorRows: Awaited<ReturnType<typeof parseCommissionLog>>,
+) {
+  const contractorIds = new Set(contractorRows.map((row) => row.staffId));
+  return commissionRows.filter((row) => !contractorIds.has(row.staffId));
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, "..");
@@ -140,6 +148,11 @@ describe("Regression Tests", () => {
     expect(currentCommission).toBeDefined();
     expect(currentContractor).toBeDefined();
 
+    const baselineCommissionNonContractor =
+      filterOutContractorsFromCommission(baselineCommission, baselineContractor);
+    const currentCommissionNonContractor =
+      filterOutContractorsFromCommission(currentCommission!, currentContractor!);
+
     const paymentsDiff = compareStaffPayments(
       baselinePayments,
       currentPayments!,
@@ -148,8 +161,8 @@ describe("Regression Tests", () => {
       },
     );
     const commissionDiff = compareCommissionData(
-      baselineCommission,
-      currentCommission!,
+      baselineCommissionNonContractor,
+      currentCommissionNonContractor,
       {
         tolerance: 0.01,
       },
@@ -228,8 +241,8 @@ describe("Regression Tests", () => {
         failureSummary.push(
           [
             "Commission regression mismatch:",
-            `- Baseline commission blocks: ${baselineCommission.length}`,
-            `- Current commission blocks: ${currentCommission!.length}`,
+            `- Baseline commission blocks (non-contractor): ${baselineCommissionNonContractor.length}`,
+            `- Current commission blocks (non-contractor): ${currentCommissionNonContractor.length}`,
             `- Modified staff: ${commissionDiff.modified.length}`,
             `- Added staff: ${commissionDiff.added.length}`,
             `- Removed staff: ${commissionDiff.removed.length}`,
