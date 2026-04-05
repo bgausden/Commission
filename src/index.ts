@@ -78,11 +78,7 @@ import {
   uploadRunArtifacts,
 } from "./gdrive_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
-import {
-  DEFAULT_OLD_DIR,
-  DEFAULT_STAFF_HURDLES_FILE,
-  defaultStaffID,
-} from "./constants.js";
+import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import path from "node:path";
 import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
@@ -112,6 +108,7 @@ const setGlobal = <K extends keyof CustomGlobals>(
   key: K,
   value: CustomGlobals[K],
 ): void => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any)[key] = value;
 };
 
@@ -126,8 +123,6 @@ function emitProgress(step: string, detail?: string): void {
     step,
     ...(detail ? { detail } : {}),
   };
-  // Intentionally use stdout (console.log) so it can be streamed.
-  // eslint-disable-next-line no-console
   console.log(`${PROGRESS_PREFIX}${JSON.stringify(payload)}`);
 }
 
@@ -149,7 +144,6 @@ const TIPS_FOR = "Tips:";
 const COMM_FOR = "Sales Commission:";
 const REV_PER_SESS = "Rev. per Session";
 
-const BASE_RATE = "baseRate";
 const HURDLE_1_LEVEL = "hurdle1Level";
 const HURDLE_2_LEVEL = "hurdle2Level";
 const HURDLE_3_LEVEL = "hurdle3Level";
@@ -168,30 +162,6 @@ const serviceCommMap: TServiceCommMap = new Map<
   TStaffName,
   GeneralServiceComm
 >();
-const emptyServComm: GeneralServiceComm = {
-  staffName: "",
-  base: { baseCommRevenue: 0, baseCommRate: 0, baseCommAmt: 0 },
-  hurdle1: {
-    hurdle1PayOut: 0,
-    hurdle1Level: 0,
-    hurdle1Rate: 0,
-    hurdle1Revenue: 0,
-  },
-  hurdle2: {
-    hurdle2Payout: 0,
-    hurdle2Level: 0,
-    hurdle2Rate: 0,
-    hurdle2Revenue: 0,
-  },
-  hurdle3: {
-    hurdle3Payout: 0,
-    hurdle3Level: 0,
-    hurdle3Rate: 0,
-    hurdle3Revenue: 0,
-  },
-  generalServiceComm: 0,
-  generalServiceRevenue: 0,
-};
 
 function readExcelFile(fileName: string): XLSX.WorkSheet {
   const READ_OPTIONS = { raw: true, blankrows: true, sheetrows: 0 };
@@ -1511,17 +1481,14 @@ main()
     if (error instanceof Error) {
       errorLogger.error(`${error.message}`);
       // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
-      // eslint-disable-next-line no-console
       console.error(error.message);
     } else if (typeof error === "string") {
       errorLogger.error(`${error.toString()}`);
-      // eslint-disable-next-line no-console
       console.error(error.toString());
     } else {
       errorLogger.error(
         `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
       );
-      // eslint-disable-next-line no-console
       console.error(
         `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
       );
