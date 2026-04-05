@@ -75,6 +75,7 @@ npm run assemble-baseline -- \
 ```
 
 Notes:
+
 - The script supports archived `.gz` files and plain files.
 - It materializes `source/` and `outputs/` as uncompressed `.xlsx`/`.log` files.
 - Baseline assembly requires a matching `commission-*` and `contractor-*` log pair.
