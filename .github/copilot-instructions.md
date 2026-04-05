@@ -26,9 +26,9 @@ Full set declared in [src/globals.ts](../src/globals.ts). Without this comment E
 
 Vendored at `vendor/xlsx-0.20.3/`. Vitest alias in `vitest.config.ts` maps `'xlsx'` to `src/vendor-xlsx.mjs`. Installing from npm will break this.
 
-### Always call `shutdownLogging()` before process exit
+### Always `await shutdownLogging()` before process exit
 
-log4js buffers writes asynchronously. Any exit path that skips `shutdownLogging()` will lose log entries.
+log4js buffers writes asynchronously. `shutdownLogging()` returns `Promise<void>` — any exit path that skips `await shutdownLogging()` will lose log entries.
 
 ## Key Behavioral Notes
 
@@ -84,6 +84,17 @@ Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments(
 
 - Implement pooling for service/product commissions and tips
 - Remove `ncp` dependency in build script
-- Move `staffHurdle.json` filename to a constant
 - Fix rounding for custom pay rates
 - Move `TALENOX_API_TOKEN` to env var
+
+## Runtime Environment Variables
+
+| Variable             | Purpose                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| `DATA_DIR`           | Override input workbook directory (default: `data/`)                                 |
+| `LOGS_DIR`           | Override log output directory (default: `logs/`)                                     |
+| `PAYMENTS_DIR`       | Override payments output directory (default: `payments/`)                            |
+| `LOG4JS_CONSOLE`     | Console log verbosity: `on` (default) / `errors` / `off`                             |
+| `NODE_CONFIG_DIR`    | Override directory that `node-config-ts` reads config from                           |
+| `STAFF_HURDLE_FILE`  | Override path to `staffHurdle.json`                                                  |
+| `REGRESSION_OFFLINE` | Set to `1` to skip all external API calls (Talenox/GDrive); used by regression tests |

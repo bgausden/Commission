@@ -28,9 +28,9 @@ Files that use `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR`, etc. must include 
 
 The full set of globals is declared in `src/globals.d.ts`.
 
-### Always call `shutdownLogging()` before process exit
+### Always `await shutdownLogging()` before process exit
 
-log4js buffers writes. Any code path that exits the process must call `shutdownLogging()` first or log entries will be lost.
+log4js buffers writes asynchronously. `shutdownLogging()` returns a `Promise<void>` — any code path that exits the process must `await` it or log entries will be lost.
 
 ### `updateTalenox: false` is a dry-run safety flag
 

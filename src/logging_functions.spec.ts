@@ -21,8 +21,8 @@ describe("logging_functions", () => {
     await initLogs();
   });
 
-  afterAll(() => {
-    shutdownLogging();
+  afterAll(async () => {
+    await shutdownLogging();
 
     if (typeof originalLog4jsConsole === "undefined") {
       delete process.env.LOG4JS_CONSOLE;

@@ -254,10 +254,13 @@ errorLogger.level = "error";
 export const webEchoLogger = getLogger("webEcho");
 webEchoLogger.level = "info";
 
-export function shutdownLogging(): void {
-  shutdown((err) => {
-    if (err) {
-      console.error(err);
-    }
+export function shutdownLogging(): Promise<void> {
+  return new Promise((resolve) => {
+    shutdown((err) => {
+      if (err) {
+        console.error(err);
+      }
+      resolve();
+    });
   });
 }
