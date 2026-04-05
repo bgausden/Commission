@@ -149,6 +149,7 @@ async function listBaselines(): Promise<void> {
   console.log('');
   console.log('Usage:');
   console.log('  npm run create-baseline -- <name>     Create new baseline');
+  console.log('  npm run assemble-baseline -- --name <name> --month <m> --year <yyyy>');
   console.log('  npm run update-baseline -- <name>     Update existing baseline');
   console.log('  npm run test:regression               Run regression tests');
   console.log('='.repeat(100));

@@ -28,6 +28,7 @@ npm test               # Run test suite
 npm test                    # Run all tests
 npm run test:regression     # Run regression tests only
 npm run create-baseline -- baseline-name  # Create test baseline
+npm run assemble-baseline -- --name 2025-12 --month 12 --year 2025  # Assemble from archived artifacts
 npm run anonymize-fixtures  # Anonymize test fixture data
 ```
 
@@ -43,8 +44,46 @@ Baselines are gitignored — create one locally before regression tests will do 
 
 ```bash
 npm run create-baseline -- <name>
+npm run assemble-baseline -- --name <name> --month <1-12> --year <yyyy>
 npm run list-baselines          # show available baselines
 ```
+
+#### Assembling a baseline from saved artifacts (no rerun required)
+
+Use this when you already have archived source/payments/log outputs and want to avoid hand-building the baseline directory:
+
+```bash
+# Auto-discover source/payments + latest matching commission/contractor logs
+npm run assemble-baseline -- --name 2025-12 --month 12 --year 2025
+
+# Preflight only (no baseline files written)
+npm run assemble-baseline -- --name 2025-12 --month 12 --year 2025 --preflight
+
+# Overwrite existing baseline directory
+npm run assemble-baseline -- --name 2025-12 --month 12 --year 2025 --run-id 20260101T110030 --force
+
+# Non-interactive terminal usage (auto-confirm)
+npm run assemble-baseline -- --name 2025-12 --month 12 --year 2025 --run-id 20260101T110030 --confirm-force
+
+# Pin to a known historical run + config snapshot commit
+npm run assemble-baseline -- \
+	--name 2025-12 \
+	--month 12 \
+	--year 2025 \
+	--run-id 20260101T110030 \
+	--config-commit b450868
+```
+
+Notes:
+- The script supports archived `.gz` files and plain files.
+- It materializes `source/` and `outputs/` as uncompressed `.xlsx`/`.log` files.
+- Baseline assembly requires a matching `commission-*` and `contractor-*` log pair.
+- `--preflight` validates artifacts/config only and reports missing items without writing files.
+- `--force` overwrites an existing `test-baselines/<name>/` directory before assembling.
+- The script asks for confirmation in interactive terminals. Use `--confirm-force` to auto-confirm.
+- In non-interactive terminals, `--confirm-force` is required; otherwise the script exits with guidance.
+- Use `--help` for full override options (`--source-file`, `--payments-file`, explicit log paths, metadata overrides).
+- If any artifact is missing locally, recover/export it from Google Drive, place it under `data/`, `payments/`, or `logs/` (or their `old/` subfolders), then re-run the assemble command.
 
 #### Validating the current codebase against a past payroll
 

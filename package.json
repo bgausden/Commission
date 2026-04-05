@@ -9,6 +9,7 @@
         "test": "./node_modules/.bin/vitest --run",
         "test:regression": "./node_modules/.bin/vitest --run regression.spec.ts",
         "create-baseline": "npx tsx scripts/createBaseline.ts",
+        "assemble-baseline": "npx tsx scripts/assembleBaselineFromArtifacts.ts",
         "update-baseline": "npx tsx scripts/updateBaseline.ts",
         "list-baselines": "npx tsx scripts/listBaselines.ts",
         "anonymize-fixtures": "npx tsx scripts/anonymizeTestFixtures.ts",
