@@ -55,6 +55,10 @@ Exact string matches — whitespace or capitalisation changes in the source repo
 
 Staff with a `poolsWith` array in `staffHurdle.json` share total revenue equally before hurdle calculation. Pooling currently applies to general services only — tips, product commission, and custom rate commissions are **not** pooled (active TODO).
 
+### Regression test axiom
+
+The regression test processes a **fixed input file** (the Mindbody commission xlsx stored in the baseline) and asserts that **all generated outputs** (payments Excel, commission log, contractor log) are field-for-field identical to the baseline outputs. Any difference — including added staff, removed staff, or modified values — is a test failure. All changes to regression logic must preserve this invariant.
+
 ### Regression baseline discovery
 
 `regression.spec.ts` auto-discovers the oldest available baseline in `test-baselines/` (by `createdDate` in `metadata.json`). Override with:

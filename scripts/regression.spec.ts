@@ -74,7 +74,7 @@ const regressionTolerance = parseRegressionTolerance(
   process.env.REGRESSION_TOLERANCE,
 );
 
-describe("Regression Tests", () => {
+describe("Regression: fixed input must produce identical outputs to baseline", () => {
   beforeAll(async () => {
     const baselineName = process.env.BASELINE_NAME;
     if (baselineName && baselineName.trim().length > 0) {

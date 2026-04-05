@@ -36,6 +36,10 @@ log4js buffers writes asynchronously. `shutdownLogging()` returns a `Promise<voi
 
 `config/default.json` contains `updateTalenox`. When `false`, commissions are calculated and the payments Excel is generated but nothing is pushed to the Talenox API. Leave this `false` unless running a real payroll.
 
+### Regression test axiom
+
+The regression test processes a **fixed input file** (the Mindbody commission xlsx stored in the baseline) and asserts that **all generated outputs** (payments Excel, commission log, contractor log) are field-for-field identical to the baseline outputs. Any difference — including added staff, removed staff, or modified values — is a test failure. All changes to regression logic must preserve this invariant.
+
 ### Regression tests auto-discover the oldest baseline
 
 `regression.spec.ts` does not hardcode a baseline name. On each run it scans `test-baselines/`, reads `metadata.json` from each subdirectory, and selects the entry with the earliest `createdDate`. Set `BASELINE_NAME` to override:
