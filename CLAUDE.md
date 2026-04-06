@@ -59,10 +59,50 @@ Use `npm run assemble-baseline -- ...` to build a baseline directly from archive
 - `--preflight` validates availability without writing files
 - `--force` requires confirmation; use `--confirm-force` for non-interactive runs
 
+### Git workflow — do not work in master
+
+All new features and bug fixes must be developed on a separate branch. Do not implement feature/fix work directly on `master`.
+
 ### Test fixtures use anonymized staff names
 
 `test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names. See `test-fixtures/README.md` for update instructions.
 
 ## Coding Philosophy
 
-When proposing a bug fix, always assess whether the underlying issue can be eliminated through type-level constraints rather than runtime checks. Prefer compile-time impossibility over runtime defence.
+## Development Principles
+
+**Functional core, imperative shell**
+Pure logic at the centre; I/O and side-effects at the boundary.
+Enables deterministic testing of all business logic without mocking infrastructure.
+
+**Consistency by construction**
+Model your domain so invalid state cannot be expressed in the type system.
+Eliminates entire classes of defensive checks and the bugs that occur when they're forgotten.
+
+**Use assertions to catch logic errors**
+Assert invariants and preconditions that correct code should never violate.
+Assertions are documentation that executes; they surface logic errors at the point of cause, not downstream.
+
+**Parse, don't validate**
+Accept raw input once at the system boundary; convert it to a guaranteed-valid type immediately.
+Never re-validate the same data downstream — if it's in the system, it's already known-good.
+
+**Total functions**
+Every function handles its full input domain; return Result/Option rather than throwing or returning null.
+Forces callers to handle failure paths explicitly; eliminates hidden control flow.
+
+**Push effects to the leaves**
+Clocks, randomness, and I/O belong as close to the entry point as possible.
+Keeps the functional core pure and makes time/environment-dependent behaviour easy to control in tests.
+
+**Explicit over implicit**
+Functions declare all dependencies as arguments; no hidden control flow or global mutable state.
+In small teams, implicit behaviour has no institutional memory to compensate for it — it becomes a trap.
+
+**Ports and adapters**
+Domain logic depends on interfaces, not concrete infrastructure.
+Swapping databases, queues, or external APIs becomes a non-event; enforces FCIS at the module level.
+
+**Prefer duplication over the wrong abstraction**
+Abstract only when ≥3 concrete cases exist and the shared shape is unambiguous.
+Wrong abstractions are harder to undo than duplication; in small teams the cost per person is high.
