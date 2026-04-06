@@ -4,7 +4,7 @@
 
 TypeScript-based commission calculator for salon staff that processes Mindbody payroll reports and calculates tiered commissions with custom pay rates.
 
-**Entry points**: [src/index.ts](../src/index.ts) (CLI), [src/server.ts](../src/server.ts) (web UI on port 3000)
+**Entry points**: [src/index.ts](../src/index.ts) (CLI), [src/server.ts](../src/server.ts) (web UI, default port 3000, overridable via `PORT` env var)
 
 ## Non-Obvious Constraints
 
@@ -43,13 +43,7 @@ Staff ID `"000"` is the fallback entry used when a staff member appears in the M
 
 ### Mindbody Excel format assumptions
 
-The parser ([src/index.ts](../src/index.ts)) locates data by searching for specific header strings:
-
-- Staff blocks begin with `"Staff ID #: <ID>"`
-- Revenue column found by searching for `"Rev. per Session"`
-- Totals row starts with `"Total for "`
-
-Exact string matches — whitespace or capitalisation changes in the source report will break parsing silently.
+The parser ([src/index.ts](../src/index.ts)) locates staff blocks, the revenue column, and totals rows by exact string matches against constants defined at the top of that file. Whitespace or capitalisation changes in the source report will break parsing silently.
 
 ### Commission pooling
 
@@ -83,7 +77,7 @@ Use `npm run assemble-baseline -- ...` to create baselines from archived run art
 
 ### Talenox API ([src/talenox_functions.ts](../src/talenox_functions.ts))
 
-Auth token is a hardcoded constant in [src/talenox_constants.ts](../src/talenox_constants.ts) (TODO: move to env var).
+Auth token is loaded from `process.env.TALENOX_API_TOKEN` (via dotenv) in [src/talenox_constants.ts](../src/talenox_constants.ts).
 
 Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments()`.
 
@@ -94,11 +88,13 @@ Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments(
 3. **Rounding**: General service commission amounts use `Math.round(value * 100) / 100`. Custom pay rate rounding has a known floating-point precision issue (active TODO).
 4. **ESM imports**: Always use `.js` extension in relative imports even for `.ts` source files.
 
-## Active TODOs ([src/index.ts](../src/index.ts))
+## Active TODOs
 
-- Implement pooling for service/product commissions and tips
-- Fix rounding for custom pay rates
-- Move `TALENOX_API_TOKEN` to env var
+See the top of [src/index.ts](../src/index.ts) for the current TODO list.
+
+## Coding Philosophy
+
+When proposing a bug fix, always assess whether the underlying issue can be eliminated through type-level constraints rather than runtime checks. Prefer compile-time impossibility over runtime defence.
 
 ## Runtime Environment Variables
 
@@ -110,4 +106,5 @@ Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments(
 | `LOG4JS_CONSOLE`     | Console log verbosity: `on` (default) / `errors` / `off`                             |
 | `NODE_CONFIG_DIR`    | Override directory that `node-config-ts` reads config from                           |
 | `STAFF_HURDLE_FILE`  | Override path to `staffHurdle.json`                                                  |
+| `PORT`               | Override web server port (default: `3000`)                                           |
 | `REGRESSION_OFFLINE` | Set to `1` to skip all external API calls (Talenox/GDrive); used by regression tests |

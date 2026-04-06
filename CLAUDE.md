@@ -50,8 +50,6 @@ BASELINE_NAME=dec-2025-baseline npm run test:regression
 
 `test-baselines/` is gitignored. Regression tests fail with a clear error when no baseline exists.
 
-The discovery logic lives in `scripts/utils/baselineUtils.ts` (`findOldestBaseline`).
-
 ### Baseline assembly from archived artifacts
 
 Use `npm run assemble-baseline -- ...` to build a baseline directly from archived artifacts without rerunning historical payrolls.
@@ -63,11 +61,8 @@ Use `npm run assemble-baseline -- ...` to build a baseline directly from archive
 
 ### Test fixtures use anonymized staff names
 
-`test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names.
+`test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names. See `test-fixtures/README.md` for update instructions.
 
-To update fixtures after a real payroll run:
+## Coding Philosophy
 
-```bash
-cp "payments/Talenox Payments YYYYMM.xlsx" test-fixtures/sample-payments.xlsx
-npm run anonymize-fixtures
-```
+When proposing a bug fix, always assess whether the underlying issue can be eliminated through type-level constraints rather than runtime checks. Prefer compile-time impossibility over runtime defence.
