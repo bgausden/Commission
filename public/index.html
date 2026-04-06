@@ -4,125 +4,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Config</title>
+    <title>Commission Config</title>
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="bg-gray-100 p-6">
-    <h1 class="text-2xl font-bold mb-4">Update Commission Config</h1>
-    <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none" class="mb-6">
-        <div id="drop-zone"
-            class="border-4 border-dashed border-gray-300 p-6 text-center mb-4 cursor-pointer hover:border-blue-500 transition-all duration-300 ease-in-out bg-white rounded-lg shadow-md">
-            Drag and drop payroll workbook here, or click to select file. Only .xlsx files are allowed.
-        </div>
-        <div class="form-group flex items-center mt-2">
-            <label class="form-label font-bold mr-2">Payroll Workbook (in XLSX format):</label>
-            <span id="payroll-wb-name"></span>
-        </div>
-        <input type="file" id="file-input" name="file" class="hidden" accept=".xlsx">
-    </form>
-    <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none" class="mb-6">
-        <div class="form-group flex items-center mt-2">
-            <label for="missingStaffAreFatal" class="form-label text-lg text-blue-500 mr-2">Missing Staff are
-                Fatal:</label>
-            <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
-        </div>
-        <div class="form-group flex items-center mt-2">
-            <label for="updateTalenox" class="form-label text-lg text-blue-500 mr-2">Update Talenox:</label>
-            <input type="checkbox" id="updateTalenox" name="updateTalenox">
-        </div>
-        <div class="form-group flex items-center mt-2">
-            <label for="uploadToGDrive" class="form-label text-lg text-blue-500 mr-2">Upload to Google Drive:</label>
-            <input type="checkbox" id="uploadToGDrive" name="uploadToGDrive">
-        </div>
-        <div id="advanced-settings-display" class="mt-6">
-            <h2 onclick="toggleAdvancedSettings()" class="cursor-pointer flex items-center text-xl font-bold">
-                Advanced Config
-                <span id="advanced-settings-toggle-icon" class="ml-2 transform transition-transform">&#9654;</span>
-            </h2>
-            <div id="advanced-settings" class="mt-2 hidden">
-                These settings are usually set in the .env file. They can be set here to override the .env for testing
-                purposes, but will not persist across server restarts.
-                <div class="form-group mt-3">
-                    <label for="GDRIVE_SERVICE_ACCOUNT_KEY" class="form-label text-lg text-blue-500 mr-2 block">Google
-                        Drive Service Account:</label>
-                    <input type="text" id="GDRIVE_SERVICE_ACCOUNT_KEY" name="GDRIVE_SERVICE_ACCOUNT_KEY"
-                        class="w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder="/path/to/your/service-account-secret.json">
-                </div>
-                <div class="form-group mt-3">
-                    <label for="GDRIVE_TALENOX_FOLDER_ID" class="form-label text-lg text-blue-500 mr-2 block">Google
-                        Drive
-                        Talenox Folder ID:</label>
-                    <input type="text" id="GDRIVE_TALENOX_FOLDER_ID" name="GDRIVE_TALENOX_FOLDER_ID"
-                        class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Google Drive folder ID">
-                </div>
-            </div>
-        </div>
-        <button type="submit" class="form-button bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">Update
-            Config</button>
-        <button type="button" id="run-commission-btn"
-            class="form-button bg-green-500 text-white px-4 py-2 mt-4 ml-2 rounded hover:bg-green-700">Run Commission
-            Calculation</button>
-    </form>
-    <div id="config-display" class="mt-6">
-        <h2 onclick="toggleConfig()" class="cursor-pointer flex items-center text-xl font-bold">
-            Current Config
-            <span id="toggle-icon" class="ml-2 transform transition-transform">&#9654;</span>
-        </h2>
-        <div id="config-content" class="config-content mt-2 hidden">
-            <pre id="config-json" class="bg-gray-200 p-4 rounded"></pre>
-        </div>
-    </div>
-    <div id="confirmation-dialog" class="confirmation-dialog text-green-500 mt-4 hidden"></div>
-    <div id="error-dialog" class="error-dialog text-red-500 mt-4"></div>
+<body>
+    <nav class="site-nav">
+        <span class="site-nav-title">Commission</span>
+        <ul class="site-nav-links">
+            <li><a href="index.html" class="active">Config</a></li>
+            <li><a href="staffhurdle.html">Staff Hurdles</a></li>
+        </ul>
+    </nav>
 
-    <div id="commission-panel" class="mt-6 bg-white rounded-lg shadow-md p-4">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold">Commission Run</h2>
-            <div class="flex items-center space-x-3">
-                <label class="text-sm text-gray-700 flex items-center space-x-2">
-                    <input type="checkbox" id="commission-show-logs" />
-                    <span>Show logs</span>
-                </label>
-                <label class="text-sm text-gray-700 flex items-center space-x-2">
-                    <input type="checkbox" id="commission-show-stderr" />
-                    <span>Show stderr</span>
-                </label>
-                <button type="button" id="commission-clear-btn"
-                    class="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300">Clear</button>
+    <div class="container">
+        <h1>Commission Config</h1>
+
+        <!-- Upload Panel -->
+        <div class="panel">
+            <h2 class="panel-title">Payroll Workbook</h2>
+            <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none">
+                <div id="drop-zone" class="drop-zone">
+                    Drag and drop payroll workbook here, or click to select file. Only .xlsx files are allowed.
+                </div>
+                <div class="mt-4 flex items-center gap-3">
+                    <span class="form-label form-label--inline">Payroll Workbook:</span>
+                    <span id="payroll-wb-name" class="status-value"></span>
+                </div>
+                <input type="file" id="file-input" name="file" class="hidden" accept=".xlsx">
+            </form>
+        </div>
+
+        <!-- Config Panel -->
+        <div class="panel">
+            <h2 class="panel-title">Run Settings</h2>
+            <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none">
+                <div class="form-group">
+                    <label class="form-label-inline">
+                        <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
+                        <span>Missing Staff are Fatal</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label-inline">
+                        <input type="checkbox" id="updateTalenox" name="updateTalenox">
+                        <span>Update Talenox</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label-inline">
+                        <input type="checkbox" id="uploadToGDrive" name="uploadToGDrive">
+                        <span>Upload to Google Drive</span>
+                    </label>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="mt-6">
+                    <button type="button" class="collapsible-trigger" onclick="toggleAdvancedSettings()">
+                        <span class="collapsible-icon" id="advanced-settings-toggle-icon">&#9654;</span>
+                        Advanced Config
+                    </button>
+                    <div id="advanced-settings" class="collapsible-content">
+                        <p class="mt-4 text-xs">
+                            These settings override the .env for testing purposes and will not persist across server restarts.
+                        </p>
+                        <div class="form-group">
+                            <label for="GDRIVE_SERVICE_ACCOUNT_KEY" class="form-label">Google Drive Service Account</label>
+                            <input type="text" id="GDRIVE_SERVICE_ACCOUNT_KEY" name="GDRIVE_SERVICE_ACCOUNT_KEY"
+                                class="form-input" placeholder="/path/to/your/service-account-secret.json">
+                        </div>
+                        <div class="form-group">
+                            <label for="GDRIVE_TALENOX_FOLDER_ID" class="form-label">Google Drive Talenox Folder ID</label>
+                            <input type="text" id="GDRIVE_TALENOX_FOLDER_ID" name="GDRIVE_TALENOX_FOLDER_ID"
+                                class="form-input" placeholder="Google Drive folder ID">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 mt-6">
+                    <button type="submit" class="btn">Update Config</button>
+                    <button type="button" id="run-commission-btn" class="btn btn-primary">Run Commission</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Current Config Panel -->
+        <div class="panel">
+            <button type="button" class="collapsible-trigger" onclick="toggleConfig()">
+                <span class="collapsible-icon" id="toggle-icon">&#9654;</span>
+                Current Config
+            </button>
+            <div id="config-content" class="collapsible-content">
+                <pre id="config-json" class="log-output"></pre>
             </div>
         </div>
-        <div class="mt-2 flex items-center">
-            <span class="font-bold mr-2">Status:</span>
-            <span id="commission-status" class="text-gray-700">Idle</span>
-            <span id="commission-jobid" class="text-gray-500 ml-3 text-sm"></span>
+
+        <!-- Feedback -->
+        <div id="confirmation-dialog" class="feedback feedback-success"></div>
+        <div id="error-dialog" class="feedback feedback-error"></div>
+
+        <!-- Commission Run Panel -->
+        <div class="panel" id="commission-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Commission Run</h2>
+                <div class="flex items-center gap-4">
+                    <label class="form-label-inline">
+                        <input type="checkbox" id="commission-show-logs">
+                        <span>Show logs</span>
+                    </label>
+                    <label class="form-label-inline">
+                        <input type="checkbox" id="commission-show-stderr">
+                        <span>Show stderr</span>
+                    </label>
+                    <button type="button" id="commission-clear-btn" class="btn btn-ghost">Clear</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="status-label">Status:</span>
+                <span id="commission-status" class="status-value">Idle</span>
+                <span id="commission-jobid" class="status-value status-value--jobid"></span>
+            </div>
+            <div class="mt-4">
+                <span class="form-label">Progress</span>
+                <ol id="commission-steps" class="steps-list"></ol>
+            </div>
+            <div id="commission-log-container" class="mt-4 hidden">
+                <pre id="commission-log" class="log-output"></pre>
+            </div>
+            <div id="commission-result" class="mt-4 text-sm"></div>
         </div>
-        <div class="mt-3">
-            <div class="text-sm font-semibold text-gray-700">Progress</div>
-            <ol id="commission-steps" class="mt-2 list-decimal ml-6 text-sm text-gray-800 space-y-1"></ol>
+
+        <!-- Confirmation Modal -->
+        <div id="confirm-modal" class="modal-overlay">
+            <div class="modal">
+                <h3>Confirm Commission Calculation</h3>
+                <p>You are about to run commission calculations with Talenox updates enabled. This will update
+                    the live Talenox system. Are you sure you want to proceed?</p>
+                <div class="modal-actions">
+                    <button type="button" id="confirm-cancel" class="btn">Cancel</button>
+                    <button type="button" id="confirm-ok" class="btn btn-danger">Confirm</button>
+                </div>
+            </div>
         </div>
-        <div id="commission-log-container" class="mt-3 hidden">
-            <pre id="commission-log"
-                class="bg-gray-100 p-3 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap"></pre>
-        </div>
-        <div id="commission-result" class="mt-2 text-sm"></div>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md mx-auto shadow-xl">
-            <h3 class="text-lg font-bold mb-4">Confirm Commission Calculation</h3>
-            <p class="mb-6">You are about to run commission calculations with Talenox updates enabled. This will update
-                the live Talenox system. Are you sure you want to proceed?</p>
-            <div class="flex justify-end space-x-2">
-                <button id="confirm-cancel"
-                    class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
-                <button id="confirm-ok" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700">OK</button>
-            </div>
-        </div>
-    </div>
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -140,23 +166,23 @@
 
         dropZone.addEventListener('dragover', (event) => {
             event.preventDefault();
-            dropZone.classList.add('border-blue-500');
+            dropZone.classList.add('active');
         });
 
         dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-blue-500');
+            dropZone.classList.remove('active');
         });
 
         dropZone.addEventListener('drop', (event) => {
             event.preventDefault();
-            dropZone.classList.remove('border-blue-500');
+            dropZone.classList.remove('active');
 
             const files = event.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 if (fileExtension !== 'xlsx') {
-                    errorDialog.textContent = 'Invalid file type. Only .xlsx files are allowed.';
+                    showError('Invalid file type. Only .xlsx files are allowed.');
                     return;
                 }
                 fileInput.files = files;
@@ -170,7 +196,7 @@
                 const file = files[0];
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 if (fileExtension !== 'xlsx') {
-                    errorDialog.textContent = 'Invalid file type. Only .xlsx files are allowed.';
+                    showError('Invalid file type. Only .xlsx files are allowed.');
                     return;
                 }
                 htmx.trigger(uploadForm, 'submit');
@@ -179,13 +205,13 @@
 
         htmx.on('htmx:beforeRequest', (event) => {
             if (event.detail.elt.id === 'upload-form') {
-                errorDialog.textContent = '';
+                hideError();
             }
         });
 
         htmx.on('htmx:responseError', (event) => {
             if (event.detail.elt.id === 'upload-form') {
-                errorDialog.textContent = event.detail.xhr.responseText;
+                showError(event.detail.xhr.responseText);
             }
         });
 
@@ -201,7 +227,6 @@
             fetch('/config')
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Fetched config:', data); // Debugging log
                     configJson.textContent = JSON.stringify(data, null, 4);
                     payrollWbName.textContent = data.PAYROLL_WB_FILENAME;
                     document.getElementById('missingStaffAreFatal').checked = data.missingStaffAreFatal;
@@ -211,33 +236,40 @@
                     document.getElementById('GDRIVE_TALENOX_FOLDER_ID').value = data.GDRIVE_TALENOX_FOLDER_ID || '';
                 })
                 .catch(error => {
-                    console.error('Error fetching config:', error); // Debugging log
+                    console.error('Error fetching config:', error);
                 });
         }
 
         function toggleConfig() {
-            const configContent = document.getElementById('config-content');
-            const toggleIcon = document.getElementById('toggle-icon');
-            const isHidden = configContent.classList.contains('hidden');
-            configContent.classList.toggle('hidden', !isHidden);
-            toggleIcon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+            const content = document.getElementById('config-content');
+            const icon = document.getElementById('toggle-icon');
+            content.classList.toggle('open');
+            icon.classList.toggle('open');
         }
 
         function toggleAdvancedSettings() {
-            const advancedSettings = document.getElementById('advanced-settings');
-            const toggleIcon = document.getElementById('advanced-settings-toggle-icon');
-            const isHidden = advancedSettings.classList.contains('hidden');
-            advancedSettings.classList.toggle('hidden', !isHidden);
-            toggleIcon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+            const content = document.getElementById('advanced-settings');
+            const icon = document.getElementById('advanced-settings-toggle-icon');
+            content.classList.toggle('open');
+            icon.classList.toggle('open');
         }
 
         function showConfirmation(message) {
-            const confirmationDialog = document.getElementById('confirmation-dialog');
             confirmationDialog.textContent = message;
-            confirmationDialog.classList.remove('hidden');
+            confirmationDialog.classList.add('visible');
             setTimeout(() => {
-                confirmationDialog.classList.add('hidden');
+                confirmationDialog.classList.remove('visible');
             }, 3000);
+        }
+
+        function showError(message) {
+            errorDialog.textContent = message;
+            errorDialog.classList.add('visible');
+        }
+
+        function hideError() {
+            errorDialog.textContent = '';
+            errorDialog.classList.remove('visible');
         }
 
         // Fetch and display the current config on load
@@ -248,37 +280,28 @@
             const updateTalenoxChecked = document.getElementById('updateTalenox').checked;
 
             if (updateTalenoxChecked) {
-                // Show confirmation modal
                 const modal = document.getElementById('confirm-modal');
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-
-                // Set default focus on Cancel button
+                modal.classList.add('open');
                 document.getElementById('confirm-cancel').focus();
             } else {
-                // Run directly without confirmation
                 runCommissionCalculation();
             }
         });
 
         // Modal Cancel button
         document.getElementById('confirm-cancel').addEventListener('click', () => {
-            const modal = document.getElementById('confirm-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            document.getElementById('confirm-modal').classList.remove('open');
         });
 
         // Modal OK button
         document.getElementById('confirm-ok').addEventListener('click', () => {
-            const modal = document.getElementById('confirm-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            document.getElementById('confirm-modal').classList.remove('open');
             runCommissionCalculation();
         });
 
         // Function to run commission calculation
         function runCommissionCalculation() {
-            errorDialog.textContent = '';
+            hideError();
             setCommissionStatus('Starting...');
             setCommissionResult('');
             disableRunButton(true);
@@ -292,7 +315,6 @@
                 .then(async (response) => {
                     const data = await response.json().catch(() => ({}));
 
-                    // If there's already a run in progress, attach to it.
                     if (response.status === 409 && data.jobId) {
                         setCommissionStatus('Already running (attaching)...');
                         connectToCommissionStream(data.jobId, `/run-commission/stream/${data.jobId}`, `/run-commission/status/${data.jobId}`);
@@ -310,7 +332,6 @@
                         return;
                     }
 
-                    // Back-compat fallback (should not happen after server change)
                     setCommissionStatus('Started');
                     setCommissionResult(data.message || 'Commission calculation started.');
                 })
@@ -332,19 +353,15 @@
         const commissionResultEl = document.getElementById('commission-result');
         const runBtn = document.getElementById('run-commission-btn');
 
-        // Default: show steps, hide logs.
         document.getElementById('commission-show-logs').checked = false;
         commissionLogContainerEl.classList.add('hidden');
 
         document.getElementById('commission-show-logs').addEventListener('change', (e) => {
-            const checked = !!e.target.checked;
-            commissionLogContainerEl.classList.toggle('hidden', !checked);
+            commissionLogContainerEl.classList.toggle('hidden', !e.target.checked);
         });
 
         function disableRunButton(disabled) {
             runBtn.disabled = disabled;
-            runBtn.classList.toggle('opacity-50', disabled);
-            runBtn.classList.toggle('cursor-not-allowed', disabled);
         }
 
         function setCommissionStatus(text) {
@@ -357,8 +374,12 @@
 
         function setCommissionResult(text, isError) {
             commissionResultEl.textContent = text || '';
-            commissionResultEl.classList.toggle('text-red-600', !!isError);
-            commissionResultEl.classList.toggle('text-green-700', !isError && !!text);
+            commissionResultEl.className = 'mt-4 text-sm';
+            if (isError) {
+                commissionResultEl.classList.add('status-value', 'error');
+            } else if (text) {
+                commissionResultEl.classList.add('status-value', 'success');
+            }
         }
 
         function formatLogFiles(logFiles) {
@@ -410,11 +431,10 @@
             setCommissionJobId(jobId);
 
             if (currentEventSource) {
-                try {currentEventSource.close();} catch { }
+                try { currentEventSource.close(); } catch { }
                 currentEventSource = null;
             }
 
-            // Prefer SSE for real-time logs/status.
             if (typeof window.EventSource !== 'undefined') {
                 const es = new EventSource(streamUrl);
                 currentEventSource = es;
@@ -449,7 +469,7 @@
 
                 es.addEventListener('done', (event) => {
                     let payload = null;
-                    try {payload = JSON.parse(event.data);} catch { }
+                    try { payload = JSON.parse(event.data); } catch { }
 
                     if (payload && payload.status) {
                         setCommissionStatus(payload.status);
@@ -463,13 +483,12 @@
                     }
 
                     disableRunButton(false);
-                    try {es.close();} catch { }
+                    try { es.close(); } catch { }
                     currentEventSource = null;
                 });
 
                 es.onerror = () => {
-                    // If the stream drops, fall back to polling so user still gets a result.
-                    try {es.close();} catch { }
+                    try { es.close(); } catch { }
                     currentEventSource = null;
                     pollCommissionStatus(statusUrl);
                 };
@@ -477,13 +496,12 @@
                 return;
             }
 
-            // Fallback for older browsers.
             pollCommissionStatus(statusUrl);
         }
 
         function pollCommissionStatus(statusUrl) {
             let attempts = 0;
-            const maxAttempts = 600; // ~10 minutes at 1s
+            const maxAttempts = 600;
             const interval = setInterval(() => {
                 attempts += 1;
                 fetch(statusUrl)
@@ -499,7 +517,7 @@
                             setCommissionResult(logsText ? `${msg} (${logsText})` : msg, !ok);
                         }
                     })
-                    .catch(() => { /* ignore */});
+                    .catch(() => { });
 
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
