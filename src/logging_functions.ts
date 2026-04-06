@@ -15,11 +15,6 @@ import {
   resolveFromProjectRootIfRelative,
 } from "./projectRoot.js";
 
-function shouldLogToConsole(): boolean {
-  const setting = (process.env.LOG4JS_CONSOLE ?? "on").trim().toLowerCase();
-  return !["off", "false", "0", "none", "errors"].includes(setting);
-}
-
 function consoleMode(): "on" | "off" | "errors" {
   const setting = (process.env.LOG4JS_CONSOLE ?? "on").trim().toLowerCase();
   if (["off", "false", "0", "none"].includes(setting)) return "off";
@@ -220,7 +215,15 @@ export async function initLogs(): Promise<LogPaths> {
   );
 
   const initialDebugLogFileName = debugLogAppender.filename;
-  debugLogAppender.filename = path.join(LOGS_DIR, initialDebugLogFileName);
+  const debugLogFileExt = extname(initialDebugLogFileName);
+  const debugLogFileBaseName = basename(
+    initialDebugLogFileName,
+    debugLogFileExt,
+  );
+  debugLogAppender.filename = path.join(
+    LOGS_DIR,
+    `${debugLogFileBaseName}-${timeStamp}${debugLogFileExt}`,
+  );
 
   configure(log4jsConfig);
 

@@ -14,11 +14,12 @@ import { PassThrough } from "node:stream";
 describe("logging_functions", () => {
   const LOGS_DIR = "./logs";
   const originalLog4jsConsole = process.env.LOG4JS_CONSOLE;
+  let initializedLogPaths: Awaited<ReturnType<typeof initLogs>>;
 
   beforeAll(async () => {
     // Ensure test expectations are stable regardless of local .env settings.
     process.env.LOG4JS_CONSOLE = "on";
-    await initLogs();
+    initializedLogPaths = await initLogs();
   });
 
   afterAll(async () => {
@@ -55,6 +56,11 @@ describe("logging_functions", () => {
     assert(contractorLogFile);
     const logFilePath = path.join(LOGS_DIR, contractorLogFile);
     expect(existsSync(logFilePath)).toBe(true);
+  });
+
+  it("should assign a timestamped debug filename", () => {
+    const debugFileName = path.basename(initializedLogPaths.debugLog);
+    expect(debugFileName).toMatch(/^commission-\d{8}T\d{6}\.debug$/);
   });
 
   it("only severity debug messages sent to debugLogger should log messages to stderr", async () => {

@@ -12,7 +12,6 @@ Extensions - Application:   28152.000000000004
 */
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
 // TODO expose google upload in web UI with toggle and fields for env vars
-// TODO don't overwrite .debug file when running commission multiple times in a day - append timestamp to filename
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 // TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
 
