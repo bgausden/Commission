@@ -91,6 +91,37 @@
             },
         },
         {
+            "name": "Server via TSX (GUI worker debug)",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "src/server.ts"
+            ],
+            "runtimeArgs": [
+                "--import",
+                "tsx/esm",
+                "-r",
+                "dotenv/config"
+            ],
+            "cwd": "${workspaceRoot}",
+            "autoAttachChildProcesses": true,
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "sourceMaps": true,
+            "env": {
+                "DEBUG": "*",
+                "DEBUG_COLORS": "true",
+                "NODE_ENV": "production",
+                "WEB_RUN_CHILD_INSPECT": "1"
+            },
+            "console": "integratedTerminal",
+            "skipFiles": [
+                "<node_internals>/**",
+                "${workspaceFolder}/node_modules/**"
+            ]
+        },
+        {
             "name": "Current file via TSX",
             "type": "node",
             "request": "launch",
