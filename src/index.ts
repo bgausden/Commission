@@ -10,7 +10,6 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 /* TODO fix rounding for pay calculated from custom pay rates
 Extensions - Application:   28152.000000000004
 */
-// TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
 // TODO expose google upload in web UI with toggle and fields for env vars
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 // TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
@@ -1087,21 +1086,22 @@ function logStaffCommission(
   commComponents: TCommComponents,
   servicesRevenues: TServRevenueMap,
 ): void {
-  const logger = isContractor(staffID) ? contractorLogger : commissionLogger;
-
-  if (!isPayViaTalenox(staffID) && !isContractor(staffID)) {
-    warnLogger.warn(
-      `Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`,
-    );
-  }
+  const isStaffContractor = isContractor(staffID);
+  const staffIsPaidViaTalenox = isPayViaTalenox(staffID);
+  const logger = isStaffContractor ? contractorLogger : commissionLogger;
 
   let text = `Payroll details for ${staffID} ${staffName}`;
-  if (isContractor(staffID)) {
+  if (isStaffContractor) {
     text += ` [CONTRACTOR]`;
   }
 
   logger.info("");
   logger.info(text);
+  if (!staffIsPaidViaTalenox && !isStaffContractor) {
+    logger.info(
+      `Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`,
+    );
+  }
   logger.info("");
 
   // Log revenue breakdown
@@ -1194,12 +1194,6 @@ function processPayrollExcelData(
                   throw new Error("Fatal: " + text);
                 } else {
                   warnLogger.warn("Warning: " + text);
-                }
-              } else {
-                if (!isContractor(staffID)) {
-                  warnLogger.warn(
-                    `Note: ${staffID} ${staffName} is configured to NOT pay via Talenox.`,
-                  );
                 }
               }
             }
