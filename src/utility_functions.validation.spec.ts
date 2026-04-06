@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { getValidatedStaffHurdle } from "./utility_functions.js";
+import { getValidatedStaffHurdle, isContractor } from "./utility_functions.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 
 // Mock dependencies
@@ -73,7 +73,9 @@ describe("getValidatedStaffHurdle", () => {
     });
 
     it("should not log any warnings or errors", async () => {
-      const { warnLogger, errorLogger } = await import("./logging_functions.js");
+      const { warnLogger, errorLogger } = await import(
+        "./logging_functions.js"
+      );
 
       getValidatedStaffHurdle("019", "test context");
 
@@ -91,7 +93,9 @@ describe("getValidatedStaffHurdle", () => {
     it("should throw an error with context", async () => {
       const { errorLogger } = await import("./logging_functions.js");
 
-      expect(() => getValidatedStaffHurdle("999", "commission calculation")).toThrow(
+      expect(() =>
+        getValidatedStaffHurdle("999", "commission calculation"),
+      ).toThrow(
         "Staff ID 999 found in commission calculation but is missing from staffHurdle.json",
       );
 
@@ -101,7 +105,9 @@ describe("getValidatedStaffHurdle", () => {
     });
 
     it("should not return default configuration", () => {
-      expect(() => getValidatedStaffHurdle("888", "payroll processing")).toThrow();
+      expect(() =>
+        getValidatedStaffHurdle("888", "payroll processing"),
+      ).toThrow();
     });
   });
 
@@ -171,7 +177,9 @@ describe("getValidatedStaffHurdle", () => {
 
       // Test with false
       config.missingStaffAreFatal = false;
-      expect(() => getValidatedStaffHurdle("222", "test")).toThrow(/Default staff ID 000 is missing/);
+      expect(() => getValidatedStaffHurdle("222", "test")).toThrow(
+        /Default staff ID 000 is missing/,
+      );
     });
   });
 
@@ -180,7 +188,9 @@ describe("getValidatedStaffHurdle", () => {
       const { config } = await import("node-config-ts");
       config.missingStaffAreFatal = true;
 
-      expect(() => getValidatedStaffHurdle("111", "Talenox API upload")).toThrow(/Talenox API upload/);
+      expect(() =>
+        getValidatedStaffHurdle("111", "Talenox API upload"),
+      ).toThrow(/Talenox API upload/);
     });
 
     it("should include context in warning messages", async () => {
@@ -190,7 +200,9 @@ describe("getValidatedStaffHurdle", () => {
 
       getValidatedStaffHurdle("100", "Excel row parsing");
 
-      expect(warnLogger.warn).toHaveBeenCalledWith(expect.stringContaining("Excel row parsing"));
+      expect(warnLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Excel row parsing"),
+      );
     });
 
     it("should include context in default-missing error messages", async () => {
@@ -198,7 +210,9 @@ describe("getValidatedStaffHurdle", () => {
       config.missingStaffAreFatal = false;
       delete global.staffHurdles["000"];
 
-      expect(() => getValidatedStaffHurdle("099", "commission breakdown")).toThrow(/Cannot process staff 099/);
+      expect(() =>
+        getValidatedStaffHurdle("099", "commission breakdown"),
+      ).toThrow(/Cannot process staff 099/);
 
       // Restore default
       global.staffHurdles["000"] = mockStaffHurdles["000"];
@@ -264,7 +278,36 @@ describe("getValidatedStaffHurdle", () => {
       const result = getValidatedStaffHurdle("999", "Mindbody payroll report");
 
       expect(result).toEqual(mockStaffHurdles["000"]);
-      expect(warnLogger.warn).toHaveBeenCalledWith(expect.stringContaining("Mindbody payroll report"));
+      expect(warnLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Mindbody payroll report"),
+      );
     });
+  });
+});
+
+describe("isContractor", () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    global.staffHurdles = { ...mockStaffHurdles };
+
+    const { config } = await import("node-config-ts");
+    config.missingStaffAreFatal = true;
+  });
+
+  it("should return contractor status for configured staff", () => {
+    expect(isContractor("012")).toBe(false);
+  });
+
+  it("should use default staff configuration when non-fatal missing staff fallback is enabled", async () => {
+    const { config } = await import("node-config-ts");
+    config.missingStaffAreFatal = false;
+
+    expect(isContractor("999")).toBe(false);
+  });
+
+  it("should throw when staff is missing and missingStaffAreFatal is enabled", () => {
+    expect(() => isContractor("999")).toThrow(
+      "Staff ID 999 found in contractor status check but is missing from staffHurdle.json",
+    );
   });
 });

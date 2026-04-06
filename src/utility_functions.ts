@@ -106,17 +106,7 @@ export function eqSet(as: unknown[], bs: unknown[]): boolean {
 }
 
 export function isContractor(staffID: TStaffID): boolean {
-  const sh = getValidatedStaffHurdle(staffID, "contractor status check");
-
-  if (
-    "contractor" in sh
-    //Object.keys((staffHurdle as TStaffHurdles)[staffID]).indexOf('contractor')
-  ) {
-    return sh.contractor;
-  }
-  let message = `staffHurdle for staffID ${staffID} is missing 'contractor' key. Aborting.`;
-  errorLogger.error(message);
-  throw new Error(message);
+  return getValidatedStaffHurdle(staffID, "contractor status check").contractor;
 }
 
 export function getStaffHurdle(staffID: string) {

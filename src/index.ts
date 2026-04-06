@@ -11,7 +11,6 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 Extensions - Application:   28152.000000000004
 */
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
-// TODO rewrite isContractor() in utility_functions.ts (unneccessarily complicated - just use ?)
 // TODO warn if google upload is enabled but GDRIVE_SERVICE_ACCOUNT_KEY or GDRIVE_TALENOX_FOLDER_ID env vars are missing
 // TODO expose google upload in web UI with toggle and fields for env vars
 // TODO log in debug and GUI when skipping google upload due to missing env vars
