@@ -106,3 +106,7 @@ Swapping databases, queues, or external APIs becomes a non-event; enforces FCIS 
 **Prefer duplication over the wrong abstraction**
 Abstract only when ≥3 concrete cases exist and the shared shape is unambiguous.
 Wrong abstractions are harder to undo than duplication; in small teams the cost per person is high.
+
+### GUI and design work
+
+When working on the web UI (`public/`) or any design/styling task, read [`.impeccable.md`](.impeccable.md) for the project's design context — color palette, typography, spacing, component guidelines, and design principles derived from HBO's aesthetic.
