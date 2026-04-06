@@ -366,6 +366,16 @@
 
         function setCommissionStatus(text) {
             commissionStatusEl.textContent = text;
+            commissionStatusEl.classList.remove('success', 'error', 'running');
+            if (text === 'Idle' || text === 'done') {
+                // no extra class
+            } else if (text === 'success') {
+                commissionStatusEl.classList.add('success');
+            } else if (text === 'failed' || text === 'Failed to start' || text === 'unknown') {
+                commissionStatusEl.classList.add('error');
+            } else {
+                commissionStatusEl.classList.add('running');
+            }
         }
 
         function setCommissionJobId(jobId) {

@@ -12,9 +12,14 @@
     --color-text-secondary: #f6f6f6;
     --color-text-muted:  #9ca3af;
     --color-accent:      #4E505B;
+    --color-accent-warm: #c9a84c;
+    --color-accent-warm-hover: #d4b65e;
+    --color-accent-warm-muted: rgba(201, 168, 76, 0.15);
     --color-success:     #22c55e;
+    --color-warning:     #e5a93d;
     --color-danger:      #ef4444;
-    --color-focus-ring:  rgba(13, 110, 253, 0.25);
+    --color-info:        #3b82f6;
+    --color-focus-ring:  rgba(201, 168, 76, 0.3);
 
     --font-stack:        "Helvetica Neue", Helvetica, Arial, sans-serif;
 
@@ -108,7 +113,7 @@ p {
     font-weight: var(--fw-bold);
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--color-text);
+    color: var(--color-accent-warm);
     text-decoration: none;
 }
 
@@ -132,10 +137,13 @@ p {
     border-bottom: 2px solid transparent;
 }
 
-.site-nav-links a:hover,
-.site-nav-links a.active {
+.site-nav-links a:hover {
     color: var(--color-text);
-    border-bottom-color: var(--color-text);
+}
+
+.site-nav-links a.active {
+    color: var(--color-accent-warm);
+    border-bottom-color: var(--color-accent-warm);
 }
 
 /* --- Panels / Cards --- */
@@ -160,6 +168,7 @@ p {
 
 .panel-title {
     margin: 0;
+    color: var(--color-accent-warm);
 }
 
 /* --- Buttons --- */
@@ -199,17 +208,17 @@ p {
 }
 
 .btn-primary {
-    background: var(--color-text);
+    background: var(--color-accent-warm);
     color: var(--color-bg);
-    border-color: var(--color-text);
+    border-color: var(--color-accent-warm);
     font-weight: var(--fw-bold);
     padding: var(--spacing-3) var(--spacing-8);
     font-size: var(--fs-base);
 }
 
 .btn-primary:hover {
-    background: var(--color-text-secondary);
-    border-color: var(--color-text-secondary);
+    background: var(--color-accent-warm-hover);
+    border-color: var(--color-accent-warm-hover);
 }
 
 .btn-ghost {
@@ -227,11 +236,13 @@ p {
 .btn-danger {
     border-color: var(--color-danger);
     color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.08);
 }
 
 .btn-danger:hover {
     background: var(--color-danger);
     color: var(--color-text);
+    border-color: var(--color-danger);
 }
 
 /* --- Form Elements --- */
@@ -286,7 +297,7 @@ p {
 input[type="checkbox"] {
     width: 1rem;
     height: 1rem;
-    accent-color: var(--color-text);
+    accent-color: var(--color-accent-warm);
     cursor: pointer;
 }
 
@@ -305,8 +316,9 @@ input[type="checkbox"] {
 
 .drop-zone:hover,
 .drop-zone.active {
-    border-color: var(--color-text-muted);
+    border-color: var(--color-accent-warm);
     color: var(--color-text-secondary);
+    background: var(--color-accent-warm-muted);
 }
 
 /* --- Collapsible Sections --- */
@@ -337,7 +349,7 @@ input[type="checkbox"] {
     display: inline-block;
     font-size: var(--fs-xs);
     transition: transform 0.3s ease-in-out;
-    color: var(--color-text-muted);
+    color: var(--color-accent-warm);
 }
 
 .collapsible-icon.open {
@@ -394,6 +406,8 @@ input[type="checkbox"] {
 
 .status-value.success { color: var(--color-success); }
 .status-value.error   { color: var(--color-danger); }
+.status-value.running { color: var(--color-warning); }
+.status-value.info    { color: var(--color-info); }
 
 /* --- Steps List --- */
 .steps-list {
@@ -497,7 +511,7 @@ input[type="checkbox"] {
 }
 
 .data-table th:hover {
-    color: var(--color-text);
+    color: var(--color-accent-warm);
 }
 
 .data-table td {
@@ -550,7 +564,7 @@ input[type="checkbox"] {
 }
 
 .resize-handle:hover {
-    background: var(--color-accent);
+    background: var(--color-accent-warm);
 }
 
 /* Checkbox column */
