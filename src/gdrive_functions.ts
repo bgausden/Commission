@@ -14,19 +14,36 @@ export interface DriveArtifact {
 }
 
 export interface FolderHierarchy {
-  year: string;   // e.g. "2026"
-  month: string;  // e.g. "202602"
+  year: string; // e.g. "2026"
+  month: string; // e.g. "202602"
 }
+
+const REQUIRED_GDRIVE_ENV_VARS = [
+  "GDRIVE_SERVICE_ACCOUNT_KEY",
+  "GDRIVE_TALENOX_FOLDER_ID",
+] as const;
 
 // ---------------------------------------------------------------------------
 // Functional core — pure, no I/O
 // ---------------------------------------------------------------------------
 
-export function buildFolderHierarchy(payrollYear: string, payrollMonth: string): FolderHierarchy {
+export function buildFolderHierarchy(
+  payrollYear: string,
+  payrollMonth: string,
+): FolderHierarchy {
   const monthNames: Record<string, string> = {
-    January: "01", February: "02", March: "03", April: "04",
-    May: "05", June: "06", July: "07", August: "08",
-    September: "09", October: "10", November: "11", December: "12",
+    January: "01",
+    February: "02",
+    March: "03",
+    April: "04",
+    May: "05",
+    June: "06",
+    July: "07",
+    August: "08",
+    September: "09",
+    October: "10",
+    November: "11",
+    December: "12",
   };
   const monthNum = monthNames[payrollMonth] ?? "00";
   return {
@@ -46,12 +63,14 @@ export function buildArtifactList(
   return [
     {
       localPath: inputFilePath,
-      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       remoteName: path.basename(inputFilePath),
     },
     {
       localPath: paymentsFilePath,
-      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       remoteName: path.basename(paymentsFilePath),
     },
     {
@@ -77,11 +96,23 @@ export function buildArtifactList(
   ];
 }
 
+export function getMissingGoogleDriveEnvVars(
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  return REQUIRED_GDRIVE_ENV_VARS.filter((envVar) => {
+    const value = env[envVar];
+    return value === undefined || value.trim() === "";
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Imperative shell — all I/O, returns Result
 // ---------------------------------------------------------------------------
 
-async function attempt<T>(label: string, fn: () => Promise<T>): Promise<Result<T>> {
+async function attempt<T>(
+  label: string,
+  fn: () => Promise<T>,
+): Promise<Result<T>> {
   try {
     return ok(await fn());
   } catch (e) {
@@ -95,7 +126,10 @@ export async function authenticate(): Promise<Result<drive_v3.Drive>> {
     return err("GDRIVE_SERVICE_ACCOUNT_KEY is not set in environment");
   }
   return attempt("Failed to authenticate with Google Drive", async () => {
-    const auth = new google.auth.GoogleAuth({ keyFile, scopes: ["https://www.googleapis.com/auth/drive"] });
+    const auth = new google.auth.GoogleAuth({
+      keyFile,
+      scopes: ["https://www.googleapis.com/auth/drive"],
+    });
     return google.drive({ version: "v3", auth });
   });
 }
@@ -130,7 +164,11 @@ export async function getOrCreateFolder(
 
   const result = await attempt(`Failed to create folder '${name}'`, () =>
     drive.files.create({
-      requestBody: { name, mimeType: "application/vnd.google-apps.folder", parents: [parentId] },
+      requestBody: {
+        name,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [parentId],
+      },
       fields: "id",
       supportsAllDrives: true,
     }),
@@ -163,17 +201,23 @@ export async function uploadFile(
   folderId: string,
   artifact: DriveArtifact,
 ): Promise<Result<string>> {
-  const result = await attempt(`Failed to upload '${artifact.remoteName}'`, () =>
-    drive.files.create({
-      requestBody: { name: artifact.remoteName, parents: [folderId] },
-      media: { mimeType: artifact.mimeType, body: createReadStream(artifact.localPath) },
-      fields: "id",
-      supportsAllDrives: true,
-    }),
+  const result = await attempt(
+    `Failed to upload '${artifact.remoteName}'`,
+    () =>
+      drive.files.create({
+        requestBody: { name: artifact.remoteName, parents: [folderId] },
+        media: {
+          mimeType: artifact.mimeType,
+          body: createReadStream(artifact.localPath),
+        },
+        fields: "id",
+        supportsAllDrives: true,
+      }),
   );
   if (!result.ok) return result;
   const id = result.value.data.id;
-  if (!id) return err(`Uploaded '${artifact.remoteName}' but received no file ID`);
+  if (!id)
+    return err(`Uploaded '${artifact.remoteName}' but received no file ID`);
   return ok(id);
 }
 
@@ -190,22 +234,39 @@ export async function uploadRunArtifacts(
   if (!authResult.ok) return authResult;
   const drive = authResult.value;
 
-  const yearFolderResult = await getOrCreateFolder(drive, hierarchy.year, rootFolderId);
+  const yearFolderResult = await getOrCreateFolder(
+    drive,
+    hierarchy.year,
+    rootFolderId,
+  );
   if (!yearFolderResult.ok) return yearFolderResult;
   const yearFolderId = yearFolderResult.value;
 
-  const existingMonthResult = await findFolder(drive, hierarchy.month, yearFolderId);
+  const existingMonthResult = await findFolder(
+    drive,
+    hierarchy.month,
+    yearFolderId,
+  );
   if (!existingMonthResult.ok) return existingMonthResult;
 
   if (existingMonthResult.value !== null) {
-    const hasFilesResult = await folderHasFiles(drive, existingMonthResult.value);
+    const hasFilesResult = await folderHasFiles(
+      drive,
+      existingMonthResult.value,
+    );
     if (!hasFilesResult.ok) return hasFilesResult;
     if (hasFilesResult.value) {
-      return err(`Drive folder ${hierarchy.year}/${hierarchy.month} already exists and contains files — skipping upload to avoid overwriting`);
+      return err(
+        `Drive folder ${hierarchy.year}/${hierarchy.month} already exists and contains files — skipping upload to avoid overwriting`,
+      );
     }
   }
 
-  const monthFolderResult = await getOrCreateFolder(drive, hierarchy.month, yearFolderId);
+  const monthFolderResult = await getOrCreateFolder(
+    drive,
+    hierarchy.month,
+    yearFolderId,
+  );
   if (!monthFolderResult.ok) return monthFolderResult;
   const monthFolderId = monthFolderResult.value;
 

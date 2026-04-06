@@ -11,9 +11,7 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 Extensions - Application:   28152.000000000004
 */
 // TODO Fix warning that staff are not paid via Talenox appearing in wrong place in log.
-// TODO warn if google upload is enabled but GDRIVE_SERVICE_ACCOUNT_KEY or GDRIVE_TALENOX_FOLDER_ID env vars are missing
 // TODO expose google upload in web UI with toggle and fields for env vars
-// TODO log in debug and GUI when skipping google upload due to missing env vars
 // TODO don't overwrite .debug file when running commission multiple times in a day - append timestamp to filename
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 // TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
@@ -74,6 +72,7 @@ import {
 import {
   buildArtifactList,
   buildFolderHierarchy,
+  getMissingGoogleDriveEnvVars,
   uploadRunArtifacts,
 } from "./gdrive_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
@@ -1394,23 +1393,33 @@ async function main() {
   writePaymentsWorkBook(payments);
 
   if (config.uploadToGDrive) {
-    emitProgressAndInfo("Uploading artifacts to Google Drive");
-    const hierarchy = buildFolderHierarchy(PAYROLL_YEAR, PAYROLL_MONTH);
-    const artifacts = buildArtifactList(
-      payrollWorkbookPath,
-      path.join(PAYMENTS_DIR, PAYMENTS_WB_NAME),
-      logPaths.commissionLog,
-      logPaths.contractorLog,
-      logPaths.debugLog,
-      resolveFromProjectRoot(DEFAULT_STAFF_HURDLES_FILE),
-    );
-    const driveResult = await uploadRunArtifacts(artifacts, hierarchy);
-    if (!driveResult.ok) {
-      warnLogger.warn(`Google Drive upload skipped: ${driveResult.error}`);
-    } else {
-      infoLogger.info(
-        `Artifacts uploaded to Google Drive: ${hierarchy.year}/${hierarchy.month}`,
+    const missingEnvVars = getMissingGoogleDriveEnvVars();
+    if (missingEnvVars.length > 0) {
+      const detail = `Missing environment variable(s): ${missingEnvVars.join(", ")}`;
+      warnLogger.warn(
+        `Google Drive upload is enabled but cannot run. ${detail}.`,
       );
+      emitProgressAndInfo("Skipping Google Drive upload", detail);
+    } else {
+      emitProgressAndInfo("Uploading artifacts to Google Drive");
+      const hierarchy = buildFolderHierarchy(PAYROLL_YEAR, PAYROLL_MONTH);
+      const artifacts = buildArtifactList(
+        payrollWorkbookPath,
+        path.join(PAYMENTS_DIR, PAYMENTS_WB_NAME),
+        logPaths.commissionLog,
+        logPaths.contractorLog,
+        logPaths.debugLog,
+        resolveFromProjectRoot(DEFAULT_STAFF_HURDLES_FILE),
+      );
+      const driveResult = await uploadRunArtifacts(artifacts, hierarchy);
+      if (!driveResult.ok) {
+        warnLogger.warn(`Google Drive upload skipped: ${driveResult.error}`);
+        emitProgressAndInfo("Google Drive upload skipped", driveResult.error);
+      } else {
+        infoLogger.info(
+          `Artifacts uploaded to Google Drive: ${hierarchy.year}/${hierarchy.month}`,
+        );
+      }
     }
   }
 
