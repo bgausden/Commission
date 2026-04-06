@@ -59,6 +59,10 @@ Use `npm run assemble-baseline -- ...` to build a baseline directly from archive
 - `--preflight` validates availability without writing files
 - `--force` requires confirmation; use `--confirm-force` for non-interactive runs
 
+### Git workflow — do not work in master
+
+All new features and bug fixes must be developed on a separate branch. Do not implement feature/fix work directly on `master`.
+
 ### Test fixtures use anonymized staff names
 
 `test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names. See `test-fixtures/README.md` for update instructions.
@@ -66,3 +70,5 @@ Use `npm run assemble-baseline -- ...` to build a baseline directly from archive
 ## Coding Philosophy
 
 When proposing a bug fix, always assess whether the underlying issue can be eliminated through type-level constraints rather than runtime checks. Prefer compile-time impossibility over runtime defence.
+
+Design requirement: prefer a functional core, imperative shell architecture. Keep pure business logic in small deterministic functions and isolate I/O, API calls, filesystem access, logging, and process/environment interactions in thin orchestration layers.

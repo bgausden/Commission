@@ -30,6 +30,10 @@ Vendored at `vendor/xlsx-0.20.3/`. Vitest alias in `vitest.config.ts` maps `'xls
 
 log4js buffers writes asynchronously. `shutdownLogging()` returns `Promise<void>` — any exit path that skips `await shutdownLogging()` will lose log entries.
 
+### Git workflow — do not work in master
+
+All new features and bug fixes must be developed on a separate branch. Do not implement feature/fix work directly on `master`.
+
 ## Key Behavioral Notes
 
 ### `staffHurdle.json` default fallback
@@ -95,6 +99,8 @@ See the top of [src/index.ts](../src/index.ts) for the current TODO list.
 ## Coding Philosophy
 
 When proposing a bug fix, always assess whether the underlying issue can be eliminated through type-level constraints rather than runtime checks. Prefer compile-time impossibility over runtime defence.
+
+Design requirement: prefer a functional core, imperative shell architecture. Keep pure business logic in small deterministic functions and isolate I/O, API calls, filesystem access, logging, and process/environment interactions in thin orchestration layers.
 
 ## Runtime Environment Variables
 
