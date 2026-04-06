@@ -17,8 +17,14 @@ describe("/update-config endpoint", () => {
   let writeFileSyncSpy: ReturnType<typeof vi.spyOn>;
 
   let configFileContents = "";
+  let envFileContents = "";
   let configReadError: unknown | undefined;
   let configWriteError: unknown | undefined;
+  let envReadError: unknown | undefined;
+  let envWriteError: unknown | undefined;
+
+  let originalGdriveServiceAccountKey: string | undefined;
+  let originalGdriveFolderId: string | undefined;
 
   let server: Server;
   let baseUrl: string;
@@ -41,6 +47,11 @@ describe("/update-config endpoint", () => {
     return { status: response.status, json, text };
   }
 
+  async function getConfig(): Promise<unknown> {
+    const response = await fetch(`${baseUrl}/config`);
+    return response.json();
+  }
+
   beforeEach(async () => {
     // Reset all mocks first so we don't wipe out mockReturnValue/mockImplementation set below.
     vi.clearAllMocks();
@@ -56,11 +67,21 @@ describe("/update-config endpoint", () => {
     baseUrl = `http://127.0.0.1:${addr.port}`;
 
     configFileContents = "";
+    envFileContents = "";
     configReadError = undefined;
     configWriteError = undefined;
+    envReadError = undefined;
+    envWriteError = undefined;
+
+    originalGdriveServiceAccountKey = process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
+    originalGdriveFolderId = process.env.GDRIVE_TALENOX_FOLDER_ID;
+
+    delete process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
+    delete process.env.GDRIVE_TALENOX_FOLDER_ID;
 
     const isDefaultConfigPath = (p: unknown) =>
       typeof p === "string" && /config[\\/]+default\.json$/.test(p);
+    const isEnvPath = (p: unknown) => typeof p === "string" && /\.env$/.test(p);
     const realReadFileSync = fs.readFileSync.bind(fs);
     const realWriteFileSync = fs.writeFileSync.bind(fs);
 
@@ -74,6 +95,12 @@ describe("/update-config endpoint", () => {
           throw configReadError;
         }
         return configFileContents;
+      }
+      if (isEnvPath(pathLike)) {
+        if (envReadError !== undefined) {
+          throw envReadError;
+        }
+        return envFileContents;
       }
       // Allow other reads (node modules, encodings, etc.) to behave normally.
       return (realReadFileSync as unknown as (...args: unknown[]) => unknown)(
@@ -95,6 +122,13 @@ describe("/update-config endpoint", () => {
         }
         return;
       }
+      if (isEnvPath(pathLike)) {
+        if (envWriteError !== undefined) {
+          throw envWriteError;
+        }
+        envFileContents = String(data);
+        return;
+      }
       return (realWriteFileSync as unknown as (...args: unknown[]) => unknown)(
         pathLike,
         data,
@@ -106,6 +140,17 @@ describe("/update-config endpoint", () => {
   });
 
   afterEach(async () => {
+    if (originalGdriveServiceAccountKey === undefined) {
+      delete process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
+    } else {
+      process.env.GDRIVE_SERVICE_ACCOUNT_KEY = originalGdriveServiceAccountKey;
+    }
+    if (originalGdriveFolderId === undefined) {
+      delete process.env.GDRIVE_TALENOX_FOLDER_ID;
+    } else {
+      process.env.GDRIVE_TALENOX_FOLDER_ID = originalGdriveFolderId;
+    }
+
     vi.restoreAllMocks();
 
     await new Promise<void>((resolve, reject) => {
@@ -202,6 +247,65 @@ describe("/update-config endpoint", () => {
       const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
       const writtenConfig = JSON.parse(writtenData);
       expect(writtenConfig.PAYROLL_WB_FILENAME).toBe("important-file.xlsx");
+    });
+
+    it("should update uploadToGDrive", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+        uploadToGDrive: false,
+      };
+
+      configFileContents = JSON.stringify(existingConfig);
+      const response = await postUpdateConfig({
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+        uploadToGDrive: true,
+      });
+
+      expect(response.status).toBe(200);
+      const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
+      const writtenConfig = JSON.parse(writtenData);
+      expect(writtenConfig.uploadToGDrive).toBe(true);
+    });
+
+    it("should keep Google Drive env vars as runtime-only overrides", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+        uploadToGDrive: false,
+      };
+
+      configFileContents = JSON.stringify(existingConfig);
+      envFileContents =
+        "EXISTING=1\nGDRIVE_SERVICE_ACCOUNT_KEY=/env/sa-key.json\nGDRIVE_TALENOX_FOLDER_ID=env-folder\n";
+
+      const response = await postUpdateConfig({
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+        uploadToGDrive: true,
+        GDRIVE_SERVICE_ACCOUNT_KEY: "/tmp/sa-key.json",
+        GDRIVE_TALENOX_FOLDER_ID: "abc123",
+      });
+
+      expect(response.status).toBe(200);
+      // .env remains unchanged (no persistence of GUI overrides)
+      expect(envFileContents).toContain("EXISTING=1");
+      expect(envFileContents).toContain(
+        "GDRIVE_SERVICE_ACCOUNT_KEY=/env/sa-key.json",
+      );
+      expect(envFileContents).toContain("GDRIVE_TALENOX_FOLDER_ID=env-folder");
+
+      // GET /config should reflect runtime overrides for GUI use.
+      const currentConfig = (await getConfig()) as Record<string, unknown>;
+      expect(currentConfig.GDRIVE_SERVICE_ACCOUNT_KEY).toBe("/tmp/sa-key.json");
+      expect(currentConfig.GDRIVE_TALENOX_FOLDER_ID).toBe("abc123");
+
+      // process.env should not be mutated by GUI overrides.
+      expect(process.env.GDRIVE_SERVICE_ACCOUNT_KEY).toBeUndefined();
+      expect(process.env.GDRIVE_TALENOX_FOLDER_ID).toBeUndefined();
     });
   });
 

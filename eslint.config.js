@@ -23,6 +23,9 @@ const typeCompat = new FlatCompat({
 });
 
 export default [
+    {
+        ignores: ["dist/**", "node_modules/**", "vendor/**"],
+    },
     ...compat.extends(),
     ...typeCompat.extends(),
     js.configs.recommended,

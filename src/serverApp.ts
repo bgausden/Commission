@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
 import {
   getProjectRoot,
   resolveFromProjectRoot,
@@ -53,6 +54,14 @@ interface CommissionJob {
 }
 
 const PROGRESS_PREFIX = "__PROGRESS__ ";
+const GOOGLE_DRIVE_ENV_KEYS = [
+  "GDRIVE_SERVICE_ACCOUNT_KEY",
+  "GDRIVE_TALENOX_FOLDER_ID",
+] as const;
+
+type GoogleDriveEnvKey = (typeof GOOGLE_DRIVE_ENV_KEYS)[number];
+
+type GoogleDriveEnvValues = Record<GoogleDriveEnvKey, string>;
 
 function tryParseProgressLine(line: string): CommissionJobStep | null {
   if (!line.startsWith(PROGRESS_PREFIX)) return null;
@@ -93,11 +102,71 @@ function shouldEchoChildToServerConsole(): boolean {
   return value !== "" && !["0", "false", "off", "no"].includes(value);
 }
 
+function isTruthyEnv(value: string | undefined): boolean {
+  const normalized = (value ?? "").trim().toLowerCase();
+  return normalized !== "" && !["0", "false", "off", "no"].includes(normalized);
+}
+
+function getGuiWorkerInspectorArg(): "--inspect" | "--inspect-brk" | undefined {
+  if (isTruthyEnv(process.env.WEB_RUN_CHILD_INSPECT_BRK)) {
+    return "--inspect-brk";
+  }
+  if (isTruthyEnv(process.env.WEB_RUN_CHILD_INSPECT)) {
+    return "--inspect";
+  }
+  return undefined;
+}
+
 function stripAnsi(input: string): string {
   // Matches ANSI escape sequences like "\u001b[32m" (colors), cursor controls, etc.
   // Keeps the textual content for clean display in the web UI.
   // eslint-disable-next-line no-control-regex
   return input.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, "");
+}
+
+function asBodyString(body: unknown, key: string): string | undefined {
+  if (!body || typeof body !== "object") return undefined;
+
+  const value = (body as Record<string, unknown>)[key];
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return undefined;
+}
+
+function getGoogleDriveEnvValuesFromProcessEnv(): GoogleDriveEnvValues {
+  return {
+    GDRIVE_SERVICE_ACCOUNT_KEY: process.env.GDRIVE_SERVICE_ACCOUNT_KEY ?? "",
+    GDRIVE_TALENOX_FOLDER_ID: process.env.GDRIVE_TALENOX_FOLDER_ID ?? "",
+  };
+}
+
+function readGoogleDriveEnvValues(envFilePath: string): GoogleDriveEnvValues {
+  const values = getGoogleDriveEnvValuesFromProcessEnv();
+
+  try {
+    if (!fs.existsSync(envFilePath)) {
+      return values;
+    }
+    const envText = fs.readFileSync(envFilePath, "utf8");
+    const parsed = dotenv.parse(envText);
+
+    for (const key of GOOGLE_DRIVE_ENV_KEYS) {
+      if (parsed[key] !== undefined) {
+        values[key] = parsed[key];
+      }
+    }
+    return values;
+  } catch (error) {
+    if (error instanceof Error) {
+      debugLogger.warn(
+        `Failed to read ${envFilePath}. Falling back to process.env values. Error: ${error.message}`,
+      );
+    }
+    return values;
+  }
 }
 
 function getLogsDir(currentModuleDir: string): string {
@@ -185,10 +254,14 @@ export function createApp() {
   const projectRoot = getProjectRoot();
 
   const commissionJobs = new Map<string, CommissionJob>();
+  // Runtime-only overrides from the web UI advanced settings.
+  // These must not be persisted to .env/default.json.
+  const guiGoogleDriveEnvOverrides: Partial<GoogleDriveEnvValues> = {};
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const CONFIG_FILE_PATH = path.join(__dirname, "../config/default.json");
+  const ENV_FILE_PATH = resolveFromProjectRoot(".env");
   const STAFF_HURDLE_FILE_PATH = path.join(
     __dirname,
     "..",
@@ -203,7 +276,8 @@ export function createApp() {
 
   app.get("/config", (_req: Request, res: Response) => {
     const config = loadConfig();
-    res.json(config);
+    const googleDriveEnv = readGoogleDriveEnvValues(ENV_FILE_PATH);
+    res.json({ ...config, ...googleDriveEnv, ...guiGoogleDriveEnvOverrides });
   });
 
   app.post("/upload", (req: Request, res: Response) => {
@@ -230,6 +304,21 @@ export function createApp() {
       const config = loadConfig();
       config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
       config.updateTalenox = Boolean(req.body.updateTalenox);
+      config.uploadToGDrive = Boolean(req.body.uploadToGDrive);
+
+      const gdriveEnvUpdates: Partial<GoogleDriveEnvValues> = {};
+      const keyFile = asBodyString(req.body, "GDRIVE_SERVICE_ACCOUNT_KEY");
+      const folderId = asBodyString(req.body, "GDRIVE_TALENOX_FOLDER_ID");
+
+      if (keyFile !== undefined) {
+        gdriveEnvUpdates.GDRIVE_SERVICE_ACCOUNT_KEY = keyFile.trim();
+      }
+      if (folderId !== undefined) {
+        gdriveEnvUpdates.GDRIVE_TALENOX_FOLDER_ID = folderId.trim();
+      }
+
+      Object.assign(guiGoogleDriveEnvOverrides, gdriveEnvUpdates);
+
       saveConfig(config);
       res.status(200).json({ message: "Config updated successfully skipper" });
     } catch (error) {
@@ -438,7 +527,12 @@ export function createApp() {
       job.status = "running";
       job.message = "Commission calculation started";
       pushStatus();
-      pushLog("info", `Starting: node ${indexPath}`);
+      const inspectorArg = getGuiWorkerInspectorArg();
+      const childNodeArgs = inspectorArg
+        ? [inspectorArg, indexPath]
+        : [indexPath];
+
+      pushLog("info", `Starting: node ${childNodeArgs.join(" ")}`);
 
       // Prefer streaming debugLogger output via its file appender (commission.debug), rather than whatever lands on stderr.
       const logsDir = getLogsDir(__dirname);
@@ -466,12 +560,16 @@ export function createApp() {
         }
       }, 500);
 
-      const child = spawn("node", [indexPath], {
+      const child = spawn("node", childNodeArgs, {
         cwd: projectRoot,
         // For web UI runs, we want rich logs to stream back to the browser.
         // Force the child process to emit log4js console output to stdout/stderr,
         // regardless of the server's own LOG4JS_CONSOLE setting.
-        env: { ...process.env, LOG4JS_CONSOLE: "on" },
+        env: {
+          ...process.env,
+          ...guiGoogleDriveEnvOverrides,
+          LOG4JS_CONSOLE: "on",
+        },
         stdio: "pipe",
       });
 
