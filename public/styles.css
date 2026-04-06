@@ -31,9 +31,10 @@
     --fs-2xl:  1.5rem;
     --fs-3xl:  2rem;
 
-    --fw-regular: 400;
-    --fw-medium:  500;
-    --fw-bold:    700;
+    --fw-regular:  400;
+    --fw-medium:   500;
+    --fw-semibold: 600;
+    --fw-bold:     700;
 
     --spacing-1: 0.25rem;
     --spacing-2: 0.5rem;
@@ -90,8 +91,8 @@ h1, h2, h3 {
 }
 
 h1 { font-size: var(--fs-3xl); }
-h2 { font-size: var(--fs-xl); margin-bottom: var(--spacing-4); }
-h3 { font-size: var(--fs-lg); margin-bottom: var(--spacing-3); }
+h2 { font-size: var(--fs-2xl); margin-bottom: var(--spacing-4); }
+h3 { font-size: var(--fs-xl); margin-bottom: var(--spacing-3); }
 
 p {
     color: var(--color-text-secondary);
@@ -169,6 +170,8 @@ p {
 .panel-title {
     margin: 0;
     color: var(--color-accent-warm);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.06em;
 }
 
 /* --- Buttons --- */
@@ -308,7 +311,7 @@ input[type="checkbox"] {
     padding: var(--spacing-8) var(--spacing-6);
     text-align: center;
     color: var(--color-text-muted);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-base);
     cursor: pointer;
     transition: var(--transition-fast);
     background: var(--color-surface);
@@ -335,7 +338,7 @@ input[type="checkbox"] {
     border: none;
     color: var(--color-text);
     font-family: var(--font-stack);
-    font-size: var(--fs-xl);
+    font-size: var(--fs-2xl);
     font-weight: var(--fw-bold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -519,6 +522,7 @@ input[type="checkbox"] {
     border-bottom: 1px solid rgba(78, 80, 91, 0.3);
     color: var(--color-text-secondary);
     vertical-align: middle;
+    font-variant-numeric: tabular-nums;
 }
 
 .data-table tbody tr {
