@@ -625,6 +625,10 @@ input[type="checkbox"] {
     background: rgba(78, 80, 91, 0.1);
 }
 
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
 .data-table input[type="text"],
 .data-table input[type="number"] {
     width: 100%;
@@ -704,4 +708,27 @@ input[type="checkbox"] {
 .status-value--jobid {
     margin-left: var(--spacing-3);
     font-size: var(--fs-xs);
+}
+
+/* --- Custom Scrollbars (Webkit) --- */
+.log-output::-webkit-scrollbar,
+.data-table-wrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.log-output::-webkit-scrollbar-track,
+.data-table-wrapper::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+
+.log-output::-webkit-scrollbar-thumb,
+.data-table-wrapper::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius);
+}
+
+.log-output::-webkit-scrollbar-thumb:hover,
+.data-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
 }
