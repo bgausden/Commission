@@ -160,6 +160,21 @@ p {
     margin-top: var(--spacing-8);
 }
 
+/* --- Panel Groups --- */
+.panel-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.panel-group > .panel + .panel {
+    margin-top: 0;
+}
+
+.panel-group + .panel-group {
+    margin-top: var(--spacing-12);
+}
+
 .panel-header {
     display: flex;
     align-items: center;
