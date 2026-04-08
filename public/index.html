@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commission Config</title>
+    <title>Commission — Config</title>
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -28,7 +28,7 @@
             <h2 class="panel-title">Payroll Workbook</h2>
             <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none">
                 <div id="drop-zone" class="drop-zone">
-                    Drag and drop payroll workbook here, or click to select file. Only .xlsx files are allowed.
+                    Drop a payroll workbook here, or click to select — .xlsx only
                 </div>
                 <div class="mt-4 flex items-center gap-3">
                     <span class="form-label form-label--inline">Payroll Workbook:</span>
@@ -307,6 +307,13 @@
             document.getElementById('confirm-modal').classList.remove('open');
         });
 
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('confirm-modal').classList.remove('open');
+            }
+        });
+
         // Modal OK button
         document.getElementById('confirm-ok').addEventListener('click', () => {
             document.getElementById('confirm-modal').classList.remove('open');
@@ -381,7 +388,7 @@
         function setCommissionStatus(text) {
             commissionStatusEl.textContent = text;
             commissionStatusEl.classList.remove('success', 'error', 'running');
-            if (text === 'Idle' || text === 'done') {
+            if (text === 'Idle' || text === 'Done') {
                 // no extra class
             } else if (text === 'success') {
                 commissionStatusEl.classList.add('success');
@@ -502,7 +509,7 @@
                         const msg = payload.message || (ok ? 'Completed successfully.' : 'Failed.');
                         setCommissionResult(logsText ? `${msg} (${logsText})` : msg, !ok);
                     } else {
-                        setCommissionStatus('done');
+                        setCommissionStatus('Done');
                         setCommissionResult('Completed.');
                     }
 
