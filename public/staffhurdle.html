@@ -22,7 +22,10 @@
         <h1>Staff Hurdle Config</h1>
 
         <div class="panel">
-            <input type="text" id="search-box" placeholder="Search staff..." class="form-input mb-4">
+            <div class="panel-header">
+                <h2 class="panel-title">Staff</h2>
+                <input type="text" id="search-box" placeholder="Search staff…" class="form-input" style="max-width: 18rem;">
+            </div>
             <form id="staff-hurdle-form" hx-post="/update-staff-hurdle" hx-trigger="submit" hx-swap="none">
                 <div class="data-table-wrapper">
                     <table id="staff-hurdle-table" class="data-table">

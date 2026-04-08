@@ -263,6 +263,28 @@ p {
     border-color: var(--color-danger);
 }
 
+/* --- Checkbox Group (tight cluster) --- */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-6);
+}
+
+.checkbox-group .form-group {
+    margin-bottom: 0;
+}
+
+/* --- Form Actions (button row with separator) --- */
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-8);
+    padding-top: var(--spacing-6);
+    border-top: 1px solid rgba(78, 80, 91, 0.3);
+}
+
 /* --- Form Elements --- */
 .form-group {
     margin-bottom: var(--spacing-6);
@@ -383,14 +405,19 @@ input[type="checkbox"] {
     display: block;
 }
 
-/* --- Feedback Dialogs --- */
+/* --- Feedback Dialogs (fixed toast) --- */
 .feedback {
+    position: fixed;
+    bottom: var(--spacing-6);
+    right: var(--spacing-6);
+    max-width: 24rem;
     padding: var(--spacing-3) var(--spacing-4);
     border-radius: var(--radius);
     font-size: var(--fs-sm);
     font-weight: var(--fw-medium);
-    margin-top: var(--spacing-4);
+    z-index: 100;
     display: none;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
 }
 
 .feedback.visible {
