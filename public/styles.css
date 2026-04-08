@@ -370,18 +370,39 @@ input[type="checkbox"] {
     -webkit-user-select: none;
     user-select: none;
     margin: 0;
-    padding: 0;
+    padding: 2px 4px;
+    margin-left: -4px;
     background: none;
     border: none;
-    color: var(--color-text);
+    border-radius: var(--radius);
+    color: var(--color-accent-warm);
     font-family: var(--font-stack);
     font-size: var(--fs-2xl);
     font-weight: var(--fw-bold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    transition: color 0.3s ease-in-out;
 }
 
 .collapsible-trigger:hover {
+    color: var(--color-accent-warm-hover);
+}
+
+.collapsible-trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Sub-panel collapsible (smaller, muted — for use inside a panel) */
+.collapsible-trigger--section {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-6);
+}
+
+.collapsible-trigger--section:hover {
     color: var(--color-text-secondary);
 }
 
@@ -389,7 +410,7 @@ input[type="checkbox"] {
     display: inline-block;
     font-size: var(--fs-xs);
     transition: transform 0.3s ease-in-out;
-    color: var(--color-accent-warm);
+    color: inherit;
 }
 
 .collapsible-icon.open {
@@ -397,12 +418,20 @@ input[type="checkbox"] {
 }
 
 .collapsible-content {
-    display: none;
-    margin-top: var(--spacing-4);
+    display: block;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    margin-top: 0;
+    pointer-events: none;
+    transition: max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, margin-top 0.3s ease-in-out;
 }
 
 .collapsible-content.open {
-    display: block;
+    max-height: 80rem;
+    opacity: 1;
+    margin-top: var(--spacing-4);
+    pointer-events: auto;
 }
 
 /* --- Feedback Dialogs (fixed toast) --- */

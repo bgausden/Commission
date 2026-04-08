@@ -65,7 +65,7 @@
 
                 <!-- Advanced Settings -->
                 <div>
-                    <button type="button" class="collapsible-trigger" onclick="toggleAdvancedSettings()">
+                    <button type="button" id="advanced-settings-toggle" class="collapsible-trigger collapsible-trigger--section" onclick="toggleAdvancedSettings()" aria-expanded="false" aria-controls="advanced-settings">
                         <span class="collapsible-icon" id="advanced-settings-toggle-icon">&#9654;</span>
                         Advanced Config
                     </button>
@@ -99,7 +99,7 @@
 
         <!-- Current Config Panel -->
         <div class="panel">
-            <button type="button" class="collapsible-trigger" onclick="toggleConfig()">
+            <button type="button" id="config-toggle" class="collapsible-trigger" onclick="toggleConfig()" aria-expanded="false" aria-controls="config-content">
                 <span class="collapsible-icon" id="toggle-icon">&#9654;</span>
                 Current Config
             </button>
@@ -253,15 +253,19 @@
         function toggleConfig() {
             const content = document.getElementById('config-content');
             const icon = document.getElementById('toggle-icon');
-            content.classList.toggle('open');
+            const trigger = document.getElementById('config-toggle');
+            const isOpen = content.classList.toggle('open');
             icon.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', String(isOpen));
         }
 
         function toggleAdvancedSettings() {
             const content = document.getElementById('advanced-settings');
             const icon = document.getElementById('advanced-settings-toggle-icon');
-            content.classList.toggle('open');
+            const trigger = document.getElementById('advanced-settings-toggle');
+            const isOpen = content.classList.toggle('open');
             icon.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', String(isOpen));
         }
 
         function showConfirmation(message) {
