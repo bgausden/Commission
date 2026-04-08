@@ -435,6 +435,11 @@ input[type="checkbox"] {
 }
 
 /* --- Feedback Dialogs (fixed toast) --- */
+@keyframes toast-slide-up {
+    from { opacity: 0; transform: translateY(0.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 .feedback {
     position: fixed;
     bottom: var(--spacing-6);
@@ -451,6 +456,7 @@ input[type="checkbox"] {
 
 .feedback.visible {
     display: block;
+    animation: toast-slide-up 0.25s ease-out;
 }
 
 .feedback-success {
@@ -512,6 +518,16 @@ input[type="checkbox"] {
 }
 
 /* --- Modal --- */
+@keyframes modal-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes modal-scale-in {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -524,6 +540,11 @@ input[type="checkbox"] {
 
 .modal-overlay.open {
     display: flex;
+    animation: modal-fade-in 0.2s ease-out;
+}
+
+.modal-overlay.open .modal {
+    animation: modal-scale-in 0.2s ease-out;
 }
 
 .modal {
