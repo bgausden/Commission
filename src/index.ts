@@ -10,8 +10,6 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 Extensions - Application:   28152.000000000004
 */
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
-// TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
-
 import "./checkStartup.js";
 import { config } from "node-config-ts";
 // import prettyjson from "prettyjson"
@@ -74,6 +72,7 @@ import {
 } from "./gdrive_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
 import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
+import Decimal from "decimal.js";
 import path from "node:path";
 import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
@@ -307,7 +306,10 @@ export function getServiceRevenues(
           `Did not find ${servName} in servRevenueMap. This should never happen.`,
         );
 
-        serviceRevenue += serviceRevenueEntry.serviceRevenue;
+        serviceRevenue = new Decimal(serviceRevenue)
+          .plus(serviceRevenueEntry.serviceRevenue)
+          .toDecimalPlaces(2)
+          .toNumber();
         servRevenueMap.set(servName, { serviceRevenue, customRate });
       }
     }
@@ -336,69 +338,59 @@ export function calculateTieredCommission(
     hurdle3Rate,
   } = hurdleConfig;
 
-  let baseRevenue = 0;
-  let hurdle1Revenue = 0;
-  let hurdle2Revenue = 0;
-  let hurdle3Revenue = 0;
+  const svcD = new Decimal(serviceRevenue);
+  let baseRevenueD = new Decimal(0);
+  let hurdle1RevenueD = new Decimal(0);
+  let hurdle2RevenueD = new Decimal(0);
+  let hurdle3RevenueD = new Decimal(0);
 
   if (hurdle1Level <= 0) {
     // No hurdles configured - all revenue pays at base rate
-    baseRevenue = serviceRevenue;
+    baseRevenueD = svcD;
   } else if (serviceRevenue <= hurdle1Level) {
-    // Revenue below first hurdle
-    baseRevenue = 0;
-    hurdle1Revenue = 0;
+    // Revenue below first hurdle — all bands stay zero
   } else if (hurdle2Level <= 0 || serviceRevenue <= hurdle2Level) {
     // Revenue between hurdle1 and hurdle2 (or no hurdle2)
-    baseRevenue = 0;
-    hurdle1Revenue = serviceRevenue - hurdle1Level;
+    hurdle1RevenueD = svcD.minus(hurdle1Level);
   } else if (hurdle3Level <= 0 || serviceRevenue <= hurdle3Level) {
     // Revenue between hurdle2 and hurdle3 (or no hurdle3)
-    baseRevenue = 0;
-    hurdle1Revenue = hurdle2Level - hurdle1Level;
-    hurdle2Revenue = serviceRevenue - hurdle2Level;
+    hurdle1RevenueD = new Decimal(hurdle2Level).minus(hurdle1Level);
+    hurdle2RevenueD = svcD.minus(hurdle2Level);
   } else {
     // Revenue exceeds hurdle3
-    baseRevenue = 0;
-    hurdle1Revenue = hurdle2Level - hurdle1Level;
-    hurdle2Revenue = hurdle3Level - hurdle2Level;
-    hurdle3Revenue = serviceRevenue - hurdle3Level;
+    hurdle1RevenueD = new Decimal(hurdle2Level).minus(hurdle1Level);
+    hurdle2RevenueD = new Decimal(hurdle3Level).minus(hurdle2Level);
+    hurdle3RevenueD = svcD.minus(hurdle3Level);
   }
 
   // Round all revenue allocations to 2 decimal places
-  baseRevenue = Math.round(baseRevenue * 100) / 100;
-  hurdle1Revenue = Math.round(hurdle1Revenue * 100) / 100;
-  hurdle2Revenue = Math.round(hurdle2Revenue * 100) / 100;
-  hurdle3Revenue = Math.round(hurdle3Revenue * 100) / 100;
+  baseRevenueD = baseRevenueD.toDecimalPlaces(2);
+  hurdle1RevenueD = hurdle1RevenueD.toDecimalPlaces(2);
+  hurdle2RevenueD = hurdle2RevenueD.toDecimalPlaces(2);
+  hurdle3RevenueD = hurdle3RevenueD.toDecimalPlaces(2);
 
   // Calculate commission for each tier
-  const baseCommission = Math.round(baseRevenue * baseRate * 100) / 100;
-  const hurdle1Commission =
-    Math.round(hurdle1Revenue * hurdle1Rate * 100) / 100;
-  const hurdle2Commission =
-    Math.round(hurdle2Revenue * hurdle2Rate * 100) / 100;
-  const hurdle3Commission =
-    Math.round(hurdle3Revenue * hurdle3Rate * 100) / 100;
+  const baseCommission = baseRevenueD.times(baseRate).toDecimalPlaces(2);
+  const hurdle1Commission = hurdle1RevenueD.times(hurdle1Rate).toDecimalPlaces(2);
+  const hurdle2Commission = hurdle2RevenueD.times(hurdle2Rate).toDecimalPlaces(2);
+  const hurdle3Commission = hurdle3RevenueD.times(hurdle3Rate).toDecimalPlaces(2);
 
-  const totalCommission =
-    Math.round(
-      (baseCommission +
-        hurdle1Commission +
-        hurdle2Commission +
-        hurdle3Commission) *
-        100,
-    ) / 100;
+  const totalCommission = baseCommission
+    .plus(hurdle1Commission)
+    .plus(hurdle2Commission)
+    .plus(hurdle3Commission)
+    .toDecimalPlaces(2);
 
   return {
-    baseRevenue,
-    baseCommission,
-    hurdle1Revenue,
-    hurdle1Commission,
-    hurdle2Revenue,
-    hurdle2Commission,
-    hurdle3Revenue,
-    hurdle3Commission,
-    totalCommission,
+    baseRevenue: baseRevenueD.toNumber(),
+    baseCommission: baseCommission.toNumber(),
+    hurdle1Revenue: hurdle1RevenueD.toNumber(),
+    hurdle1Commission: hurdle1Commission.toNumber(),
+    hurdle2Revenue: hurdle2RevenueD.toNumber(),
+    hurdle2Commission: hurdle2Commission.toNumber(),
+    hurdle3Revenue: hurdle3RevenueD.toNumber(),
+    hurdle3Commission: hurdle3Commission.toNumber(),
+    totalCommission: totalCommission.toNumber(),
   };
 }
 
@@ -532,27 +524,27 @@ function splitAmountAcrossMembers(
 ): number[] {
   if (memberCount <= 0) return [];
 
-  const totalCents = Math.round(amount * 100);
+  const totalCents = amountToCents(amount);
   const baseShare = Math.trunc(totalCents / memberCount);
   const remainder = totalCents % memberCount;
 
   return Array.from({ length: memberCount }, (_value, index) => {
     const cents = baseShare + (index < remainder ? 1 : 0);
-    return cents / 100;
+    return new Decimal(cents).dividedBy(100).toNumber();
   });
 }
 
 function sumCustomRateCommissions(
   customRateCommissions: TCommComponents["customRateCommissions"],
 ): number {
-  return Object.values(customRateCommissions).reduce(
-    (sum, amount) => sum + amount,
-    0,
-  );
+  return Object.values(customRateCommissions)
+    .reduce((sum, amount) => sum.plus(amount), new Decimal(0))
+    .toDecimalPlaces(2)
+    .toNumber();
 }
 
 function amountToCents(amount: number): number {
-  return Math.round(amount * 100);
+  return new Decimal(amount).times(100).toDecimalPlaces(0).toNumber();
 }
 
 type PoolTotals = {
@@ -691,27 +683,42 @@ function aggregatePool(
   poolMembers: TStaffID[],
   commMap: TCommMap,
 ): PoolAggregate {
-  const numericTotals = createEmptyPoolTotals();
-  const customRateCommissions: Record<string, number> = {};
+  let totalServiceRevenue = new Decimal(0);
+  let tips = new Decimal(0);
+  let productCommission = new Decimal(0);
+  let generalServiceCommission = new Decimal(0);
+  const customRateCommissions: Record<string, Decimal> = {};
 
   for (const poolMember of poolMembers) {
     const commMapElement = getRequiredCommComponents(commMap, poolMember);
 
-    numericTotals.totalServiceRevenue += commMapElement.totalServiceRevenue;
-    numericTotals.tips += commMapElement.tips;
-    numericTotals.productCommission += commMapElement.productCommission;
-    numericTotals.generalServiceCommission +=
-      commMapElement.generalServiceCommission;
+    totalServiceRevenue = totalServiceRevenue.plus(commMapElement.totalServiceRevenue);
+    tips = tips.plus(commMapElement.tips);
+    productCommission = productCommission.plus(commMapElement.productCommission);
+    generalServiceCommission = generalServiceCommission.plus(commMapElement.generalServiceCommission);
 
     for (const [serviceName, amount] of Object.entries(
       commMapElement.customRateCommissions,
     )) {
       customRateCommissions[serviceName] =
-        (customRateCommissions[serviceName] ?? 0) + amount;
+        (customRateCommissions[serviceName] ?? new Decimal(0)).plus(amount);
     }
   }
 
-  return { numericTotals, customRateCommissions };
+  const numericCustomRateCommissions: Record<string, number> = {};
+  for (const [k, v] of Object.entries(customRateCommissions)) {
+    numericCustomRateCommissions[k] = v.toDecimalPlaces(2).toNumber();
+  }
+
+  return {
+    numericTotals: {
+      totalServiceRevenue: totalServiceRevenue.toDecimalPlaces(2).toNumber(),
+      tips: tips.toDecimalPlaces(2).toNumber(),
+      productCommission: productCommission.toDecimalPlaces(2).toNumber(),
+      generalServiceCommission: generalServiceCommission.toDecimalPlaces(2).toNumber(),
+    },
+    customRateCommissions: numericCustomRateCommissions,
+  };
 }
 
 function splitPoolAggregate(
@@ -1035,18 +1042,18 @@ export function calculateStaffCommission(
   };
 
   // Calculate total service revenue
-  let totalServiceRevenue = 0;
+  let totalServiceRevenueD = new Decimal(0);
   let generalServiceRevenue = 0;
   if (servicesRevenues) {
     servicesRevenues.forEach((element, serviceName) => {
-      totalServiceRevenue += element.serviceRevenue;
+      totalServiceRevenueD = totalServiceRevenueD.plus(element.serviceRevenue);
       if (serviceName === GENERAL_SERV_REVENUE) {
         generalServiceRevenue = element.serviceRevenue;
       }
     });
   }
 
-  commComponents.totalServiceRevenue = totalServiceRevenue;
+  commComponents.totalServiceRevenue = totalServiceRevenueD.toDecimalPlaces(2).toNumber();
 
   // Calculate general service commission (uses hurdle logic)
   const generalServiceCommission = calcGeneralServiceCommission(
@@ -1058,19 +1065,19 @@ export function calculateStaffCommission(
   commComponents.totalServiceCommission += generalServiceCommission;
 
   // Calculate custom rate service commissions
-  let totalCustomServiceCommission = 0;
+  let totalCustomServiceCommissionD = new Decimal(0);
   if (servicesRevenues) {
     servicesRevenues.forEach((customRateEntry, serviceName) => {
       if (serviceName !== GENERAL_SERV_REVENUE) {
-        const customServiceCommission =
-          customRateEntry.serviceRevenue * Number(customRateEntry.customRate);
-        commComponents.customRateCommissions[serviceName] =
-          customServiceCommission;
-        totalCustomServiceCommission += customServiceCommission;
+        const commD = new Decimal(customRateEntry.serviceRevenue)
+          .times(Number(customRateEntry.customRate))
+          .toDecimalPlaces(2);
+        commComponents.customRateCommissions[serviceName] = commD.toNumber();
+        totalCustomServiceCommissionD = totalCustomServiceCommissionD.plus(commD);
       }
     });
-    commComponents.customRateCommission = totalCustomServiceCommission;
-    commComponents.totalServiceCommission += totalCustomServiceCommission;
+    commComponents.customRateCommission = totalCustomServiceCommissionD.toDecimalPlaces(2).toNumber();
+    commComponents.totalServiceCommission += commComponents.customRateCommission;
   }
 
   return commComponents;
@@ -1138,10 +1145,11 @@ function logStaffCommission(
   logger.info(
     fws32Left(`Total Payable`),
     fws14RightHKD(
-      commComponents.customRateCommission +
-        commComponents.generalServiceCommission +
-        commComponents.productCommission +
-        commComponents.tips,
+      new Decimal(commComponents.customRateCommission)
+        .plus(commComponents.generalServiceCommission)
+        .plus(commComponents.productCommission)
+        .plus(commComponents.tips)
+        .toNumber(),
     ),
   );
   logger.info("");
