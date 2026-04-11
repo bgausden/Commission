@@ -10,8 +10,6 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 Extensions - Application:   28152.000000000004
 */
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
-// TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
-
 import "./checkStartup.js";
 import { config } from "node-config-ts";
 // import prettyjson from "prettyjson"
@@ -74,6 +72,7 @@ import {
 } from "./gdrive_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
 import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
+import Decimal from "decimal.js";
 import path from "node:path";
 import { loadStaffHurdles } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
