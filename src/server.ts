@@ -1,3 +1,4 @@
+import "./checkStartup.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createApp } from "./serverApp.js";

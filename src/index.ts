@@ -1,4 +1,3 @@
-// TODO Implement pooling of service and product commissions, tips for Ari and Anson
 // TODO Investigate why script can't be run directly from the dist folder (has to be run from dist/.. or config has no value)
 /* TODO add support for hourly wage staff:
 Gausden, ElizabethStaff ID #: 048 									
@@ -13,6 +12,7 @@ Extensions - Application:   28152.000000000004
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 // TODO move all money calculations to using the Decimal library to avoid any floating point issues (https://mikemcl.github.io/decimal.js/)
 
+import "./checkStartup.js";
 import { config } from "node-config-ts";
 // import prettyjson from "prettyjson"
 import XLSX from "xlsx";
