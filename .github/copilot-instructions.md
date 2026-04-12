@@ -34,6 +34,16 @@ log4js buffers writes asynchronously. `shutdownLogging()` returns `Promise<void>
 
 All new features and bug fixes must be developed on a separate branch. Do not implement feature/fix work directly on `master`.
 
+### Definition of done — three gates, no exceptions
+
+No task is considered complete until all three pass, regardless of whether failures appear to pre-date the current change:
+
+1. **Full test suite**: `npm test` — all tests pass; no tests deleted, skipped, or weakened to make them pass
+2. **Regression**: `BASELINE_NAME=2025-12 npm run test:regression` — output matches the baseline field-for-field
+3. **Clean build**: `npm run build` — no TypeScript errors
+
+If any gate fails, fix it before merging. Do not merge with a known failure on the basis that "it was already broken".
+
 ## Key Behavioral Notes
 
 ### `staffHurdle.json` default fallback
