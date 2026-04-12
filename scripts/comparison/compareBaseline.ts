@@ -7,11 +7,10 @@ import type {
   StaffPayment,
   StaffCommissionData,
   ComparisonResult,
-  StaffDiff,
   FieldDifference,
   ComparisonOptions,
   ComparisonKind,
-} from '../../src/regression.types.js';
+} from "../../src/regression.types.js";
 
 const DEFAULT_OPTIONS: ComparisonOptions = {
   tolerance: 0.01,
@@ -94,7 +93,7 @@ export function compareStaffPayments(
       result.added.push({
         staffId,
         staffName: currentStaff.staffName,
-        category: 'ADDED',
+        category: "ADDED",
       });
       continue;
     }
@@ -145,14 +144,14 @@ export function compareStaffPayments(
       result.modified.push({
         staffId,
         staffName: currentStaff.staffName,
-        category: 'MODIFIED',
+        category: "MODIFIED",
         differences,
       });
     } else {
       result.identical.push({
         staffId,
         staffName: currentStaff.staffName,
-        category: 'IDENTICAL',
+        category: "IDENTICAL",
       });
     }
   }
@@ -163,7 +162,7 @@ export function compareStaffPayments(
       result.removed.push({
         staffId,
         staffName: baselineStaff.staffName,
-        category: 'REMOVED',
+        category: "REMOVED",
       });
     }
   }
@@ -200,7 +199,7 @@ export function compareCommissionData(
       result.added.push({
         staffId,
         staffName: currentStaff.staffName,
-        category: 'ADDED',
+        category: "ADDED",
       });
       continue;
     }
@@ -209,11 +208,11 @@ export function compareCommissionData(
 
     // Compare all numeric fields
     const fieldsToCompare: Array<keyof StaffCommissionData> = [
-      'generalServicesRevenue',
-      'generalServiceCommission',
-      'productCommission',
-      'tips',
-      'totalPayable',
+      "generalServicesRevenue",
+      "generalServiceCommission",
+      "productCommission",
+      "tips",
+      "totalPayable",
     ];
 
     for (const field of fieldsToCompare) {
@@ -288,14 +287,14 @@ export function compareCommissionData(
       result.modified.push({
         staffId,
         staffName: currentStaff.staffName,
-        category: 'MODIFIED',
+        category: "MODIFIED",
         differences,
       });
     } else {
       result.identical.push({
         staffId,
         staffName: currentStaff.staffName,
-        category: 'IDENTICAL',
+        category: "IDENTICAL",
       });
     }
   }
@@ -306,7 +305,7 @@ export function compareCommissionData(
       result.removed.push({
         staffId,
         staffName: baselineStaff.staffName,
-        category: 'REMOVED',
+        category: "REMOVED",
       });
     }
   }
@@ -324,27 +323,27 @@ export function generateDiffReport(
 ): string {
   const lines: string[] = [];
 
-  lines.push('='.repeat(80));
+  lines.push("=".repeat(80));
   lines.push(`REGRESSION TEST REPORT: ${baselineName}`);
-  lines.push('='.repeat(80));
-  lines.push('');
+  lines.push("=".repeat(80));
+  lines.push("");
   lines.push(`Source File: ${sourceFile}`);
-  lines.push('');
-  lines.push('STAFF SUMMARY:');
+  lines.push("");
+  lines.push("STAFF SUMMARY:");
   lines.push(`  Identical:         ${result.identical.length}`);
   lines.push(
-    `  Modified:          ${result.modified.length}  ${result.modified.length > 0 ? '❌' : '✅'}`,
+    `  Modified:          ${result.modified.length}  ${result.modified.length > 0 ? "❌" : "✅"}`,
   );
   lines.push(
-    `  Added:             ${result.added.length}  ${result.added.length > 0 ? '❌' : '✅'}`,
+    `  Added:             ${result.added.length}  ${result.added.length > 0 ? "❌" : "✅"}`,
   );
   lines.push(
-    `  Removed:           ${result.removed.length}  ${result.removed.length > 0 ? '❌' : '✅'}`,
+    `  Removed:           ${result.removed.length}  ${result.removed.length > 0 ? "❌" : "✅"}`,
   );
-  lines.push('');
+  lines.push("");
 
   if (result.modified.length > 0) {
-    lines.push('MODIFICATIONS (Test Failure):');
+    lines.push("MODIFICATIONS (Test Failure):");
     for (const staff of result.modified) {
       lines.push(`  Staff ${staff.staffId} (${staff.staffName}):`);
       for (const diff of staff.differences || []) {
@@ -352,46 +351,46 @@ export function generateDiffReport(
         lines.push(`      Expected: HK$ ${formatAmount(diff.expected)}`);
         lines.push(`      Actual:   HK$ ${formatAmount(diff.actual)}`);
         lines.push(
-          `      Diff:     ${diff.diff >= 0 ? '+' : ''}HK$ ${formatAmount(diff.diff)}`,
+          `      Diff:     ${diff.diff >= 0 ? "+" : ""}HK$ ${formatAmount(diff.diff)}`,
         );
       }
     }
-    lines.push('');
+    lines.push("");
   }
 
   if (result.added.length > 0) {
-    lines.push('ADDITIONS (Test Failure):');
+    lines.push("ADDITIONS (Test Failure):");
     for (const staff of result.added) {
       lines.push(`  Staff ${staff.staffId} (${staff.staffName}): new staff`);
     }
-    lines.push('');
+    lines.push("");
   }
 
   if (result.removed.length > 0) {
-    lines.push('REMOVALS (Test Failure):');
+    lines.push("REMOVALS (Test Failure):");
     for (const staff of result.removed) {
       lines.push(
         `  Staff ${staff.staffId} (${staff.staffName}): staff removed`,
       );
     }
-    lines.push('');
+    lines.push("");
   }
 
   const passed =
     result.modified.length === 0 &&
     result.added.length === 0 &&
     result.removed.length === 0;
-  lines.push(`RESULT: ${passed ? '✅ PASSED' : '❌ FAILED'}`);
-  lines.push('='.repeat(80));
+  lines.push(`RESULT: ${passed ? "✅ PASSED" : "❌ FAILED"}`);
+  lines.push("=".repeat(80));
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
  * Format amount with thousand separators and 2 decimal places
  */
 function formatAmount(amount: number): string {
-  return amount.toLocaleString('en-US', {
+  return amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

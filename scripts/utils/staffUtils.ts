@@ -14,11 +14,7 @@ export function normalizeStaffId(id: string): string {
  */
 export function parseStaffId(raw: string): string | null {
   // Match patterns like "Staff ID #: 012" or "012" or "Staff 012"
-  const patterns = [
-    /Staff ID #:\s*(\d+)/i,
-    /Staff\s+(\d+)/i,
-    /^(\d+)$/,
-  ];
+  const patterns = [/Staff ID #:\s*(\d+)/i, /Staff\s+(\d+)/i, /^(\d+)$/];
 
   for (const pattern of patterns) {
     const match = raw.match(pattern);
@@ -58,10 +54,10 @@ export function sortByStaffId<T extends { staffId: string }>(items: T[]): T[] {
  */
 export function parseStaffName(raw: string): string {
   // Remove "Staff ID #: XXX" if present
-  let cleaned = raw.replace(/Staff ID #:\s*\d+/i, '').trim();
+  let cleaned = raw.replace(/Staff ID #:\s*\d+/i, "").trim();
 
   // Remove trailing commas
-  cleaned = cleaned.replace(/,\s*$/, '');
+  cleaned = cleaned.replace(/,\s*$/, "");
 
   return cleaned;
 }

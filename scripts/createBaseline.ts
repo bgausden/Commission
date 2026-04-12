@@ -159,10 +159,25 @@ async function createBaseline(options: CreateBaselineOptions): Promise<void> {
       if (stderr) {
         console.error(stderr);
       }
-    } catch (error: any) {
-      console.error("Commission calculation failed:", error.message);
-      if (error.stdout) console.log(error.stdout);
-      if (error.stderr) console.error(error.stderr);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Commission calculation failed:", message);
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "stdout" in error &&
+        typeof error.stdout === "string"
+      ) {
+        console.log(error.stdout);
+      }
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "stderr" in error &&
+        typeof error.stderr === "string"
+      ) {
+        console.error(error.stderr);
+      }
       throw new Error("Commission calculation failed");
     }
 

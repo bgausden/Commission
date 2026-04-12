@@ -50,7 +50,9 @@ describe("compareCommissionData", () => {
     const baseline = [buildCommissionRow()];
     const current = [
       buildCommissionRow({
-        generalServiceCommission: new Decimal("24603.60").plus("0.20").toNumber(),
+        generalServiceCommission: new Decimal("24603.60")
+          .plus("0.20")
+          .toNumber(),
         totalPayable: new Decimal("25718.10").plus("0.20").toNumber(),
       }),
     ];
@@ -82,7 +84,9 @@ describe("compareCommissionData", () => {
     const baseline = [buildCommissionRow()];
     const current = [
       buildCommissionRow({
-        generalServiceCommission: new Decimal("24603.60").plus("0.20").toNumber(),
+        generalServiceCommission: new Decimal("24603.60")
+          .plus("0.20")
+          .toNumber(),
         totalPayable: new Decimal("25718.10").plus("0.20").toNumber(),
       }),
     ];

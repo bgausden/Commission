@@ -7,7 +7,7 @@
  * Pattern: [2026-02-04 09:23:15.123] [INFO] -> [INFO]
  */
 export function stripTimestamps(line: string): string {
-  return line.replace(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] /g, '');
+  return line.replace(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] /g, "");
 }
 
 /**
@@ -18,7 +18,7 @@ export function relativizePaths(line: string, projectRoot?: string): string {
     // Try to detect common patterns but don't hardcode
     return line;
   }
-  return line.replace(new RegExp(projectRoot, 'g'), '.');
+  return line.replace(new RegExp(projectRoot, "g"), ".");
 }
 
 /**
@@ -29,16 +29,16 @@ export function normalizeFloats(line: string): string {
   // Match HK$ amounts with optional commas and decimals
   return line.replace(/HK\$[\d,]+\.?\d*/g, (match) => {
     // Remove HK$ and commas to get raw number
-    const numStr = match.replace(/HK\$|,/g, '');
+    const numStr = match.replace(/HK\$|,/g, "");
     const num = parseFloat(numStr);
-    
+
     if (isNaN(num)) {
       return match;
     }
-    
+
     // Round to 2 decimals and format with commas
     const rounded = Math.round(num * 100) / 100;
-    return `HK$${rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `HK$${rounded.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   });
 }
 
@@ -46,14 +46,17 @@ export function normalizeFloats(line: string): string {
  * Normalize line endings to LF
  */
 export function normalizeLineEndings(content: string): string {
-  return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
 /**
  * Trim trailing whitespace from each line
  */
 export function trimLines(content: string): string {
-  return content.split('\n').map(line => line.trimEnd()).join('\n');
+  return content
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n");
 }
 
 /**
@@ -62,9 +65,9 @@ export function trimLines(content: string): string {
 export function normalizeLog(content: string, projectRoot?: string): string {
   let normalized = normalizeLineEndings(content);
   normalized = trimLines(normalized);
-  
-  const lines = normalized.split('\n');
-  const processedLines = lines.map(line => {
+
+  const lines = normalized.split("\n");
+  const processedLines = lines.map((line) => {
     let processed = stripTimestamps(line);
     if (projectRoot) {
       processed = relativizePaths(processed, projectRoot);
@@ -72,6 +75,6 @@ export function normalizeLog(content: string, projectRoot?: string): string {
     processed = normalizeFloats(processed);
     return processed;
   });
-  
-  return processedLines.join('\n');
+
+  return processedLines.join("\n");
 }

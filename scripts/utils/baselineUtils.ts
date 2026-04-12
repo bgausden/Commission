@@ -2,11 +2,11 @@
  * Utilities for discovering and resolving regression test baselines
  */
 
-import { readdir } from 'fs/promises';
-import { join } from 'path';
-import { readJSON } from '../../src/fileUtils.js';
-import type { Result } from '../../src/types.js';
-import { ok, err } from '../../src/types.js';
+import { readdir } from "fs/promises";
+import { join } from "path";
+import { readJSON } from "../../src/fileUtils.js";
+import type { Result } from "../../src/types.js";
+import { ok, err } from "../../src/types.js";
 
 interface BaselineMeta {
   createdDate: string; // ISO 8601
@@ -20,7 +20,9 @@ interface BaselineMeta {
  *
  * @param baselinesRoot - Absolute path to the directory containing baseline subdirectories
  */
-export async function findOldestBaseline(baselinesRoot: string): Promise<Result<string>> {
+export async function findOldestBaseline(
+  baselinesRoot: string,
+): Promise<Result<string>> {
   let entries: string[];
   try {
     entries = await readdir(baselinesRoot);
@@ -31,7 +33,7 @@ export async function findOldestBaseline(baselinesRoot: string): Promise<Result<
   const candidates: Array<{ name: string; createdDate: string }> = [];
 
   for (const entry of entries) {
-    const metaPath = join(baselinesRoot, entry, 'metadata.json');
+    const metaPath = join(baselinesRoot, entry, "metadata.json");
     try {
       const meta = await readJSON<BaselineMeta>(metaPath);
       if (meta?.createdDate) {

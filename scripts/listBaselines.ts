@@ -11,7 +11,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readdir } from "fs/promises";
 import type { BaselineMetadata } from "../src/regression.types.js";
-import { readJSON, fileExists, isDirectory } from "../src/fileUtils.js";
+import { readJSON, fileExists } from "../src/fileUtils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -83,7 +83,7 @@ async function listBaselines(): Promise<void> {
         staffCount: metadata.staffCount,
         exists: true,
       });
-    } catch (error) {
+    } catch {
       baselines.push({
         name: dirName,
         createdDate: "ERROR",
