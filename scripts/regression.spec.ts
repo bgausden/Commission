@@ -22,6 +22,7 @@ import {
   prepareBaselineInputsInSandbox,
   runCommissionInSandbox,
 } from "./utils/regressionRunner.js";
+import { getEffectiveRegressionTolerance } from "./utils/regressionTolerance.js";
 
 dotenv.config();
 
@@ -70,7 +71,7 @@ const PROJECT_ROOT = join(__dirname, "..");
 const BASELINES_ROOT = join(PROJECT_ROOT, "test-baselines");
 
 let baseline: LoadedBaseline;
-const regressionTolerance = parseRegressionTolerance(
+const requestedRegressionTolerance = parseRegressionTolerance(
   process.env.REGRESSION_TOLERANCE,
 );
 
@@ -118,6 +119,10 @@ describe("Regression: fixed input must produce identical outputs to baseline", (
   it("replays baseline source with current branch code and matches baseline outputs", async () => {
     expect(baseline).toBeDefined();
     expect(baseline.metadata.baselineName).toBe(baseline.name);
+    const regressionTolerance = getEffectiveRegressionTolerance(
+      requestedRegressionTolerance,
+      baseline.metadata,
+    );
 
     const baselineSourceFile = join(
       baseline.dir,

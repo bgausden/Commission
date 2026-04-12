@@ -2,6 +2,7 @@
  * Baseline comparison utilities
  */
 
+import Decimal from "decimal.js";
 import type {
   StaffPayment,
   StaffCommissionData,
@@ -14,6 +15,33 @@ import type {
 const DEFAULT_OPTIONS: ComparisonOptions = {
   tolerance: 0.01,
 };
+
+function buildFieldDifference(
+  field: string,
+  expected: number,
+  actual: number,
+  tolerance: number,
+): FieldDifference | null {
+  const expectedDecimal = new Decimal(expected);
+  const actualDecimal = new Decimal(actual);
+  const diffDecimal = actualDecimal.minus(expectedDecimal);
+
+  if (diffDecimal.abs().lte(tolerance)) {
+    return null;
+  }
+
+  const percentDiffDecimal = expectedDecimal.isZero()
+    ? new Decimal(0)
+    : diffDecimal.dividedBy(expectedDecimal).times(100);
+
+  return {
+    field,
+    expected,
+    actual,
+    diff: diffDecimal.toNumber(),
+    percentDiff: percentDiffDecimal.toNumber(),
+  };
+}
 
 /**
  * Compare staff payment data from baseline and current run
@@ -53,18 +81,14 @@ export function compareStaffPayments(
     const differences: FieldDifference[] = [];
 
     // Compare total
-    const totalDiff = currentStaff.total - baselineStaff.total;
-    if (Math.abs(totalDiff) > opts.tolerance) {
-      differences.push({
-        field: 'Total',
-        expected: baselineStaff.total,
-        actual: currentStaff.total,
-        diff: totalDiff,
-        percentDiff:
-          baselineStaff.total !== 0
-            ? (totalDiff / baselineStaff.total) * 100
-            : 0,
-      });
+    const totalDiff = buildFieldDifference(
+      "Total",
+      baselineStaff.total,
+      currentStaff.total,
+      opts.tolerance,
+    );
+    if (totalDiff) {
+      differences.push(totalDiff);
     }
 
     // Compare individual payment types
@@ -83,16 +107,15 @@ export function compareStaffPayments(
     for (const type of allTypes) {
       const baselineAmount = baselinePaymentMap.get(type) || 0;
       const currentAmount = currentPaymentMap.get(type) || 0;
-      const diff = currentAmount - baselineAmount;
+      const difference = buildFieldDifference(
+        type,
+        baselineAmount,
+        currentAmount,
+        opts.tolerance,
+      );
 
-      if (Math.abs(diff) > opts.tolerance) {
-        differences.push({
-          field: type,
-          expected: baselineAmount,
-          actual: currentAmount,
-          diff,
-          percentDiff: baselineAmount !== 0 ? (diff / baselineAmount) * 100 : 0,
-        });
+      if (difference) {
+        differences.push(difference);
       }
     }
 
@@ -173,16 +196,15 @@ export function compareCommissionData(
     for (const field of fieldsToCompare) {
       const baselineValue = baselineStaff[field] as number;
       const currentValue = currentStaff[field] as number;
-      const diff = currentValue - baselineValue;
+      const difference = buildFieldDifference(
+        String(field),
+        baselineValue,
+        currentValue,
+        opts.tolerance,
+      );
 
-      if (Math.abs(diff) > opts.tolerance) {
-        differences.push({
-          field: String(field),
-          expected: baselineValue,
-          actual: currentValue,
-          diff,
-          percentDiff: baselineValue !== 0 ? (diff / baselineValue) * 100 : 0,
-        });
+      if (difference) {
+        differences.push(difference);
       }
     }
 
@@ -195,16 +217,15 @@ export function compareCommissionData(
     for (const serviceName of allCustomRevenues) {
       const baselineValue = baselineStaff.customRateRevenues[serviceName] || 0;
       const currentValue = currentStaff.customRateRevenues[serviceName] || 0;
-      const diff = currentValue - baselineValue;
+      const difference = buildFieldDifference(
+        `${serviceName} Revenue`,
+        baselineValue,
+        currentValue,
+        opts.tolerance,
+      );
 
-      if (Math.abs(diff) > opts.tolerance) {
-        differences.push({
-          field: `${serviceName} Revenue`,
-          expected: baselineValue,
-          actual: currentValue,
-          diff,
-          percentDiff: baselineValue !== 0 ? (diff / baselineValue) * 100 : 0,
-        });
+      if (difference) {
+        differences.push(difference);
       }
     }
 
@@ -218,16 +239,15 @@ export function compareCommissionData(
       const baselineValue =
         baselineStaff.customRateCommissions[serviceName] || 0;
       const currentValue = currentStaff.customRateCommissions[serviceName] || 0;
-      const diff = currentValue - baselineValue;
+      const difference = buildFieldDifference(
+        `${serviceName} Commission`,
+        baselineValue,
+        currentValue,
+        opts.tolerance,
+      );
 
-      if (Math.abs(diff) > opts.tolerance) {
-        differences.push({
-          field: `${serviceName} Commission`,
-          expected: baselineValue,
-          actual: currentValue,
-          diff,
-          percentDiff: baselineValue !== 0 ? (diff / baselineValue) * 100 : 0,
-        });
+      if (difference) {
+        differences.push(difference);
       }
     }
 

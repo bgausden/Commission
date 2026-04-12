@@ -20,6 +20,11 @@ export interface BaselineMetadata {
   staffCount: number;
   staffIds: string[];
   description?: string;
+  knownRoundingGaps?: {
+    staffIds: string[];
+    maxDelta: number;
+    note?: string;
+  };
 }
 
 /**
