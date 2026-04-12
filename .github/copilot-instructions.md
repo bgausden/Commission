@@ -53,6 +53,10 @@ The parser ([src/index.ts](../src/index.ts)) locates staff blocks, the revenue c
 
 Staff with a `poolsWith` array in `staffHurdle.json` share total revenue equally before hurdle calculation. Pooling currently applies to general services only — tips, product commission, and custom rate commissions are **not** pooled (active TODO).
 
+### Canonical staff hurdle loader
+
+`loadStaffHurdlesFromFile(filePath?)` in [src/staffHurdles.ts](../src/staffHurdles.ts) is the single loader for both CLI and web server. It returns `Result<TStaffHurdles>`, validates with `staffHurdleSchema` (Zod), and trims keys. Do not create a second loader. The CLI (`src/index.ts`) unwraps the Result and throws at the `main()` boundary; the server returns 500 on `err`.
+
 ### Regression test axiom
 
 The regression test processes a **fixed input file** (the Mindbody commission xlsx stored in the baseline) and asserts that **all generated outputs** (payments Excel, commission log, contractor log) are field-for-field identical to the baseline outputs. Any difference — including added staff, removed staff, or modified values — is a test failure. All changes to regression logic must preserve this invariant.
@@ -62,8 +66,10 @@ The regression test processes a **fixed input file** (the Mindbody commission xl
 `regression.spec.ts` auto-discovers the oldest available baseline in `test-baselines/` (by `createdDate` in `metadata.json`). Override with:
 
 ```bash
-BASELINE_NAME=dec-2025-baseline npm run test:regression
+BASELINE_NAME=2025-12 npm run test:regression
 ```
+
+The directory `test-baselines/2025-12-baseline/` exists but has no `metadata.json` — the auto-discovery will skip it. Always use the exact key shown by `npm run list-baselines`.
 
 `test-baselines/` is gitignored. Regression tests fail with a clear error when no baseline exists.
 
@@ -91,6 +97,8 @@ Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments(
 2. **File archiving**: `moveFilesToOldSubDir()` automatically gzip-compresses and archives old data/payment files to an `old/` subdirectory on each run.
 3. **Rounding**: General service commission amounts use `Math.round(value * 100) / 100`. Custom pay rate rounding has a known floating-point precision issue (active TODO).
 4. **ESM imports**: Always use `.js` extension in relative imports even for `.ts` source files.
+5. **Result vs assert vs throw**: Use `Result<T>` for functions that can fail on external input (file I/O, Excel parsing, API calls, schema validation). Use `assert()` for logic invariants — conditions impossible if types/schema hold. Reserve `throw` for the `main()` imperative shell boundary when unwrapping a failed Result to abort the run. Never throw inside functional-core modules.
+6. **`setGlobal()`**: Defined in `src/index.ts` (not exported) — CLI-only. Type-safe setter for the `CustomGlobals` interface. Never write to `globalThis` directly.
 
 ## Active TODOs
 
