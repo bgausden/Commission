@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "./scripts/check-gates.sh",
+        "timeout": 120
+      }
+    ]
+  }
+}
