@@ -545,17 +545,34 @@ function splitAmountAcrossMembers(
   });
 }
 
+function toMoneyDecimal(value: number | string | Decimal): Decimal {
+  return new Decimal(value);
+}
+
+function toMoneyNumber(value: number | string | Decimal): number {
+  return toMoneyDecimal(value).toDecimalPlaces(2).toNumber();
+}
+
+function sumMoney(values: Iterable<number | string | Decimal>): number {
+  let total = new Decimal(0);
+  for (const value of values) {
+    total = total.plus(value);
+  }
+  return total.toDecimalPlaces(2).toNumber();
+}
+
+function parseMoneyValue(value: unknown): number {
+  return toMoneyNumber(stripToNumeric(value));
+}
+
 function sumCustomRateCommissions(
   customRateCommissions: TCommComponents["customRateCommissions"],
 ): number {
-  return Object.values(customRateCommissions)
-    .reduce((sum, amount) => sum.plus(amount), new Decimal(0))
-    .toDecimalPlaces(2)
-    .toNumber();
+  return sumMoney(Object.values(customRateCommissions));
 }
 
 function amountToCents(amount: number): number {
-  return new Decimal(amount).times(100).toDecimalPlaces(0).toNumber();
+  return toMoneyDecimal(amount).times(100).toDecimalPlaces(0).toNumber();
 }
 
 type PoolTotals = {
@@ -606,9 +623,8 @@ function assertDistributedShares(
     `${context} produced ${shares.length} shares for ${memberCount} members.`,
   );
   assert(
-    amountToCents(shares.reduce((sum, share) => sum + share, 0)) ===
-      amountToCents(expectedTotal),
-    `${context} shares sum to ${shares.reduce((sum, share) => sum + share, 0)}, expected ${expectedTotal}.`,
+    amountToCents(sumMoney(shares)) === amountToCents(expectedTotal),
+    `${context} shares sum to ${sumMoney(shares)}, expected ${expectedTotal}.`,
   );
 }
 
@@ -832,7 +848,10 @@ function createPooledCommission(
     generalServiceCommission,
     customRateCommissions,
     customRateCommission,
-    totalServiceCommission: generalServiceCommission + customRateCommission,
+    totalServiceCommission: sumMoney([
+      generalServiceCommission,
+      customRateCommission,
+    ]),
   };
 }
 
@@ -1004,7 +1023,7 @@ export function extractStaffPayrollData(
       if (payComponent === TIPS_FOR || payComponent === COMM_FOR) {
         const maxRowIndex = wsaa[rowIndex].length - 1;
         if (wsaa[rowIndex][maxRowIndex] !== undefined) {
-          const value = Number(wsaa[rowIndex][maxRowIndex]);
+          const value = parseMoneyValue(wsaa[rowIndex][maxRowIndex]);
           if (payComponent === TIPS_FOR) {
             tips = value;
           }
@@ -1073,7 +1092,6 @@ export function calculateStaffCommission(
     generalServiceRevenue,
   );
   commComponents.generalServiceCommission = generalServiceCommission;
-  commComponents.totalServiceCommission += generalServiceCommission;
 
   // Calculate custom rate service commissions
   let totalCustomServiceCommissionD = new Decimal(0);
@@ -1087,9 +1105,15 @@ export function calculateStaffCommission(
         totalCustomServiceCommissionD = totalCustomServiceCommissionD.plus(commD);
       }
     });
-    commComponents.customRateCommission = totalCustomServiceCommissionD.toDecimalPlaces(2).toNumber();
-    commComponents.totalServiceCommission += commComponents.customRateCommission;
   }
+
+  commComponents.customRateCommission = totalCustomServiceCommissionD
+    .toDecimalPlaces(2)
+    .toNumber();
+  commComponents.totalServiceCommission = sumMoney([
+    commComponents.generalServiceCommission,
+    commComponents.customRateCommission,
+  ]);
 
   return commComponents;
 }

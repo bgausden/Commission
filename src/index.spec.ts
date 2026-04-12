@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { Decimal } from "decimal.js";
 import type {
   HurdleConfig,
   HurdleBreakdown,
@@ -98,13 +99,16 @@ function buildPoolConfig(poolMembers: string[]): TStaffHurdles {
 
 function expectDerivedTotals(comm: TCommComponents): void {
   expect(comm.customRateCommission).toBe(
-    Object.values(comm.customRateCommissions).reduce(
-      (sum, amount) => sum + amount,
-      0,
-    ),
+    Object.values(comm.customRateCommissions)
+      .reduce((sum, amount) => sum.plus(amount), new Decimal(0))
+      .toDecimalPlaces(2)
+      .toNumber(),
   );
   expect(comm.totalServiceCommission).toBe(
-    comm.generalServiceCommission + comm.customRateCommission,
+    new Decimal(comm.generalServiceCommission)
+      .plus(comm.customRateCommission)
+      .toDecimalPlaces(2)
+      .toNumber(),
   );
 }
 
@@ -871,6 +875,25 @@ describe("calculateStaffCommission", () => {
     expect(result.productCommission).toBe(125);
     // Tips and product commission are separate from service commissions
   });
+
+  it("should combine service commission totals with Decimal precision", () => {
+    const payrollData: StaffPayrollData = {
+      staffID: "012",
+      staffName: "Kate Smith",
+      tips: 0,
+      productCommission: 0,
+      servicesRevenues: new Map([
+        ["General Services", { serviceRevenue: 30001, customRate: null }],
+        ["Extensions", { serviceRevenue: 2, customRate: 0.1 }],
+      ]),
+    };
+
+    const result = calculateStaffCommission(payrollData, mockTalenoxStaff);
+
+    expect(result.generalServiceCommission).toBe(0.11);
+    expect(result.customRateCommission).toBe(0.2);
+    expect(result.totalServiceCommission).toBe(0.31);
+  });
 });
 
 describe("doPooling", () => {
@@ -1006,12 +1029,16 @@ describe("doPooling", () => {
     expect(pooledCommMap.get("012")?.customRateCommission).toBe(33.33);
     expect(pooledCommMap.get("013")?.customRateCommission).toBe(33.33);
     expect(
-      ["011", "012", "013"].reduce(
-        (sum, staffID) =>
-          sum +
-          (pooledCommMap.get(staffID)?.customRateCommissions.Extensions ?? 0),
-        0,
-      ),
+      ["011", "012", "013"]
+        .reduce(
+          (sum, staffID) =>
+            sum.plus(
+              pooledCommMap.get(staffID)?.customRateCommissions.Extensions ?? 0,
+            ),
+          new Decimal(0),
+        )
+        .toDecimalPlaces(2)
+        .toNumber(),
     ).toBe(100);
   });
 
