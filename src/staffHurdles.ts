@@ -19,8 +19,5 @@ export function loadStaffHurdles(
   path = DEFAULT_STAFF_HURDLES_FILE,
 ): TStaffHurdles {
   const rawData = loadJsonFromFile<Record<string, StaffHurdle>>(path);
-  const staffHurdles = parseStaffHurdles(rawData);
-
-  global.staffHurdles = staffHurdles;
-  return staffHurdles;
+  return parseStaffHurdles(rawData);
 }

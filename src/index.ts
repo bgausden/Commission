@@ -176,6 +176,7 @@ async function main() {
   const staffHurdles = loadStaffHurdles(
     process.env.STAFF_HURDLE_FILE ?? DEFAULT_STAFF_HURDLES_FILE,
   );
+  setGlobal("staffHurdles", staffHurdles);
   const getPayrollStaffHurdle: StaffHurdleGetter = (staffID, context) =>
     getStaffHurdleFromMap(
       staffHurdles,
