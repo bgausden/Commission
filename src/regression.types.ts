@@ -5,6 +5,15 @@
 /**
  * Metadata stored with each baseline for validation and tracking
  */
+export type ComparisonKind = "payments" | "commission" | "contractor";
+
+export interface ToleranceOverride {
+  kind: ComparisonKind;
+  staffId: string;
+  fields: string[];
+  tolerance: number;
+}
+
 export interface BaselineMetadata {
   baselineName: string;
   commitSHA: string;
@@ -20,6 +29,7 @@ export interface BaselineMetadata {
   staffCount: number;
   staffIds: string[];
   description?: string;
+  knownToleranceExceptions?: ToleranceOverride[];
   knownRoundingGaps?: {
     staffIds: string[];
     maxDelta: number;
@@ -96,4 +106,6 @@ export interface ComparisonResult {
  */
 export interface ComparisonOptions {
   tolerance: number; // Tolerance for floating-point comparison (e.g., 0.01)
+  kind?: ComparisonKind;
+  toleranceOverrides?: ToleranceOverride[];
 }

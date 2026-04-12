@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { BaselineMetadata } from "../../src/regression.types.js";
-import { getEffectiveRegressionTolerance } from "./regressionTolerance.js";
+import type {
+  BaselineMetadata,
+  ToleranceOverride,
+} from "../../src/regression.types.js";
+import { getBaselineToleranceOverrides } from "./regressionTolerance.js";
 
 function buildMetadata(
-  knownRoundingGaps?: BaselineMetadata["knownRoundingGaps"],
+  knownToleranceExceptions?: ToleranceOverride[],
 ): BaselineMetadata {
   return {
     baselineName: "2025-12",
@@ -19,38 +22,64 @@ function buildMetadata(
     },
     staffCount: 1,
     staffIds: ["001"],
-    knownRoundingGaps,
+    knownToleranceExceptions,
   };
 }
 
-describe("getEffectiveRegressionTolerance", () => {
-  it("uses baseline-known rounding gap tolerance when it is higher", () => {
-    const metadata = buildMetadata({
-      staffIds: ["007", "019", "024", "026"],
-      maxDelta: 0.2,
-      note: "Known baseline rounding gaps.",
-    });
+describe("getBaselineToleranceOverrides", () => {
+  it("returns explicit baseline tolerance exceptions", () => {
+    const metadata = buildMetadata([
+      {
+        kind: "commission",
+        staffId: "024",
+        fields: ["generalServiceCommission", "totalPayable"],
+        tolerance: 0.2,
+      },
+    ]);
 
-    expect(getEffectiveRegressionTolerance(0.01, metadata)).toBe(0.2);
+    expect(getBaselineToleranceOverrides(metadata)).toEqual([
+      {
+        kind: "commission",
+        staffId: "024",
+        fields: ["generalServiceCommission", "totalPayable"],
+        tolerance: 0.2,
+      },
+    ]);
   });
 
-  it("preserves a higher requested tolerance", () => {
-    const metadata = buildMetadata({
-      staffIds: ["007"],
-      maxDelta: 0.2,
-    });
+  it("returns an empty list when no baseline tolerance exceptions are defined", () => {
+    const metadata = buildMetadata();
 
-    expect(getEffectiveRegressionTolerance(0.25, metadata)).toBe(0.25);
+    expect(getBaselineToleranceOverrides(metadata)).toEqual([]);
   });
 
-  it("rejects invalid baseline-known rounding gap tolerance", () => {
-    const metadata = buildMetadata({
-      staffIds: ["007"],
-      maxDelta: Number.NaN,
-    });
+  it("rejects invalid baseline tolerance exception values", () => {
+    const metadata = buildMetadata([
+      {
+        kind: "commission",
+        staffId: "007",
+        fields: ["generalServiceCommission"],
+        tolerance: Number.NaN,
+      },
+    ]);
 
-    expect(() => getEffectiveRegressionTolerance(0.01, metadata)).toThrow(
-      /invalid knownRoundingGaps\.maxDelta/i,
+    expect(() => getBaselineToleranceOverrides(metadata)).toThrow(
+      /invalid tolerance exception value/i,
+    );
+  });
+
+  it("rejects tolerance exceptions without fields", () => {
+    const metadata = buildMetadata([
+      {
+        kind: "commission",
+        staffId: "007",
+        fields: [],
+        tolerance: 0.05,
+      },
+    ]);
+
+    expect(() => getBaselineToleranceOverrides(metadata)).toThrow(
+      /invalid tolerance exception fields/i,
     );
   });
 });

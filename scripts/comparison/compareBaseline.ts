@@ -10,6 +10,7 @@ import type {
   StaffDiff,
   FieldDifference,
   ComparisonOptions,
+  ComparisonKind,
 } from '../../src/regression.types.js';
 
 const DEFAULT_OPTIONS: ComparisonOptions = {
@@ -41,6 +42,27 @@ function buildFieldDifference(
     diff: diffDecimal.toNumber(),
     percentDiff: percentDiffDecimal.toNumber(),
   };
+}
+
+function getFieldTolerance(
+  kind: ComparisonKind,
+  staffId: string,
+  field: string,
+  options: ComparisonOptions,
+): number {
+  let tolerance = options.tolerance;
+
+  for (const override of options.toleranceOverrides ?? []) {
+    if (
+      override.kind === kind &&
+      override.staffId === staffId &&
+      override.fields.includes(field)
+    ) {
+      tolerance = Math.max(tolerance, override.tolerance);
+    }
+  }
+
+  return tolerance;
 }
 
 /**
@@ -85,7 +107,7 @@ export function compareStaffPayments(
       "Total",
       baselineStaff.total,
       currentStaff.total,
-      opts.tolerance,
+      getFieldTolerance("payments", staffId, "Total", opts),
     );
     if (totalDiff) {
       differences.push(totalDiff);
@@ -111,7 +133,7 @@ export function compareStaffPayments(
         type,
         baselineAmount,
         currentAmount,
-        opts.tolerance,
+        getFieldTolerance("payments", staffId, type, opts),
       );
 
       if (difference) {
@@ -158,6 +180,7 @@ export function compareCommissionData(
   options: Partial<ComparisonOptions> = {},
 ): ComparisonResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const comparisonKind = opts.kind ?? "commission";
 
   const baselineMap = new Map(baseline.map((s) => [s.staffId, s]));
   const currentMap = new Map(current.map((s) => [s.staffId, s]));
@@ -200,7 +223,7 @@ export function compareCommissionData(
         String(field),
         baselineValue,
         currentValue,
-        opts.tolerance,
+        getFieldTolerance(comparisonKind, staffId, String(field), opts),
       );
 
       if (difference) {
@@ -221,7 +244,12 @@ export function compareCommissionData(
         `${serviceName} Revenue`,
         baselineValue,
         currentValue,
-        opts.tolerance,
+        getFieldTolerance(
+          comparisonKind,
+          staffId,
+          `${serviceName} Revenue`,
+          opts,
+        ),
       );
 
       if (difference) {
@@ -243,7 +271,12 @@ export function compareCommissionData(
         `${serviceName} Commission`,
         baselineValue,
         currentValue,
-        opts.tolerance,
+        getFieldTolerance(
+          comparisonKind,
+          staffId,
+          `${serviceName} Commission`,
+          opts,
+        ),
       );
 
       if (difference) {

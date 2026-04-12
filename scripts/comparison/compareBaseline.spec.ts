@@ -77,6 +77,32 @@ describe("compareCommissionData", () => {
     expect(result.modified).toHaveLength(1);
     expect(result.identical).toHaveLength(0);
   });
+
+  it("allows explicit per-staff per-field commission tolerance overrides", () => {
+    const baseline = [buildCommissionRow()];
+    const current = [
+      buildCommissionRow({
+        generalServiceCommission: new Decimal("24603.60").plus("0.20").toNumber(),
+        totalPayable: new Decimal("25718.10").plus("0.20").toNumber(),
+      }),
+    ];
+
+    const result = compareCommissionData(baseline, current, {
+      tolerance: 0.01,
+      kind: "commission",
+      toleranceOverrides: [
+        {
+          kind: "commission",
+          staffId: "024",
+          fields: ["generalServiceCommission", "totalPayable"],
+          tolerance: 0.2,
+        },
+      ],
+    });
+
+    expect(result.modified).toHaveLength(0);
+    expect(result.identical).toHaveLength(1);
+  });
 });
 
 describe("compareStaffPayments", () => {
@@ -115,6 +141,36 @@ describe("compareStaffPayments", () => {
     ];
 
     const result = compareStaffPayments(baseline, current, { tolerance: 0.2 });
+
+    expect(result.modified).toHaveLength(1);
+    expect(result.identical).toHaveLength(0);
+  });
+
+  it("does not apply commission-only overrides to payment comparisons", () => {
+    const baseline = [buildPaymentRow()];
+    const current = [
+      buildPaymentRow({
+        payments: [
+          {
+            type: "Service Commission",
+            amount: new Decimal("24603.60").plus("0.20").toNumber(),
+          },
+        ],
+        total: new Decimal("25718.10").plus("0.20").toNumber(),
+      }),
+    ];
+
+    const result = compareStaffPayments(baseline, current, {
+      tolerance: 0.01,
+      toleranceOverrides: [
+        {
+          kind: "commission",
+          staffId: "024",
+          fields: ["generalServiceCommission", "totalPayable"],
+          tolerance: 0.2,
+        },
+      ],
+    });
 
     expect(result.modified).toHaveLength(1);
     expect(result.identical).toHaveLength(0);

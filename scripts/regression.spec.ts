@@ -22,7 +22,7 @@ import {
   prepareBaselineInputsInSandbox,
   runCommissionInSandbox,
 } from "./utils/regressionRunner.js";
-import { getEffectiveRegressionTolerance } from "./utils/regressionTolerance.js";
+import { getBaselineToleranceOverrides } from "./utils/regressionTolerance.js";
 
 dotenv.config();
 
@@ -119,10 +119,7 @@ describe("Regression: fixed input must produce identical outputs to baseline", (
   it("replays baseline source with current branch code and matches baseline outputs", async () => {
     expect(baseline).toBeDefined();
     expect(baseline.metadata.baselineName).toBe(baseline.name);
-    const regressionTolerance = getEffectiveRegressionTolerance(
-      requestedRegressionTolerance,
-      baseline.metadata,
-    );
+    const toleranceOverrides = getBaselineToleranceOverrides(baseline.metadata);
 
     const baselineSourceFile = join(
       baseline.dir,
@@ -205,21 +202,27 @@ describe("Regression: fixed input must produce identical outputs to baseline", (
       baselinePaymentsNonContractor,
       currentPaymentsNonContractor,
       {
-        tolerance: regressionTolerance,
+        tolerance: requestedRegressionTolerance,
+        kind: "payments",
+        toleranceOverrides,
       },
     );
     const commissionDiff = compareCommissionData(
       baselineCommissionNonContractor,
       currentCommissionNonContractor,
       {
-        tolerance: regressionTolerance,
+        tolerance: requestedRegressionTolerance,
+        kind: "commission",
+        toleranceOverrides,
       },
     );
     const contractorDiff = compareCommissionData(
       baselineContractor,
       currentContractor!,
       {
-        tolerance: regressionTolerance,
+        tolerance: requestedRegressionTolerance,
+        kind: "contractor",
+        toleranceOverrides,
       },
     );
 
