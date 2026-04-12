@@ -16,11 +16,21 @@ import {
 import path from "path";
 import zlib from "zlib";
 import { debugLogger, errorLogger, warnLogger } from "./logging_functions.js";
-import { TStaffID } from "./types.js";
+import type { TStaffHurdles, TStaffID } from "./types.js";
 import assert from "node:assert";
 import { DEFAULT_OLD_DIR, defaultStaffID } from "./constants.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
+
+export interface StaffHurdleLookupResult {
+  hurdle: Option<StaffHurdle>;
+  warningMessage?: string;
+}
+
+export type StaffHurdleGetter = (
+  staffID: TStaffID,
+  context: string,
+) => Option<StaffHurdle>;
 
 export function checkRate(rate: unknown): boolean {
   if (typeof rate === "number") {
@@ -36,20 +46,73 @@ export function checkRate(rate: unknown): boolean {
 
 export function stripToNumeric(n: unknown): number {
   const numericOnly = /[^0-9.-]+/g;
-  let x: number;
+  let x = 0;
   if (typeof n === "string") {
     // strip out everything except 0-9, "." and "-"
     x = parseFloat(n.replace(numericOnly, ""));
     if (isNaN(x)) {
       x = 0;
     }
-  }
-  if (typeof n === "number") {
+  } else if (typeof n === "number") {
     x = n;
-  } else {
-    x = 0;
   }
   return x;
+}
+
+/**
+ * Pure staff hurdle lookup policy.
+ * Applies missing-staff fallback rules without touching global state or logging.
+ */
+export function lookupStaffHurdle(
+  staffHurdles: TStaffHurdles,
+  missingStaffAreFatal: boolean,
+  staffID: TStaffID,
+  context: string,
+): StaffHurdleLookupResult {
+  const hurdle = staffHurdles.get(staffID);
+  if (hurdle) {
+    return { hurdle: Option.some(hurdle) };
+  }
+
+  const message = `Staff ID ${staffID} found in ${context} but is missing from staffHurdle.json`;
+  if (missingStaffAreFatal) {
+    throw new Error(message);
+  }
+
+  const defaultHurdle = staffHurdles.get(defaultStaffID);
+  if (defaultHurdle) {
+    return {
+      hurdle: Option.some(defaultHurdle),
+      warningMessage: `Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`,
+    };
+  }
+
+  const defaultMsg = `Default staff ID ${defaultStaffID} is missing from staffHurdle.json. Cannot process staff ${staffID}.`;
+  throw new Error(defaultMsg);
+}
+
+export function getStaffHurdleFromMap(
+  staffHurdles: TStaffHurdles,
+  missingStaffAreFatal: boolean,
+  staffID: TStaffID,
+  context: string,
+): Option<StaffHurdle> {
+  try {
+    const result = lookupStaffHurdle(
+      staffHurdles,
+      missingStaffAreFatal,
+      staffID,
+      context,
+    );
+    if (result.warningMessage) {
+      warnLogger.warn(result.warningMessage);
+    }
+    return result.hurdle;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errorLogger.error(`Fatal: ${message}`);
+    throw error;
+  }
 }
 
 /**
@@ -65,31 +128,19 @@ export function getStaffHurdle(
   staffID: TStaffID,
   context: string,
 ): Option<StaffHurdle> {
-  const hurdle = staffHurdles.get(staffID);
-  if (hurdle) return Option.some(hurdle);
-
-  const message = `Staff ID ${staffID} found in ${context} but is missing from staffHurdle.json`;
-  if (config.missingStaffAreFatal) {
-    errorLogger.error(`Fatal: ${message}`);
-    throw new Error(message);
-  }
-
-  warnLogger.warn(
-    `Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`,
+  return getStaffHurdleFromMap(
+    staffHurdles,
+    config.missingStaffAreFatal,
+    staffID,
+    context,
   );
-
-  const defaultHurdle = staffHurdles.get(defaultStaffID);
-  if (defaultHurdle) {
-    return Option.some(defaultHurdle);
-  }
-
-  const defaultMsg = `Default staff ID ${defaultStaffID} is missing from staffHurdle.json. Cannot process staff ${staffID}.`;
-  errorLogger.error(`Fatal: ${defaultMsg}`);
-  throw new Error(defaultMsg);
 }
 
-export function isPayViaTalenox(staffID: TStaffID): boolean {
-  const sh = getStaffHurdle(staffID, "payroll Talenox check");
+export function isPayViaTalenoxForLookup(
+  getStaffHurdleForContext: StaffHurdleGetter,
+  staffID: TStaffID,
+): boolean {
+  const sh = getStaffHurdleForContext(staffID, "payroll Talenox check");
   return sh.fold(
     (sh) => (sh.payViaTalenox ? true : false),
     () => {
@@ -100,15 +151,21 @@ export function isPayViaTalenox(staffID: TStaffID): boolean {
   );
 }
 
+export function isPayViaTalenox(staffID: TStaffID): boolean {
+  return isPayViaTalenoxForLookup(getStaffHurdle, staffID);
+}
+
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
   if (as.length !== bs.length) return false;
   for (const a of as) if (!bs.includes(a)) return false;
   return true;
 }
 
-export function isContractor(staffID: TStaffID): boolean {
-  const sh = getStaffHurdle(staffID, "contractor status check");
-
+export function isContractorForLookup(
+  getStaffHurdleForContext: StaffHurdleGetter,
+  staffID: TStaffID,
+): boolean {
+  const sh = getStaffHurdleForContext(staffID, "contractor status check");
   return sh.fold(
     (sh) => sh.contractor,
     () => {
@@ -117,6 +174,10 @@ export function isContractor(staffID: TStaffID): boolean {
       throw new Error(message);
     },
   );
+}
+
+export function isContractor(staffID: TStaffID): boolean {
+  return isContractorForLookup(getStaffHurdle, staffID);
 }
 
 export function assertLog4JsConfig(

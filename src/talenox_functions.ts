@@ -1,4 +1,3 @@
-/* global PAYROLL_MONTH, PAYROLL_YEAR, firstDay */
 import { ITalenoxPayment } from "./ITalenoxPayment.js";
 import {
   TStaffID,
@@ -34,6 +33,11 @@ import { TalenoxPayrollPaymentResult } from "./ITalenoxPayrollPaymentResult.js";
 import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.js";
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js";
 import { debugLogger } from "./logging_functions.js";
+import {
+  getGlobalPayrollContext,
+  getPayrollPayGroup,
+  type PayrollRunContext,
+} from "./payrollContext.js";
 
 const SERVICES_COMM_REMARK = "Services commission";
 const TIPS_REMARK = "Tips";
@@ -190,6 +194,7 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
 
 export async function createPayroll(
   staffMap: TTalenoxInfoStaffMap,
+  payrollContext: PayrollRunContext = getGlobalPayrollContext(),
 ): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
   const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT;
 
@@ -215,7 +220,7 @@ export async function createPayroll(
     }
     if (typeof staffInfo.resign_date !== "undefined") {
       const resignDate = new Date(Date.parse(staffInfo.resign_date));
-      if (resignDate < firstDay) {
+      if (resignDate < payrollContext.firstDay) {
         console.log(
           `${staffInfo.first_name} ${staffInfo.last_name} resigned prior to this payroll month`,
         );
@@ -228,11 +233,11 @@ export async function createPayroll(
   });
 
   const payment: TalenoxPayrollPayment = {
-    year: PAYROLL_YEAR.toString(),
-    month: PAYROLL_MONTH,
+    year: payrollContext.year.toString(),
+    month: payrollContext.month,
     period: TALENOX_WHOLE_MONTH,
     with_pay_items: true,
-    pay_group: `${PAYROLL_MONTH} ${PAYROLL_YEAR}`,
+    pay_group: getPayrollPayGroup(payrollContext),
   };
 
   const body = JSON.stringify({ employee_ids, payment } as ITalenoxPayroll);
@@ -271,6 +276,7 @@ export async function createPayroll(
 export async function uploadAdHocPayments(
   staffMap: TTalenoxInfoStaffMap,
   payments: ITalenoxPayment[],
+  payrollContext: PayrollRunContext = getGlobalPayrollContext(),
 ): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
   const url = TALENOX_ADHOC_PAYMENT_ENDPOINT;
 
@@ -283,8 +289,8 @@ export async function uploadAdHocPayments(
 
   const payment: ITalenoxAdHocPayment = {
     // id: 790479,
-    year: PAYROLL_YEAR.toString(),
-    month: PAYROLL_MONTH,
+    year: payrollContext.year.toString(),
+    month: payrollContext.month,
     period: TALENOX_WHOLE_MONTH,
   };
 
@@ -293,7 +299,7 @@ export async function uploadAdHocPayments(
     const resignDateString = staffMap.get(mbPayment.staffID)?.resign_date;
     if (resignDateString) {
       const resignDate = new Date(Date.parse(resignDateString));
-      if (resignDate < firstDay) {
+      if (resignDate < payrollContext.firstDay) {
         console.warn(
           `${mbPayment.staffName} has commission due but resigned prior to this payroll month`,
         );

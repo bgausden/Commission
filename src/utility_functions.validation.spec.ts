@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { getStaffHurdle, isContractor } from "./utility_functions.js";
+import {
+  getStaffHurdle,
+  getStaffHurdleFromMap,
+  isContractor,
+  isContractorForLookup,
+  isPayViaTalenoxForLookup,
+  lookupStaffHurdle,
+} from "./utility_functions.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
 
@@ -54,9 +61,92 @@ const mockStaffHurdles: Record<string, StaffHurdle> = {
   },
 };
 
+function buildStaffHurdlesMap(
+  entries: Record<string, StaffHurdle> = mockStaffHurdles,
+): typeof global.staffHurdles {
+  return new Map(Object.entries(entries)) as typeof global.staffHurdles;
+}
+
 global.staffHurdles = new Map(
   Object.entries(mockStaffHurdles),
 ) as typeof global.staffHurdles;
+
+describe("lookupStaffHurdle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns configured staff from the provided map without logging", async () => {
+    const { warnLogger, errorLogger } = await import("./logging_functions.js");
+    const staffHurdles = buildStaffHurdlesMap();
+
+    const result = lookupStaffHurdle(
+      staffHurdles,
+      true,
+      "012",
+      "explicit lookup test",
+    );
+
+    expect(Option.isSome(result.hurdle)).toBe(true);
+    expect(result.warningMessage).toBeUndefined();
+    expect(warnLogger.warn).not.toHaveBeenCalled();
+    expect(errorLogger.error).not.toHaveBeenCalled();
+  });
+
+  it("returns the default hurdle and warning message when fallback is allowed", () => {
+    const staffHurdles = buildStaffHurdlesMap();
+
+    const result = lookupStaffHurdle(
+      staffHurdles,
+      false,
+      "999",
+      "explicit fallback test",
+    );
+
+    expect(result.warningMessage).toBe(
+      "Staff ID 999 not in staffHurdle.json (explicit fallback test). Using default ID 000.",
+    );
+    expect(Option.isSome(result.hurdle)).toBe(true);
+    if (Option.isSome(result.hurdle)) {
+      expect(result.hurdle.value).toEqual(mockStaffHurdles["000"]);
+    }
+  });
+
+  it("throws when fallback is allowed but default staff is missing", () => {
+    const { ["000"]: _defaultStaff, ...withoutDefault } = mockStaffHurdles;
+    const staffHurdles = buildStaffHurdlesMap(withoutDefault);
+
+    expect(() =>
+      lookupStaffHurdle(staffHurdles, false, "999", "missing default test"),
+    ).toThrow(
+      "Default staff ID 000 is missing from staffHurdle.json. Cannot process staff 999.",
+    );
+  });
+});
+
+describe("getStaffHurdleFromMap", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("logs warning messages for explicit fallback lookups", async () => {
+    const { warnLogger, errorLogger } = await import("./logging_functions.js");
+    const staffHurdles = buildStaffHurdlesMap();
+
+    const result = getStaffHurdleFromMap(
+      staffHurdles,
+      false,
+      "999",
+      "explicit map lookup",
+    );
+
+    expect(Option.isSome(result)).toBe(true);
+    expect(warnLogger.warn).toHaveBeenCalledWith(
+      "Staff ID 999 not in staffHurdle.json (explicit map lookup). Using default ID 000.",
+    );
+    expect(errorLogger.error).not.toHaveBeenCalled();
+  });
+});
 
 describe("getStaffHurdle", () => {
   beforeEach(() => {
@@ -202,5 +292,27 @@ describe("isContractor", () => {
     expect(() => isContractor("999")).toThrow(
       "Staff ID 999 found in contractor status check but is missing from staffHurdle.json",
     );
+  });
+});
+
+describe("lookup-based predicates", () => {
+  it("supports contractor checks without global.staffHurdles", () => {
+    expect(
+      isContractorForLookup(
+        (staffID, context) =>
+          getStaffHurdleFromMap(buildStaffHurdlesMap(), true, staffID, context),
+        "012",
+      ),
+    ).toBe(false);
+  });
+
+  it("supports pay-via-Talenox checks without global.staffHurdles", () => {
+    expect(
+      isPayViaTalenoxForLookup(
+        (staffID, context) =>
+          getStaffHurdleFromMap(buildStaffHurdlesMap(), true, staffID, context),
+        "019",
+      ),
+    ).toBe(true);
   });
 });
