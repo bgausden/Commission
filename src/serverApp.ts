@@ -17,6 +17,7 @@ import {
 } from "./constants.js";
 import { staffHurdleSchema } from "./staffHurdleSchema.js";
 import { DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
+import { loadStaffHurdlesFromFile } from "./staffHurdles.js";
 import { TStaffHurdles } from "./types.js";
 import { IConfig } from "node-config-ts";
 import { debugLogger, webEchoLogger } from "./logging_functions.js";
@@ -332,8 +333,11 @@ export function createApp() {
   });
 
   app.get("/staff-hurdle-config", (_req: Request, res: Response) => {
-    const staffHurdles = loadStaffHurdles();
-    res.json(Object.fromEntries(staffHurdles));
+    const result = loadStaffHurdlesFromFile(STAFF_HURDLE_FILE_PATH);
+    if (!result.ok) {
+      return res.status(500).json({ message: result.error });
+    }
+    res.json(Object.fromEntries(result.value));
   });
 
   app.post("/update-staff-hurdle", (req: Request, res: Response) => {
@@ -732,12 +736,6 @@ export function createApp() {
 
   function saveConfig(config: IConfig): void {
     fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(config, null, 4));
-  }
-
-  function loadStaffHurdles(): TStaffHurdles {
-    const data = fs.readFileSync(STAFF_HURDLE_FILE_PATH, "utf8");
-    const parsed = staffHurdleSchema.parse(JSON.parse(data));
-    return new Map(Object.entries(parsed)) as TStaffHurdles;
   }
 
   function saveStaffHurdles(staffHurdles: TStaffHurdles): void {

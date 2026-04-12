@@ -38,7 +38,7 @@ import {
 import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadStaffHurdles } from "./staffHurdles.js";
+import { loadStaffHurdlesFromFile } from "./staffHurdles.js";
 import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import { resolveFromProjectRoot } from "./projectRoot.js";
@@ -173,9 +173,13 @@ async function main() {
   ]);
 
   emitProgressAndInfo("Loading staff hurdle configuration");
-  const staffHurdles = loadStaffHurdles(
+  const staffHurdlesResult = loadStaffHurdlesFromFile(
     process.env.STAFF_HURDLE_FILE ?? DEFAULT_STAFF_HURDLES_FILE,
   );
+  if (!staffHurdlesResult.ok) {
+    throw new Error(staffHurdlesResult.error);
+  }
+  const staffHurdles = staffHurdlesResult.value;
   setGlobal("staffHurdles", staffHurdles);
   const getPayrollStaffHurdle: StaffHurdleGetter = (staffID, context) =>
     getStaffHurdleFromMap(
