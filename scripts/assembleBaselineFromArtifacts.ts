@@ -21,7 +21,7 @@ import {
   readJSON,
   writeJSON,
   fileExists,
-} from "./utils/fileUtils.js";
+} from "../src/fileUtils.js";
 import { getCommitSHA, getShortCommitSHA } from "./utils/gitUtils.js";
 
 const __filename = fileURLToPath(import.meta.url);
