@@ -20,7 +20,10 @@
         "server": "node dist/server.js",
         "server:tsx": "npx tsx src/server.ts",
         "server:debug:tsx": "npx tsx --inspect-brk src/server.ts",
+        "test:tsx": "npx tsx --test src/**/*.spec.ts",
+        "test:debug:tsx": "npx tsx --inspect-brk --test src/**/*.spec.ts",
         "test:debug": "npx vitest --inspect-brk",
+        "debug-test:tsx": "tsx --inspect-brk --test src/**/*.spec.ts",
         "lint": "eslint src scripts"
     },
     "repository": {
@@ -34,12 +37,11 @@
     },
     "homepage": "https://github.com/bgausden/Commission#readme",
     "dependencies": {
-        "decimal.js": "^10.6.0",
         "dotenv": "^16.4.7",
+        "googleapis": "^144.0.0",
         "express": "^4.21.2",
         "express-fileupload": "^1.5.1",
         "fixed-width-string": "^2.0.0",
-        "googleapis": "^144.0.0",
         "log4js": "^6.3.0",
         "node-config-ts": "^3.3.1",
         "xlsx": "file:vendor/xlsx-0.20.3.tgz",
@@ -48,16 +50,17 @@
     "devDependencies": {
         "@types/express": "^4.17.21",
         "@types/express-fileupload": "^1.5.1",
-        "@types/node": "^25.5.0",
+        "@types/node": "^20.17.22",
         "@types/xlsx": "^0.0.35",
-        "@typescript-eslint/eslint-plugin": "^8.58.1",
-        "@typescript-eslint/parser": "^8.58.1",
+        "@typescript-eslint/eslint-plugin": "^8.18.1",
+        "@typescript-eslint/parser": "^8.18.1",
         "eslint": "^9.17.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.2.1",
+        "expect": "^29.7.0",
         "memfs": "^4.13.0",
         "tsx": "^4.16.0",
-        "typescript": "^6.0.2",
+        "typescript": "^5.7.2",
         "vitest": "^4.0.18"
     }
 }
