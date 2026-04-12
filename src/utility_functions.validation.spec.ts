@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getStaffHurdle, isContractor } from "./utility_functions.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
@@ -81,9 +81,8 @@ describe("getStaffHurdle", () => {
     });
 
     it("should not log any warnings or errors", async () => {
-      const { warnLogger, errorLogger } = await import(
-        "./logging_functions.js"
-      );
+      const { warnLogger, errorLogger } =
+        await import("./logging_functions.js");
 
       getStaffHurdle("019", "test context");
 

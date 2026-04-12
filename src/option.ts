@@ -15,6 +15,7 @@ export interface None extends Option<never> {
   readonly _tag: "None";
 }
 
+// eslint-disable-next-line no-redeclare -- Option is intentionally both a type and a value namespace.
 export namespace Option {
   const noneInstance: None = {
     _tag: "None",

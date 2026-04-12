@@ -39,7 +39,11 @@ const SERVICES_COMM_REMARK = "Services commission";
 const TIPS_REMARK = "Tips";
 const PRODUCT_COMM_REMARK = "Product commission";
 
-function talenoxDebug(scope: string, message: string, ...args: unknown[]): void {
+function talenoxDebug(
+  scope: string,
+  message: string,
+  ...args: unknown[]
+): void {
   const prefix = scope ? `talenox_functions:${scope}` : "talenox_functions";
   debugLogger.debug(`[${prefix}] ${message}`, ...args);
 }
@@ -58,7 +62,7 @@ export function createAdHocPayments(
 
   const payments: ITalenoxPayment[] = [];
   let paymentProto: ITalenoxPayment;
-  _commMap.forEach((commMapEntry, staffID) => {
+  _commMap.forEach((_commMapEntry, staffID) => {
     if (!isContractor(staffID)) {
       const staffMapEntry = staffMap.get(staffID);
       let payment: ITalenoxPayment;
@@ -163,7 +167,8 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
   const result = (await response.json()) as ITalenoxStaffInfo[];
   const staffMap = new Map<TStaffID, Partial<ITalenoxStaffInfo>>();
   result.forEach((staffInfo) => {
-    if (staffInfo.employee_id === "") { // may not have been set in Talenox, but we require it to map to our staffHurdle config, so we throw an error if it's missing
+    if (staffInfo.employee_id === "") {
+      // may not have been set in Talenox, but we require it to map to our staffHurdle config, so we throw an error if it's missing
       talenoxDebug(
         "getTalenoxEmployees",
         "error: %s %O",
@@ -172,8 +177,8 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
       );
       throw new Error("Empty employee_id returned from Talenox API");
     }
-    const staffID=staffInfo.employee_id;
-    isValidStaffID(staffID)
+    const staffID = staffInfo.employee_id;
+    isValidStaffID(staffID);
     staffMap.set(staffID, {
       first_name: staffInfo.first_name,
       last_name: staffInfo.last_name,
@@ -197,8 +202,13 @@ export async function createPayroll(
 
   const employee_ids: TStaffID[] = [];
   staffMap.forEach((staffInfo, staffID) => {
-    if (staffID as string === "") {
-      talenoxDebug("createPayroll", "error: %s %s", "staffID is empty", staffInfo);
+    if ((staffID as string) === "") {
+      talenoxDebug(
+        "createPayroll",
+        "error: %s %s",
+        "staffID is empty",
+        staffInfo,
+      );
       throw new Error(
         `staffID is empty for ${staffInfo.first_name} ${staffInfo.last_name}`,
       );
@@ -237,7 +247,9 @@ export async function createPayroll(
   const response = await fetch(url, init);
   if (!response.ok) {
     // Something went horribly wrong. Unlikely we can do anything useful with the failure
-    const text = await response.text().catch(() => "No text from Talenox API call.");
+    const text = await response
+      .text()
+      .catch(() => "No text from Talenox API call.");
     talenoxDebug("createPayroll", "talenox response: %s", text);
     return [new Error(`${response.status}: ${response.statusText}`), undefined];
   }

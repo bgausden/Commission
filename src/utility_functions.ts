@@ -91,7 +91,7 @@ export function getStaffHurdle(
 export function isPayViaTalenox(staffID: TStaffID): boolean {
   const sh = getStaffHurdle(staffID, "payroll Talenox check");
   return sh.fold(
-    (sh) => sh.payViaTalenox ? true : false,
+    (sh) => (sh.payViaTalenox ? true : false),
     () => {
       const message = `staffHurdle for staffID ${staffID} is missing. Cannot determine payViaTalenox.`;
       errorLogger.error(message);
@@ -260,6 +260,10 @@ export function loadJsonFromFile<T>(filepath: string): T {
 
 export function isValidStaffID(staffID: unknown): asserts staffID is TStaffID {
   if (typeof staffID !== "string" || !/^[0-9]{3}$/.test(staffID)) {
-    throw new assert.AssertionError({ message: `Invalid staffID: ${staffID}`, expected: "string of 3 digits", actual: staffID });
+    throw new assert.AssertionError({
+      message: `Invalid staffID: ${staffID}`,
+      expected: "string of 3 digits",
+      actual: staffID,
+    });
   }
 }

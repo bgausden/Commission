@@ -217,7 +217,7 @@ function getStaffIDAndName(
         /* Everything OK, split the name in staffInfo[0] into Surname and First Name */
         firstName: staffInfo[staffNameIndex].split(",")[firstNameIndex].trim(),
         lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
-          staffID: staffInfo[staffIDIndex].trim() as TStaffID,
+        staffID: staffInfo[staffIDIndex].trim() as TStaffID,
       };
     } else {
       return null;
@@ -262,7 +262,10 @@ export function getServiceRevenues(
   let customRate = NaN;
   const sh = getStaffHurdle(staffID, "Mindbody payroll report");
   // const customPayRates = sh.customPayRates || [];
-  const customPayRates = sh.fold((sh) => sh.customPayRates || [], () => [])
+  const customPayRates = sh.fold(
+    (sh) => sh.customPayRates || [],
+    () => [],
+  );
   let servName: TServiceName = GENERAL_SERV_REVENUE;
   for (let i = numSearchRows; i >= 1; i--) {
     /*   first iteration should place us on a line beginning with "Hair Pay Rate: Ladies Cut and Blow Dry (55%)" or similar
@@ -374,9 +377,15 @@ export function calculateTieredCommission(
 
   // Calculate commission for each tier
   const baseCommission = baseRevenueD.times(baseRate).toDecimalPlaces(2);
-  const hurdle1Commission = hurdle1RevenueD.times(hurdle1Rate).toDecimalPlaces(2);
-  const hurdle2Commission = hurdle2RevenueD.times(hurdle2Rate).toDecimalPlaces(2);
-  const hurdle3Commission = hurdle3RevenueD.times(hurdle3Rate).toDecimalPlaces(2);
+  const hurdle1Commission = hurdle1RevenueD
+    .times(hurdle1Rate)
+    .toDecimalPlaces(2);
+  const hurdle2Commission = hurdle2RevenueD
+    .times(hurdle2Rate)
+    .toDecimalPlaces(2);
+  const hurdle3Commission = hurdle3RevenueD
+    .times(hurdle3Rate)
+    .toDecimalPlaces(2);
 
   const totalCommission = baseCommission
     .plus(hurdle1Commission)
@@ -643,15 +652,6 @@ function getRequiredCommComponents(
   return comm;
 }
 
-function createEmptyPoolTotals(): PoolTotals {
-  return {
-    totalServiceRevenue: 0,
-    tips: 0,
-    productCommission: 0,
-    generalServiceCommission: 0,
-  };
-}
-
 function getConfiguredPoolMembers(
   staffID: TStaffID,
   hurdle: StaffHurdle,
@@ -719,16 +719,23 @@ function aggregatePool(
   for (const poolMember of poolMembers) {
     const commMapElement = getRequiredCommComponents(commMap, poolMember);
 
-    totalServiceRevenue = totalServiceRevenue.plus(commMapElement.totalServiceRevenue);
+    totalServiceRevenue = totalServiceRevenue.plus(
+      commMapElement.totalServiceRevenue,
+    );
     tips = tips.plus(commMapElement.tips);
-    productCommission = productCommission.plus(commMapElement.productCommission);
-    generalServiceCommission = generalServiceCommission.plus(commMapElement.generalServiceCommission);
+    productCommission = productCommission.plus(
+      commMapElement.productCommission,
+    );
+    generalServiceCommission = generalServiceCommission.plus(
+      commMapElement.generalServiceCommission,
+    );
 
     for (const [serviceName, amount] of Object.entries(
       commMapElement.customRateCommissions,
     )) {
-      customRateCommissions[serviceName] =
-        (customRateCommissions[serviceName] ?? new Decimal(0)).plus(amount);
+      customRateCommissions[serviceName] = (
+        customRateCommissions[serviceName] ?? new Decimal(0)
+      ).plus(amount);
     }
   }
 
@@ -742,7 +749,9 @@ function aggregatePool(
       totalServiceRevenue: totalServiceRevenue.toDecimalPlaces(2).toNumber(),
       tips: tips.toDecimalPlaces(2).toNumber(),
       productCommission: productCommission.toDecimalPlaces(2).toNumber(),
-      generalServiceCommission: generalServiceCommission.toDecimalPlaces(2).toNumber(),
+      generalServiceCommission: generalServiceCommission
+        .toDecimalPlaces(2)
+        .toNumber(),
     },
     customRateCommissions: numericCustomRateCommissions,
   };
@@ -1083,7 +1092,9 @@ export function calculateStaffCommission(
     });
   }
 
-  commComponents.totalServiceRevenue = totalServiceRevenueD.toDecimalPlaces(2).toNumber();
+  commComponents.totalServiceRevenue = totalServiceRevenueD
+    .toDecimalPlaces(2)
+    .toNumber();
 
   // Calculate general service commission (uses hurdle logic)
   const generalServiceCommission = calcGeneralServiceCommission(
@@ -1102,7 +1113,8 @@ export function calculateStaffCommission(
           .times(Number(customRateEntry.customRate))
           .toDecimalPlaces(2);
         commComponents.customRateCommissions[serviceName] = commD.toNumber();
-        totalCustomServiceCommissionD = totalCustomServiceCommissionD.plus(commD);
+        totalCustomServiceCommissionD =
+          totalCustomServiceCommissionD.plus(commD);
       }
     });
   }
@@ -1511,31 +1523,32 @@ async function main() {
 }
 
 //initDebug()
-if (process.argv[1] === fileURLToPath(import.meta.url)) main()
-  .then(async () => {
-    debugLogger.debug("Done!");
-    await shutdownLogging();
-  })
-  .catch(async (error) => {
-    // Important: propagate failure to the process exit code.
-    // Otherwise the web runner (and shell scripts) will treat failures as success.
-    process.exitCode = 1;
+if (process.argv[1] === fileURLToPath(import.meta.url))
+  main()
+    .then(async () => {
+      debugLogger.debug("Done!");
+      await shutdownLogging();
+    })
+    .catch(async (error) => {
+      // Important: propagate failure to the process exit code.
+      // Otherwise the web runner (and shell scripts) will treat failures as success.
+      process.exitCode = 1;
 
-    if (error instanceof Error) {
-      errorLogger.error(`${error.message}`);
-      // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
-      console.error(error.message);
-    } else if (typeof error === "string") {
-      errorLogger.error(`${error.toString()}`);
-      console.error(error.toString());
-    } else {
-      errorLogger.error(
-        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
-      );
-      // eslint-disable-next-line no-console
-      console.error(
-        `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
-      );
-    }
-    await shutdownLogging();
-  });
+      if (error instanceof Error) {
+        errorLogger.error(`${error.message}`);
+        // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
+        console.error(error.message);
+      } else if (typeof error === "string") {
+        errorLogger.error(`${error.toString()}`);
+        console.error(error.toString());
+      } else {
+        errorLogger.error(
+          `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
+        );
+
+        console.error(
+          `Cannot log caught error. Unknown error type: ${typeof error}. Error: ${error.toString()}`,
+        );
+      }
+      await shutdownLogging();
+    });

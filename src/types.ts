@@ -22,8 +22,14 @@ export type TCommSimpleComponentsKeys =
   | TCommSimpleComponentTips
   | TCommSimpleComponentProductCommission
   | TCommSimpleComponentGeneralServiceCommission;
-export type TCommSimpleComponentsValues = TTips | TProductCommission | TServiceCommission;
-export type TCommSimpleComponents = Record<TCommSimpleComponentsKeys, TCommSimpleComponentsValues>;
+export type TCommSimpleComponentsValues =
+  | TTips
+  | TProductCommission
+  | TServiceCommission;
+export type TCommSimpleComponents = Record<
+  TCommSimpleComponentsKeys,
+  TCommSimpleComponentsValues
+>;
 export type TCustomRateEntry = {
   serviceRevenue: number;
   customRate: number | null;
@@ -32,17 +38,23 @@ export type TCustomRateEntry = {
 export const COMM_COMPONENT_TOTAL_SERVICE_REVENUE = "totalServiceRevenue";
 export const COMM_COMPONENT_TIPS = "tips";
 export const COMM_COMPONENT_PRODUCT_COMMISSION = "productCommission";
-export const COMM_COMPONENT_GENERAL_SERVICE_COMMISSION = "generalServiceCommission";
+export const COMM_COMPONENT_GENERAL_SERVICE_COMMISSION =
+  "generalServiceCommission";
 export const COMM_COMPONENT_CUSTOM_RATE_COMMISSION = "customRateCommission";
 export const COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS = "customRateCommissions";
 export const COMM_COMPONENT_TOTAL_SERVICE_COMMISSION = "totalServiceCommission";
 
-export type TCommComponentTotalServiceRevenue = typeof COMM_COMPONENT_TOTAL_SERVICE_REVENUE;
+export type TCommComponentTotalServiceRevenue =
+  typeof COMM_COMPONENT_TOTAL_SERVICE_REVENUE;
 export type TCommComponentTips = typeof COMM_COMPONENT_TIPS;
-export type TCommComponentProductCommission = typeof COMM_COMPONENT_PRODUCT_COMMISSION;
-export type TCommComponentsGeneralServiceCommission = typeof COMM_COMPONENT_GENERAL_SERVICE_COMMISSION;
-export type TCommComponentCustomRateCommission = typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION;
-export type TCommComponentTotalServiceCommission = typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION;
+export type TCommComponentProductCommission =
+  typeof COMM_COMPONENT_PRODUCT_COMMISSION;
+export type TCommComponentsGeneralServiceCommission =
+  typeof COMM_COMPONENT_GENERAL_SERVICE_COMMISSION;
+export type TCommComponentCustomRateCommission =
+  typeof COMM_COMPONENT_CUSTOM_RATE_COMMISSION;
+export type TCommComponentTotalServiceCommission =
+  typeof COMM_COMPONENT_TOTAL_SERVICE_COMMISSION;
 export type TCommComponentCustomRateCommissions = {
   [key: string]: TServiceCommission;
 };
@@ -59,8 +71,8 @@ export type TCommComponents = {
 };
 export type TCommMap = Map<TStaffID, TCommComponents>;
 
-type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-type ThreeDigitString = `${Digit}${Digit}${Digit}`
+type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+type ThreeDigitString = `${Digit}${Digit}${Digit}`;
 export type TStaffID = ThreeDigitString;
 
 // TODO: make this a singleton

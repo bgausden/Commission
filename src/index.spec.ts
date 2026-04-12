@@ -2,16 +2,13 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Decimal } from "decimal.js";
 import type {
   HurdleConfig,
-  HurdleBreakdown,
   StaffPayrollData,
   TCommComponents,
   TCommMap,
   TTalenoxInfoStaffMap,
-  TServRevenueMap,
   TStaffHurdles,
   TStaffID,
 } from "./types.js";
-import { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
 import { createAdHocPayments } from "./talenox_functions.js";
 
@@ -91,7 +88,9 @@ function buildPoolConfig(poolMembers: string[]): TStaffHurdles {
       baseRate: 0,
       contractor: false,
       payViaTalenox: true,
-      poolsWith: poolMembers.filter((member) => member !== staffID) as TStaffID[],
+      poolsWith: poolMembers.filter(
+        (member) => member !== staffID,
+      ) as TStaffID[],
     });
   }
   return config;

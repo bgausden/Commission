@@ -68,7 +68,7 @@ export interface StaffCommissionData {
 /**
  * Difference category for staff comparison
  */
-export type DiffCategory = 'IDENTICAL' | 'MODIFIED' | 'ADDED' | 'REMOVED';
+export type DiffCategory = "IDENTICAL" | "MODIFIED" | "ADDED" | "REMOVED";
 
 /**
  * Individual field difference within a staff comparison

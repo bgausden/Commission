@@ -7,14 +7,14 @@ export function loadStaffHurdles(
   path = DEFAULT_STAFF_HURDLES_FILE,
 ): TStaffHurdles {
   const rawData = loadJsonFromFile<Record<string, StaffHurdle>>(path);
-  
+
   // Strip whitespace from staff ID keys on ingest
   const staffHurdles = new Map<TStaffID, StaffHurdle>();
   for (const [key, value] of Object.entries(rawData)) {
     const trimmedKey = key.trim() as TStaffID;
     staffHurdles.set(trimmedKey, value);
   }
-  
+
   global.staffHurdles = staffHurdles;
   return staffHurdles;
 }

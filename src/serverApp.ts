@@ -347,9 +347,7 @@ export function createApp() {
     }
 
     saveStaffHurdles(new Map(Object.entries(result.data)) as TStaffHurdles);
-    res
-      .status(200)
-      .json({ message: "Staff hurdles updated successfully" });
+    res.status(200).json({ message: "Staff hurdles updated successfully" });
   });
 
   app.get("/run-commission/status/:jobId", (req: Request, res: Response) => {
@@ -743,7 +741,10 @@ export function createApp() {
   }
 
   function saveStaffHurdles(staffHurdles: TStaffHurdles): void {
-    fs.writeFileSync(STAFF_HURDLE_FILE_PATH, JSON.stringify(Object.fromEntries(staffHurdles), null, 4));
+    fs.writeFileSync(
+      STAFF_HURDLE_FILE_PATH,
+      JSON.stringify(Object.fromEntries(staffHurdles), null, 4),
+    );
   }
 
   return app;
