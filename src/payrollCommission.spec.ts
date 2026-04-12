@@ -382,4 +382,177 @@ describe("payrollCommission", () => {
       expect(result.totalCommission).toBe(8300);
     });
   });
+
+  describe("calculateStaffCommission — multi-service cases", () => {
+    const kateHurdle: StaffHurdle = {
+      staffName: "Kate",
+      baseRate: 0,
+      hurdle1Level: 30000,
+      hurdle1Rate: 0.11,
+      contractor: false,
+      payViaTalenox: true,
+    };
+    const defaultHurdle: StaffHurdle = {
+      staffName: "Default",
+      baseRate: 0,
+      hurdle1Level: 20000,
+      hurdle1Rate: 0.1,
+      contractor: false,
+      payViaTalenox: true,
+    };
+
+    it("calculates general service commission only", () => {
+      const payrollData: StaffPayrollData = {
+        staffID: "012",
+        staffName: "Kate Smith",
+        tips: 100,
+        productCommission: 50,
+        servicesRevenues: new Map([
+          [GENERAL_SERV_REVENUE, { serviceRevenue: 35000, customRate: null }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(kateHurdle),
+      );
+      expect(result.tips).toBe(100);
+      expect(result.productCommission).toBe(50);
+      expect(result.totalServiceRevenue).toBe(35000);
+      expect(result.generalServiceCommission).toBe(550); // (35000-30000)*0.11
+      expect(result.customRateCommission).toBe(0);
+      expect(result.totalServiceCommission).toBe(550);
+    });
+
+    it("calculates custom rate commission only (no general services revenue)", () => {
+      const payrollData: StaffPayrollData = {
+        staffID: "012",
+        staffName: "Kate Smith",
+        tips: 0,
+        productCommission: 0,
+        servicesRevenues: new Map([
+          ["Extensions", { serviceRevenue: 10000, customRate: 0.15 }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(kateHurdle),
+      );
+      expect(result.generalServiceCommission).toBe(0);
+      expect(result.customRateCommission).toBe(1500);
+      expect(result.customRateCommissions["Extensions"]).toBe(1500);
+      expect(result.totalServiceCommission).toBe(1500);
+    });
+
+    it("combines general and custom rate commissions", () => {
+      const payrollData: StaffPayrollData = {
+        staffID: "019",
+        staffName: "Rex Wong",
+        tips: 200,
+        productCommission: 75,
+        servicesRevenues: new Map([
+          [GENERAL_SERV_REVENUE, { serviceRevenue: 40000, customRate: null }],
+          ["Extensions", { serviceRevenue: 8000, customRate: 0.15 }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(defaultHurdle),
+      );
+      expect(result.tips).toBe(200);
+      expect(result.productCommission).toBe(75);
+      expect(result.totalServiceRevenue).toBe(48000);
+      expect(result.generalServiceCommission).toBe(2000); // (40000-20000)*0.1
+      expect(result.customRateCommission).toBe(1200); // 8000*0.15
+      expect(result.totalServiceCommission).toBe(3200);
+    });
+
+    it("calculates commission across multiple custom rate service types", () => {
+      const payrollData: StaffPayrollData = {
+        staffID: "012",
+        staffName: "Kate Smith",
+        tips: 0,
+        productCommission: 0,
+        servicesRevenues: new Map([
+          ["Extensions", { serviceRevenue: 10000, customRate: 0.15 }],
+          ["Color Treatment", { serviceRevenue: 5000, customRate: 0.12 }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(kateHurdle),
+      );
+      expect(result.customRateCommissions["Extensions"]).toBe(1500);
+      expect(result.customRateCommissions["Color Treatment"]).toBe(600);
+      expect(result.customRateCommission).toBe(2100);
+      expect(result.totalServiceCommission).toBe(2100);
+    });
+
+    it("returns zero commissions when all service revenue is zero", () => {
+      const payrollData: StaffPayrollData = {
+        staffID: "012",
+        staffName: "Kate Smith",
+        tips: 0,
+        productCommission: 0,
+        servicesRevenues: new Map([
+          [GENERAL_SERV_REVENUE, { serviceRevenue: 0, customRate: null }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(kateHurdle),
+      );
+      expect(result.totalServiceRevenue).toBe(0);
+      expect(result.generalServiceCommission).toBe(0);
+      expect(result.customRateCommission).toBe(0);
+      expect(result.totalServiceCommission).toBe(0);
+    });
+
+    it("preserves tips and product commission independently of service commissions", () => {
+      const payrollData: StaffPayrollData = {
+        staffID: "019",
+        staffName: "Rex Wong",
+        tips: 250,
+        productCommission: 125,
+        servicesRevenues: new Map([
+          [GENERAL_SERV_REVENUE, { serviceRevenue: 35000, customRate: null }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(defaultHurdle),
+      );
+      expect(result.tips).toBe(250);
+      expect(result.productCommission).toBe(125);
+    });
+
+    it("sums general and custom rate commission with Decimal precision", () => {
+      // generalRevenue=30001 → (30001-30000)*0.11 = 0.11
+      // Extensions=2@0.1 → 0.20
+      // total = 0.31 (not 0.30999... from floating-point)
+      const payrollData: StaffPayrollData = {
+        staffID: "012",
+        staffName: "Kate Smith",
+        tips: 0,
+        productCommission: 0,
+        servicesRevenues: new Map([
+          [GENERAL_SERV_REVENUE, { serviceRevenue: 30001, customRate: null }],
+          ["Extensions", { serviceRevenue: 2, customRate: 0.1 }],
+        ]),
+      };
+      const result = calculateStaffCommission(
+        payrollData,
+        new Map(),
+        createGetter(kateHurdle),
+      );
+      expect(result.generalServiceCommission).toBe(0.11);
+      expect(result.customRateCommission).toBe(0.2);
+      expect(result.totalServiceCommission).toBe(0.31);
+    });
+  });
 });
