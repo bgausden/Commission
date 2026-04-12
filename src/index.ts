@@ -217,8 +217,7 @@ function getStaffIDAndName(
         /* Everything OK, split the name in staffInfo[0] into Surname and First Name */
         firstName: staffInfo[staffNameIndex].split(",")[firstNameIndex].trim(),
         lastName: staffInfo[staffNameIndex].split(",")[lastNameIndex].trim(),
-        //staffID: staffInfo[staffIDIndex].trim(),
-        staffID: staffInfo[staffIDIndex],
+          staffID: staffInfo[staffIDIndex].trim() as TStaffID,
       };
     } else {
       return null;

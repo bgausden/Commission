@@ -8,9 +8,11 @@ import type {
   TTalenoxInfoStaffMap,
   TServRevenueMap,
   TStaffHurdles,
+  TStaffID,
 } from "./types.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
+import { createAdHocPayments } from "./talenox_functions.js";
 
 // Mock dependencies
 vi.mock("./logging_functions.js", () => ({
@@ -54,6 +56,8 @@ vi.mock("./utility_functions.js", async (importOriginal) => {
       }
       return Option.some(defaultStaffHurdle);
     }),
+    isContractor: vi.fn(() => false),
+    isPayViaTalenox: vi.fn(() => true),
   };
 });
 
@@ -79,15 +83,15 @@ function cloneCommMap(entries: [string, TCommComponents][]): TCommMap {
 }
 
 function buildPoolConfig(poolMembers: string[]): TStaffHurdles {
-  const config: TStaffHurdles = {};
+  const config: TStaffHurdles = new Map();
   for (const staffID of poolMembers) {
-    config[staffID] = {
+    config.set(staffID as TStaffID, {
       staffName: `Staff ${staffID}`,
       baseRate: 0,
       contractor: false,
       payViaTalenox: true,
-      poolsWith: poolMembers.filter((member) => member !== staffID),
-    };
+      poolsWith: poolMembers.filter((member) => member !== staffID) as TStaffID[],
+    });
   }
   return config;
 }
