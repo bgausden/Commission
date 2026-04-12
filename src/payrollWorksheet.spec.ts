@@ -76,6 +76,119 @@ describe("payrollWorksheet", () => {
       customRate: NaN,
     });
   });
+
+  it("extracts numeric tips and product commission when not currency-formatted", () => {
+    const getStaffHurdleForContext = createGetter({
+      staffName: "Rex Wong",
+      baseRate: 0,
+      hurdle1Level: 20000,
+      hurdle1Rate: 0.1,
+      contractor: false,
+      payViaTalenox: true,
+    });
+    const rows: unknown[][] = [
+      ["Wong, Rex Staff ID #: 019"],
+      ["Hair Pay Rate: Ladies Cut (55%)", "", "", "", "", 0],
+      ["Ladies Cut", "", "", "", "", 2500],
+      ["Product Pay Rate: Shampoo (10%)", "", "", "", "", 0],
+      ["Shampoo", "", "", "", "", 100],
+      ["Tips:", "", "", "", "", 150],
+      ["Sales Commission:", "", "", "", "", 50],
+      ["Total for Wong, Rex", "", "", "", "", 2600],
+    ];
+    const result = extractStaffPayrollData(rows, 0, 7, 5, "019", getStaffHurdleForContext);
+    expect(result.staffID).toBe("019");
+    expect(result.tips).toBe(150);
+    expect(result.productCommission).toBe(50);
+  });
+
+  it("returns zero tips when the Tips row is absent", () => {
+    const getStaffHurdleForContext = createGetter({
+      staffName: "Rex Wong",
+      baseRate: 0,
+      hurdle1Level: 20000,
+      hurdle1Rate: 0.1,
+      contractor: false,
+      payViaTalenox: true,
+    });
+    const rows: unknown[][] = [
+      ["Wong, Rex Staff ID #: 019"],
+      ["Hair Pay Rate: Ladies Cut (55%)", "", "", "", "", 0],
+      ["Ladies Cut", "", "", "", "", 1800],
+      ["Sales Commission:", "", "", "", "", 30],
+      ["Total for Wong, Rex", "", "", "", "", 1800],
+    ];
+    const result = extractStaffPayrollData(rows, 0, 4, 5, "019", getStaffHurdleForContext);
+    expect(result.tips).toBe(0);
+    expect(result.productCommission).toBe(30);
+  });
+
+  it("returns zero product commission when the Sales Commission row is absent", () => {
+    const getStaffHurdleForContext = createGetter({
+      staffName: "Kate",
+      baseRate: 0,
+      hurdle1Level: 30000,
+      hurdle1Rate: 0.11,
+      contractor: false,
+      payViaTalenox: true,
+    });
+    const rows: unknown[][] = [
+      ["Kate Staff ID #: 012"],
+      ["Hair Pay Rate: Ladies Cut (55%)", "", "", "", "", 0],
+      ["Tips:", "", "", "", "", 200],
+      ["Total for Kate", "", "", "", "", 3000],
+    ];
+    const result = extractStaffPayrollData(rows, 0, 3, 5, "012", getStaffHurdleForContext);
+    expect(result.tips).toBe(200);
+    expect(result.productCommission).toBe(0);
+  });
+
+  it("treats undefined and empty-string tip/commission cells as zero", () => {
+    const getStaffHurdleForContext = createGetter({
+      staffName: "Default",
+      baseRate: 0,
+      hurdle1Level: 20000,
+      hurdle1Rate: 0.1,
+      contractor: false,
+      payViaTalenox: true,
+    });
+    const rows: unknown[][] = [
+      ["Staff, Test Staff ID #: 001"],
+      ["Hair Pay Rate: Cut (55%)", "", "", "", "", 0],
+      ["Total for Test", "", "", "", "", 0],
+      ["Tips:", "", "", "", "", undefined],
+      ["Sales Commission:", "", "", "", "", ""],
+    ];
+    const result = extractStaffPayrollData(rows, 0, 2, 5, "001", getStaffHurdleForContext);
+    expect(result.tips).toBe(0);
+    expect(result.productCommission).toBe(0);
+  });
+
+  it("only reads tips and commission within the 4-row window above the Total row", () => {
+    const getStaffHurdleForContext = createGetter({
+      staffName: "Kate",
+      baseRate: 0,
+      hurdle1Level: 30000,
+      hurdle1Rate: 0.11,
+      contractor: false,
+      payViaTalenox: true,
+    });
+    const rows: unknown[][] = [
+      ["Kate, Staff ID #: 012"],
+      ["Services..."],
+      ["Total for Kate", "", "", "", "", 5000],  // endRow = 2
+      ["Row index 3: Tips here", "", "", "", "", 100],
+      ["Row index 4", "", "", "", "", 0],
+      ["Row index 5: Sales Commission", "", "", "", "", 25],
+      ["Row index 6", "", "", "", "", 0],
+      ["Row index 7: Too far", "", "", "", "", 999],
+    ];
+    // endRow=2: search window covers indices endRow-3..endRow = -1, 0, 1, 2
+    // Tips at index 3 and Sales Commission at index 5 are outside the window
+    const result = extractStaffPayrollData(rows, 0, 2, 5, "012", getStaffHurdleForContext);
+    expect(result.tips).toBe(0);
+    expect(result.productCommission).toBe(0);
+  });
 });
 
 describe("getServiceRevenues", () => {
