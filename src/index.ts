@@ -73,7 +73,7 @@ import {
 } from "./gdrive_functions.js";
 import { fws32Left, fws14RightHKD, fws14Right } from "./string_functions.js";
 import { DEFAULT_OLD_DIR, DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadStaffHurdles } from "./staffHurdles.js";

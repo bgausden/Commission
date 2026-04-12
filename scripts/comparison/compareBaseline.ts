@@ -2,7 +2,7 @@
  * Baseline comparison utilities
  */
 
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import type {
   StaffPayment,
   StaffCommissionData,

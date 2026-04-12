@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import type {
   StaffCommissionData,
   StaffPayment,
