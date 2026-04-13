@@ -27,3 +27,4 @@ vendor/**/*.tar.gz
 test-baselines/
 config/staffHurdle.json
 other_source/staff.json
+docs/superpowers
