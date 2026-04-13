@@ -155,11 +155,11 @@ describe("payrollWorksheet", () => {
     const rows: unknown[][] = [
       ["Staff, Test Staff ID #: 001"],
       ["Hair Pay Rate: Cut (55%)", "", "", "", "", 0],
-      ["Total for Test", "", "", "", "", 0],
       ["Tips:", "", "", "", "", undefined],
       ["Sales Commission:", "", "", "", "", ""],
+      ["Total for Test", "", "", "", "", 0],
     ];
-    const result = extractStaffPayrollData(rows, 0, 2, 5, "001", getStaffHurdleForContext);
+    const result = extractStaffPayrollData(rows, 0, 4, 5, "001", getStaffHurdleForContext);
     expect(result.tips).toBe(0);
     expect(result.productCommission).toBe(0);
   });
@@ -177,11 +177,10 @@ describe("payrollWorksheet", () => {
       ["Kate, Staff ID #: 012"],
       ["Services..."],
       ["Total for Kate", "", "", "", "", 5000],  // endRow = 2
-      ["Row index 3: Tips here", "", "", "", "", 100],
+      ["Tips:", "", "", "", "", 100],             // index 3: outside window (window is 0..2)
       ["Row index 4", "", "", "", "", 0],
-      ["Row index 5: Sales Commission", "", "", "", "", 25],
+      ["Sales Commission:", "", "", "", "", 25],  // index 5: outside window
       ["Row index 6", "", "", "", "", 0],
-      ["Row index 7: Too far", "", "", "", "", 999],
     ];
     // endRow=2: search window covers indices endRow-3..endRow = -1, 0, 1, 2
     // Tips at index 3 and Sales Commission at index 5 are outside the window
