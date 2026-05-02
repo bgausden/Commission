@@ -8,7 +8,7 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 import "./checkStartup.js";
 import { config } from "node-config-ts";
-import { TStaffHurdles, TTalenoxInfoStaffMap } from "./types.js";
+import { TTalenoxInfoStaffMap } from "./types.js";
 import {
   createAdHocPayments,
   getTalenoxEmployees,
@@ -67,7 +67,6 @@ export { doPooling } from "./payrollShell.js";
 
 // Type-safe interface for custom global properties
 interface CustomGlobals {
-  staffHurdles: TStaffHurdles;
   PAYMENTS_WB_NAME: string;
   PAYMENTS_WS_NAME: string;
   LOGS_DIR: string;
@@ -178,14 +177,8 @@ async function main() {
     throw new Error(staffHurdlesResult.error);
   }
   const staffHurdles = staffHurdlesResult.value;
-  setGlobal("staffHurdles", staffHurdles);
   const getPayrollStaffHurdle: StaffHurdleGetter = (staffID, context) =>
-    getStaffHurdleFromMap(
-      staffHurdles,
-      config.missingStaffAreFatal,
-      staffID,
-      context,
-    );
+    getStaffHurdleFromMap(staffHurdles, staffID, context);
 
   let talenoxStaff: TTalenoxInfoStaffMap;
   if (REGRESSION_OFFLINE_MODE) {

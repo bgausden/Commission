@@ -1,39 +1,21 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  getStaffHurdle,
   getStaffHurdleFromMap,
-  isContractor,
   isContractorForLookup,
   isPayViaTalenoxForLookup,
   lookupStaffHurdle,
 } from "./utility_functions.js";
-import { StaffHurdle } from "./IStaffHurdle.js";
+import type { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
-
-// Mock dependencies
-vi.mock("node-config-ts", () => {
-  const config = {
-    missingStaffAreFatal: true, // Default - will override in tests
-  };
-  return { config };
-});
+import type { TStaffHurdles, TStaffID } from "./types.js";
 
 vi.mock("./logging_functions.js", () => ({
-  errorLogger: {
-    error: vi.fn(),
-  },
-  warnLogger: {
-    warn: vi.fn(),
-  },
-  debugLogger: {
-    debug: vi.fn(),
-  },
-  infoLogger: {
-    info: vi.fn(),
-  },
+  errorLogger: { error: vi.fn() },
+  warnLogger: { warn: vi.fn() },
+  debugLogger: { debug: vi.fn() },
+  infoLogger: { info: vi.fn() },
 }));
 
-// Mock global staffHurdles
 const mockStaffHurdles: Record<string, StaffHurdle> = {
   "012": {
     staffName: "Kate",
@@ -48,78 +30,41 @@ const mockStaffHurdles: Record<string, StaffHurdle> = {
     baseRate: 0,
     hurdle1Level: 25000,
     hurdle1Rate: 0.12,
-    contractor: false,
-    payViaTalenox: true,
-  },
-  "000": {
-    staffName: "Default",
-    baseRate: 0,
-    hurdle1Level: 20000,
-    hurdle1Rate: 0.1,
-    contractor: false,
-    payViaTalenox: true,
+    contractor: true,
+    payViaTalenox: false,
   },
 };
 
 function buildStaffHurdlesMap(
   entries: Record<string, StaffHurdle> = mockStaffHurdles,
-): typeof global.staffHurdles {
-  return new Map(Object.entries(entries)) as typeof global.staffHurdles;
+): TStaffHurdles {
+  return new Map(Object.entries(entries) as Array<[TStaffID, StaffHurdle]>);
 }
-
-global.staffHurdles = new Map(
-  Object.entries(mockStaffHurdles),
-) as typeof global.staffHurdles;
 
 describe("lookupStaffHurdle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns configured staff from the provided map without logging", async () => {
-    const { warnLogger, errorLogger } = await import("./logging_functions.js");
-    const staffHurdles = buildStaffHurdlesMap();
-
+  it("returns configured staff from the provided map", () => {
     const result = lookupStaffHurdle(
-      staffHurdles,
-      true,
+      buildStaffHurdlesMap(),
       "012",
       "explicit lookup test",
     );
 
     expect(Option.isSome(result.hurdle)).toBe(true);
-    expect(result.warningMessage).toBeUndefined();
-    expect(warnLogger.warn).not.toHaveBeenCalled();
-    expect(errorLogger.error).not.toHaveBeenCalled();
   });
 
-  it("returns the default hurdle and warning message when fallback is allowed", () => {
-    const staffHurdles = buildStaffHurdlesMap();
-
-    const result = lookupStaffHurdle(
-      staffHurdles,
-      false,
-      "999",
-      "explicit fallback test",
-    );
-
-    expect(result.warningMessage).toBe(
-      "Staff ID 999 not in staffHurdle.json (explicit fallback test). Using default ID 000.",
-    );
-    expect(Option.isSome(result.hurdle)).toBe(true);
-    if (Option.isSome(result.hurdle)) {
-      expect(result.hurdle.value).toEqual(mockStaffHurdles["000"]);
-    }
-  });
-
-  it("throws when fallback is allowed but default staff is missing", () => {
-    const { ["000"]: _defaultStaff, ...withoutDefault } = mockStaffHurdles;
-    const staffHurdles = buildStaffHurdlesMap(withoutDefault);
-
+  it("throws when staff ID is missing", () => {
     expect(() =>
-      lookupStaffHurdle(staffHurdles, false, "999", "missing default test"),
+      lookupStaffHurdle(
+        buildStaffHurdlesMap(),
+        "999" as TStaffID,
+        "explicit lookup test",
+      ),
     ).toThrow(
-      "Default staff ID 000 is missing from staffHurdle.json. Cannot process staff 999.",
+      "Staff ID 999 found in explicit lookup test but is missing from staffHurdle.json",
     );
   });
 });
@@ -129,190 +74,49 @@ describe("getStaffHurdleFromMap", () => {
     vi.clearAllMocks();
   });
 
-  it("logs warning messages for explicit fallback lookups", async () => {
-    const { warnLogger, errorLogger } = await import("./logging_functions.js");
-    const staffHurdles = buildStaffHurdlesMap();
-
+  it("returns the configured hurdle for known staff", async () => {
+    const { errorLogger, warnLogger } = await import("./logging_functions.js");
     const result = getStaffHurdleFromMap(
-      staffHurdles,
-      false,
-      "999",
-      "explicit map lookup",
+      buildStaffHurdlesMap(),
+      "012",
+      "commission calculation",
     );
 
     expect(Option.isSome(result)).toBe(true);
-    expect(warnLogger.warn).toHaveBeenCalledWith(
-      "Staff ID 999 not in staffHurdle.json (explicit map lookup). Using default ID 000.",
-    );
+    expect(warnLogger.warn).not.toHaveBeenCalled();
     expect(errorLogger.error).not.toHaveBeenCalled();
   });
-});
 
-describe("getStaffHurdle", () => {
-  beforeEach(() => {
-    // Reset mocks before each test
-    vi.clearAllMocks();
+  it("logs fatal and rethrows for unknown staff", async () => {
+    const { errorLogger } = await import("./logging_functions.js");
 
-    // Ensure global staffHurdles is reset to original state
-    global.staffHurdles = new Map(
-      Object.entries(mockStaffHurdles),
-    ) as typeof global.staffHurdles;
-  });
-
-  describe("when staff ID exists in staffHurdles", () => {
-    it("should return the staff's configuration directly", () => {
-      const result = getStaffHurdle("012", "test context");
-      expect(Option.isSome(result)).toBe(true);
-      if (Option.isSome(result)) {
-        expect(result.value).toEqual(mockStaffHurdles["012"]);
-        expect(result.value.staffName).toBe("Kate");
-        expect(result.value.hurdle1Level).toBe(30000);
-      }
-    });
-
-    it("should not log any warnings or errors", async () => {
-      const { warnLogger, errorLogger } =
-        await import("./logging_functions.js");
-
-      getStaffHurdle("019", "test context");
-
-      expect(warnLogger.warn).not.toHaveBeenCalled();
-      expect(errorLogger.error).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("when staff ID is missing and missingStaffAreFatal is true", () => {
-    beforeEach(async () => {
-      const { config } = await import("node-config-ts");
-      config.missingStaffAreFatal = true;
-    });
-
-    it("should throw an error with context", async () => {
-      const { errorLogger } = await import("./logging_functions.js");
-
-      expect(() => getStaffHurdle("999", "commission calculation")).toThrow(
-        "Staff ID 999 found in commission calculation but is missing from staffHurdle.json",
-      );
-
-      expect(errorLogger.error).toHaveBeenCalledWith(
-        "Fatal: Staff ID 999 found in commission calculation but is missing from staffHurdle.json",
-      );
-    });
-
-    it("should not return default configuration", () => {
-      expect(() => getStaffHurdle("888", "payroll processing")).toThrow();
-    });
-  });
-
-  describe("context parameter usage", () => {
-    it("should include context in fatal error messages", async () => {
-      const { config } = await import("node-config-ts");
-      config.missingStaffAreFatal = true;
-
-      expect(() => getStaffHurdle("111", "Talenox API upload")).toThrow(
-        /Talenox API upload/,
-      );
-    });
-  });
-
-  describe("edge cases", () => {
-    it("should handle empty string staff ID", async () => {
-      const { config } = await import("node-config-ts");
-      config.missingStaffAreFatal = true;
-      // ts-ignore to test runtime behavior with invalid input
-      // @ts-ignore ts-2345
-      expect(() => getStaffHurdle("", "edge case test")).toThrow();
-    });
-
-    it("should return same object reference for multiple calls with same ID", () => {
-      const result1 = getStaffHurdle("012", "first call");
-      const result2 = getStaffHurdle("012", "second call");
-
-      expect(Option.isSome(result1) && Option.isSome(result2)).toBe(true);
-      if (Option.isSome(result1) && Option.isSome(result2)) {
-        expect(result1.value).toBe(result2.value); // Same underlying StaffHurdle reference
-      }
-    });
-  });
-
-  describe("integration with real usage patterns", () => {
-    it("should work for commission calculation context", () => {
-      const result = getStaffHurdle("012", "commission calculation");
-      expect(Option.isSome(result)).toBe(true);
-      if (Option.isSome(result)) {
-        expect(result.value.baseRate).toBeDefined();
-        expect(result.value.hurdle1Level).toBeDefined();
-        expect(result.value.hurdle1Rate).toBeDefined();
-      }
-    });
-
-    it("should work for contractor status check context", () => {
-      const result = getStaffHurdle("019", "contractor status check");
-      expect(Option.isSome(result)).toBe(true);
-      if (Option.isSome(result)) {
-        expect(result.value.contractor).toBeDefined();
-        expect(typeof result.value.contractor).toBe("boolean");
-      }
-    });
-
-    it("should work for Talenox payment check context", () => {
-      const result = getStaffHurdle("012", "payroll Talenox check");
-      expect(Option.isSome(result)).toBe(true);
-      if (Option.isSome(result)) {
-        expect(result.value.payViaTalenox).toBeDefined();
-        expect(typeof result.value.payViaTalenox).toBe("boolean");
-      }
-    });
-  });
-});
-
-describe("isContractor", () => {
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    global.staffHurdles = new Map(
-      Object.entries(mockStaffHurdles),
-    ) as typeof global.staffHurdles;
-
-    const { config } = await import("node-config-ts");
-    config.missingStaffAreFatal = true;
-  });
-
-  it("should return contractor status for configured staff", () => {
-    expect(isContractor("012")).toBe(false);
-  });
-
-  it("should use default staff configuration when non-fatal missing staff fallback is enabled", async () => {
-    const { config } = await import("node-config-ts");
-    config.missingStaffAreFatal = false;
-
-    expect(isContractor("999")).toBe(false);
-  });
-
-  it("should throw when staff is missing and missingStaffAreFatal is enabled", () => {
-    expect(() => isContractor("999")).toThrow(
+    expect(() =>
+      getStaffHurdleFromMap(
+        buildStaffHurdlesMap(),
+        "999" as TStaffID,
+        "contractor status check",
+      ),
+    ).toThrow(
       "Staff ID 999 found in contractor status check but is missing from staffHurdle.json",
+    );
+
+    expect(errorLogger.error).toHaveBeenCalledWith(
+      "Fatal: Staff ID 999 found in contractor status check but is missing from staffHurdle.json",
     );
   });
 });
 
 describe("lookup-based predicates", () => {
-  it("supports contractor checks without global.staffHurdles", () => {
-    expect(
-      isContractorForLookup(
-        (staffID, context) =>
-          getStaffHurdleFromMap(buildStaffHurdlesMap(), true, staffID, context),
-        "012",
-      ),
-    ).toBe(false);
+  const getter = (staffID: TStaffID, context: string) =>
+    getStaffHurdleFromMap(buildStaffHurdlesMap(), staffID, context);
+
+  it("supports contractor checks without ambient globals", () => {
+    expect(isContractorForLookup(getter, "012")).toBe(false);
+    expect(isContractorForLookup(getter, "019")).toBe(true);
   });
 
-  it("supports pay-via-Talenox checks without global.staffHurdles", () => {
-    expect(
-      isPayViaTalenoxForLookup(
-        (staffID, context) =>
-          getStaffHurdleFromMap(buildStaffHurdlesMap(), true, staffID, context),
-        "019",
-      ),
-    ).toBe(true);
+  it("supports pay-via-Talenox checks without ambient globals", () => {
+    expect(isPayViaTalenoxForLookup(getter, "012")).toBe(true);
+    expect(isPayViaTalenoxForLookup(getter, "019")).toBe(false);
   });
 });

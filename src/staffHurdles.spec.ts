@@ -49,14 +49,6 @@ describe("parseStaffHurdles", () => {
 
     const staffHurdles = parseStaffHurdles({
       "012": kate,
-      "000": {
-        staffName: "Default",
-        baseRate: 0,
-        hurdle1Level: 20000,
-        hurdle1Rate: 0.1,
-        contractor: false,
-        payViaTalenox: true,
-      },
     });
 
     expect(staffHurdles.get("012")).toBe(kate);
@@ -73,7 +65,10 @@ describe("loadStaffHurdlesFromFile", () => {
   });
 
   it("returns ok with a populated Map for a valid file", () => {
-    const filePath = writeTmp("valid.json", JSON.stringify({ "012": VALID_HURDLE }));
+    const filePath = writeTmp(
+      "valid.json",
+      JSON.stringify({ "012": VALID_HURDLE }),
+    );
 
     const result = loadStaffHurdlesFromFile(filePath);
 
@@ -87,7 +82,10 @@ describe("loadStaffHurdlesFromFile", () => {
   it("trims whitespace from keys during Map construction", () => {
     // Space in key is only valid at the raw JSON level — schema rejects it,
     // so we verify trimming on a key that already passes schema (no spaces).
-    const filePath = writeTmp("trim.json", JSON.stringify({ "012": VALID_HURDLE }));
+    const filePath = writeTmp(
+      "trim.json",
+      JSON.stringify({ "012": VALID_HURDLE }),
+    );
 
     const result = loadStaffHurdlesFromFile(filePath);
 

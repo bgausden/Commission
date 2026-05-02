@@ -1,7 +1,4 @@
-/* global staffHurdles */
-
 import { Configuration as l4JSConfiguration } from "log4js";
-import { config } from "node-config-ts";
 import {
   createReadStream,
   createWriteStream,
@@ -18,13 +15,12 @@ import zlib from "zlib";
 import { debugLogger, errorLogger, warnLogger } from "./logging_functions.js";
 import type { TStaffHurdles, TStaffID } from "./types.js";
 import assert from "node:assert";
-import { DEFAULT_OLD_DIR, defaultStaffID } from "./constants.js";
+import { DEFAULT_OLD_DIR } from "./constants.js";
 import { StaffHurdle } from "./IStaffHurdle.js";
 import { Option } from "./option.js";
 
 export interface StaffHurdleLookupResult {
   hurdle: Option<StaffHurdle>;
-  warningMessage?: string;
 }
 
 export type StaffHurdleGetter = (
@@ -61,11 +57,10 @@ export function stripToNumeric(n: unknown): number {
 
 /**
  * Pure staff hurdle lookup policy.
- * Applies missing-staff fallback rules without touching global state or logging.
+ * Missing staff IDs are always fatal.
  */
 export function lookupStaffHurdle(
   staffHurdles: TStaffHurdles,
-  missingStaffAreFatal: boolean,
   staffID: TStaffID,
   context: string,
 ): StaffHurdleLookupResult {
@@ -75,65 +70,22 @@ export function lookupStaffHurdle(
   }
 
   const message = `Staff ID ${staffID} found in ${context} but is missing from staffHurdle.json`;
-  if (missingStaffAreFatal) {
-    throw new Error(message);
-  }
-
-  const defaultHurdle = staffHurdles.get(defaultStaffID);
-  if (defaultHurdle) {
-    return {
-      hurdle: Option.some(defaultHurdle),
-      warningMessage: `Staff ID ${staffID} not in staffHurdle.json (${context}). Using default ID ${defaultStaffID}.`,
-    };
-  }
-
-  const defaultMsg = `Default staff ID ${defaultStaffID} is missing from staffHurdle.json. Cannot process staff ${staffID}.`;
-  throw new Error(defaultMsg);
+  throw new Error(message);
 }
 
 export function getStaffHurdleFromMap(
   staffHurdles: TStaffHurdles,
-  missingStaffAreFatal: boolean,
   staffID: TStaffID,
   context: string,
 ): Option<StaffHurdle> {
   try {
-    const result = lookupStaffHurdle(
-      staffHurdles,
-      missingStaffAreFatal,
-      staffID,
-      context,
-    );
-    if (result.warningMessage) {
-      warnLogger.warn(result.warningMessage);
-    }
+    const result = lookupStaffHurdle(staffHurdles, staffID, context);
     return result.hurdle;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     errorLogger.error(`Fatal: ${message}`);
     throw error;
   }
-}
-
-/**
- * Retrieves staff hurdle configuration with fallback behavior.
- * Returns Option to handle cases where staff ID doesn't exist.
- *
- * @param staffID - The staff ID to look up
- * @param context - Description of call site (for error messages)
- * @returns Option<StaffHurdle> (contains value or None)
- * @throws Error if missingStaffAreFatal and ID missing, or if default "000" missing
- */
-export function getStaffHurdle(
-  staffID: TStaffID,
-  context: string,
-): Option<StaffHurdle> {
-  return getStaffHurdleFromMap(
-    staffHurdles,
-    config.missingStaffAreFatal,
-    staffID,
-    context,
-  );
 }
 
 export function isPayViaTalenoxForLookup(
@@ -149,10 +101,6 @@ export function isPayViaTalenoxForLookup(
       throw new Error(message);
     },
   );
-}
-
-export function isPayViaTalenox(staffID: TStaffID): boolean {
-  return isPayViaTalenoxForLookup(getStaffHurdle, staffID);
 }
 
 export function eqSet(as: unknown[], bs: unknown[]): boolean {
@@ -174,10 +122,6 @@ export function isContractorForLookup(
       throw new Error(message);
     },
   );
-}
-
-export function isContractor(staffID: TStaffID): boolean {
-  return isContractorForLookup(getStaffHurdle, staffID);
 }
 
 export function assertLog4JsConfig(

@@ -5,8 +5,6 @@ const DEFAULT_OLD_DIR = "old" as const;
 const DEFAULT_CONTRACTOR_LOGFILE = "contractor.log";
 const DEFAULT_COMMISSION_LOGFILE = "commission.log";
 
-const defaultStaffID = "000" as const;
-
 /* function loadJsonFromFile<T>(filepath: string): T {
   const fileContent = fs.readFileSync(filepath, 'utf-8')
   return JSON.parse(fileContent as string) as T
@@ -36,7 +34,6 @@ export {
   DEFAULT_LOGS_DIR,
   DEFAULT_PAYMENTS_DIR,
   DEFAULT_OLD_DIR,
-  defaultStaffID,
   DEFAULT_LOG4JS_CONFIG_FILE,
   DEFAULT_COMMISSION_LOGFILE,
   DEFAULT_CONTRACTOR_LOGFILE,
