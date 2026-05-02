@@ -34,7 +34,6 @@ import { TalenoxUploadAdHocPaymentsResult } from "./IUploadAdHocPaymentsResult.j
 import { ITalenoxStaffInfo } from "./ITalenoxStaffInfo.js";
 import { debugLogger } from "./logging_functions.js";
 import {
-  getGlobalPayrollContext,
   getPayrollPayGroup,
   type PayrollRunContext,
 } from "./payrollContext.js";
@@ -194,7 +193,7 @@ export async function getTalenoxEmployees(): Promise<TTalenoxInfoStaffMap> {
 
 export async function createPayroll(
   staffMap: TTalenoxInfoStaffMap,
-  payrollContext: PayrollRunContext = getGlobalPayrollContext(),
+  payrollContext: PayrollRunContext,
 ): Promise<[Error | undefined, TalenoxPayrollPaymentResult | undefined]> {
   const url = TALENOX_PAYROLL_PAYMENT_ENDPOINT;
 
@@ -276,7 +275,7 @@ export async function createPayroll(
 export async function uploadAdHocPayments(
   staffMap: TTalenoxInfoStaffMap,
   payments: ITalenoxPayment[],
-  payrollContext: PayrollRunContext = getGlobalPayrollContext(),
+  payrollContext: PayrollRunContext,
 ): Promise<[Error | undefined, TalenoxUploadAdHocPaymentsResult | undefined]> {
   const url = TALENOX_ADHOC_PAYMENT_ENDPOINT;
 
