@@ -65,8 +65,6 @@ Several independent improvements landed together: Google Drive upload of commiss
 
 - **Google Drive integration** (`src/gdrive_functions.ts`, new guide in `docs/`): Commission run artifacts (payment Excel, commission log) are automatically uploaded to a configured Google Drive folder after a successful run. Supports shared drives. Directories are created on first use.
 
-- **Vendored xlsx tracked in repo** (`vendor/xlsx-0.20.3/`): Source of the vendored xlsx library is now committed so diffs are auditable.
-
 - **Baseline auto-discovery** (`scripts/utils/baselineUtils.ts` → `findOldestBaseline`): Regression tests no longer hardcode a baseline name. On each run, the oldest baseline by `createdDate` in `test-baselines/` is selected automatically. Override with `BASELINE_NAME` env var.
 
 - **`test-baselines/` gitignored**: Baseline directories contain generated output and should not be tracked.
@@ -79,7 +77,7 @@ Several independent improvements landed together: Google Drive upload of commiss
 
 ### Files touched
 
-`src/gdrive_functions.ts` (new), `src/index.ts`, `vendor/xlsx-0.20.3/` (new), `scripts/utils/baselineUtils.ts`, `scripts/regression.spec.ts`, `.gitignore`, `CLAUDE.md`, `docs/google-drive-setup.md` (new)
+`src/gdrive_functions.ts` (new), `src/index.ts`, `vendor/xlsx-0.20.3/` (now removed as installing via npm from tarball), `scripts/utils/baselineUtils.ts`, `scripts/regression.spec.ts`, `.gitignore`, `CLAUDE.md`, `docs/google-drive-setup.md` (new)
 
 ---
 

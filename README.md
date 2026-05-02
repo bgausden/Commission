@@ -123,7 +123,7 @@ The `test-fixtures/` directory contains anonymized sample data for testing. The 
 
 ## Dependencies
 
-**xlsx**: Uses vendored `vendor/xlsx-0.20.3/` (not npm package) for Excel file processing to ensure version stability.
+**xlsx**: Uses vendored xlsx package installed from `vendor/xlsx-0.20.3.tgz` (package is not downloaded from npm.org) for Excel file processing to ensure version stability.
 
 ## Console Logging
 

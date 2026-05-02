@@ -6,13 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### xlsx is vendored — do not install from npm
 
-This project uses a vendored copy of xlsx at `vendor/xlsx-0.20.3/`, not the npm package. The npm package is intentionally absent to ensure version stability.
-
-- Vitest alias in `vitest.config.ts` maps `'xlsx'` imports to `src/vendor-xlsx.mjs`
-- `src/vendor-xlsx.mjs` is the wrapper that configures xlsx with Node.js `fs`
-- `@types/xlsx` is installed for type definitions only
-
-**Do not run `npm install xlsx`.**
+This project uses a vendored copy of xlsx installed via npm from the tarball under the vendor directory. The xlsx package is intentionally installed from a downloaded tarball to ensure version stability.
 
 ### ESM imports require `.js` extension
 

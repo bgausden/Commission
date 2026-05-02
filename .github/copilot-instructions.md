@@ -22,9 +22,9 @@ Full set declared in [src/globals.d.ts](../src/globals.d.ts). Without this comme
 
 `config/default.json` → `updateTalenox`. When `false`, commissions are calculated and the payments Excel is generated but nothing is pushed to the Talenox API. **Do not set to `true`** unless running a real payroll.
 
-### xlsx is vendored — do not install from npm
+### xlsx is vendored — do not install from npm download - use `vendor/xlsx-0.20.3.tgz`
 
-Vendored at `vendor/xlsx-0.20.3/`. Vitest alias in `vitest.config.ts` maps `'xlsx'` to `src/vendor-xlsx.mjs`. Installing from npm will break this.
+Vendored at `vendor/xlsx-0.20.3.tgz`.
 
 ### Always `await shutdownLogging()` before process exit
 
