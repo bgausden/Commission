@@ -15,8 +15,8 @@ import {
   createPayroll,
   uploadAdHocPayments,
 } from "./talenox_functions.js";
+import { moveFilesToOldSubDir } from "./fileUtils.js";
 import {
-  moveFilesToOldSubDir,
   isValidDirectory,
   getStaffHurdleFromMap,
   type StaffHurdleGetter,

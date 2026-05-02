@@ -2,10 +2,8 @@ import { readFileSync } from "node:fs";
 import log4js, { FileAppender } from "log4js";
 const { configure, getLogger, shutdown } = log4js;
 import path, { basename, extname } from "node:path";
-import {
-  assertLog4JsConfig,
-  moveFilesToOldSubDir,
-} from "./utility_functions.js";
+import { assertLog4JsConfig } from "./utility_functions.js";
+import { moveFilesToOldSubDir } from "./fileUtils.js";
 // import { z } from "zod";
 import assert from "node:assert";
 import { DEFAULT_LOG4JS_CONFIG_FILE } from "./constants.js";

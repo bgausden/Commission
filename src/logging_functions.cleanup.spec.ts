@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { fs, vol } from "memfs";
 import path from "path";
 import zlib from "zlib";
-import { moveFilesToOldSubDir } from "./utility_functions.js";
+import { moveFilesToOldSubDir } from "./fileUtils.js";
 
 vi.mock("node:fs");
 vi.mock("node:fs/promises");

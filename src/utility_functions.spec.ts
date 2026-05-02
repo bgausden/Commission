@@ -1,4 +1,4 @@
-import { getMostRecentlyModifiedFiles } from "./utility_functions.js";
+import { getMostRecentlyModifiedFiles } from "./fileUtils.js";
 import { afterAll, beforeAll, suite, test, expect, vi } from "vitest";
 import { fs, vol } from "memfs";
 
