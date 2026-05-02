@@ -11,7 +11,6 @@ import type {
 } from "./types.js";
 import {
   checkRate,
-  getStaffHurdle,
   stripToNumeric,
   type StaffHurdleGetter,
 } from "./utility_functions.js";
@@ -99,7 +98,7 @@ function buildHurdleConfig(
 function calculateGeneralServiceCommission(
   staffID: TStaffID,
   serviceRev: TServiceRevenue,
-  getStaffHurdleForContext: StaffHurdleGetter = getStaffHurdle,
+  getStaffHurdleForContext: StaffHurdleGetter,
 ): number {
   const hurdleConfig = buildHurdleConfig(staffID, getStaffHurdleForContext);
   return calculateTieredCommission(serviceRev, hurdleConfig).totalCommission;
@@ -178,7 +177,7 @@ export function calculateTieredCommission(
 export function calculateStaffCommission(
   payrollData: StaffPayrollData,
   _talenoxStaff: TTalenoxInfoStaffMap,
-  getStaffHurdleForContext: StaffHurdleGetter = getStaffHurdle,
+  getStaffHurdleForContext: StaffHurdleGetter,
 ): TCommComponents {
   const { staffID, servicesRevenues } = payrollData;
 

@@ -241,7 +241,11 @@ async function main() {
 
   // Create payment spreadsheet and upload to Talenox
   emitProgressAndInfo("Creating Talenox payment entries");
-  const payments = createAdHocPayments(pooledCommMap, talenoxStaff);
+  const payments = createAdHocPayments(
+    pooledCommMap,
+    talenoxStaff,
+    getPayrollStaffHurdle,
+  );
 
   emitProgressAndInfo("Archiving old payment spreadsheets");
   await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);

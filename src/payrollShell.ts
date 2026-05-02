@@ -12,7 +12,6 @@ import type {
 import {
   isPayViaTalenoxForLookup,
   isContractorForLookup,
-  getStaffHurdle,
   type StaffHurdleGetter,
 } from "./utility_functions.js";
 import {
@@ -39,7 +38,7 @@ import {
 export type PayrollProcessingOptions = {
   regressionOfflineMode: boolean;
   missingStaffAreFatal: boolean;
-  getStaffHurdleForContext?: StaffHurdleGetter;
+  getStaffHurdleForContext: StaffHurdleGetter;
 };
 
 function formatPoolStaffName(
@@ -112,7 +111,7 @@ function logStaffCommission(
   staffName: string,
   commComponents: TCommComponents,
   servicesRevenues: TServRevenueMap,
-  getStaffHurdleForContext: StaffHurdleGetter = getStaffHurdle,
+  getStaffHurdleForContext: StaffHurdleGetter,
 ): void {
   const isStaffContractor = isContractorForLookup(
     getStaffHurdleForContext,
@@ -226,7 +225,7 @@ export function processPayrollExcelData(
   const {
     regressionOfflineMode,
     missingStaffAreFatal,
-    getStaffHurdleForContext = getStaffHurdle,
+    getStaffHurdleForContext,
   } = options;
   const commMap: TCommMap = new Map();
   let staffID: TStaffID | undefined;

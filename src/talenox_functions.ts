@@ -17,7 +17,11 @@ import {
   TALENOX_ADHOC_PAYMENT_ENDPOINT,
   TALENOX_API_TOKEN,
 } from "./talenox_constants.js";
-import { isContractor, isValidStaffID } from "./utility_functions.js";
+import {
+  isContractorForLookup,
+  isValidStaffID,
+  type StaffHurdleGetter,
+} from "./utility_functions.js";
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment.js";
 import { ITalenoxAdhocPayItems } from "./ITalenoxAdhocPayItems.js";
 import {
@@ -54,6 +58,7 @@ function talenoxDebug(
 export function createAdHocPayments(
   _commMap: TCommMap,
   staffMap: TTalenoxInfoStaffMap,
+  getStaffHurdleForContext: StaffHurdleGetter,
 ): ITalenoxPayment[] {
   const emptyTalenoxPayment: ITalenoxPayment = {
     staffID: "000",
@@ -66,7 +71,7 @@ export function createAdHocPayments(
   const payments: ITalenoxPayment[] = [];
   let paymentProto: ITalenoxPayment;
   _commMap.forEach((_commMapEntry, staffID) => {
-    if (!isContractor(staffID)) {
+    if (!isContractorForLookup(getStaffHurdleForContext, staffID)) {
       const staffMapEntry = staffMap.get(staffID);
       let payment: ITalenoxPayment;
       if (staffMapEntry === undefined) {

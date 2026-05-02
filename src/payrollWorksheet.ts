@@ -8,11 +8,7 @@ import type {
   TServiceName,
   TStaffID,
 } from "./types.js";
-import {
-  getStaffHurdle,
-  stripToNumeric,
-  type StaffHurdleGetter,
-} from "./utility_functions.js";
+import { stripToNumeric, type StaffHurdleGetter } from "./utility_functions.js";
 
 const SERVICE_ROW_REGEX = /(.*) Pay Rate: (.*) \((.*)%\)/i;
 const SERVICE_TYPE_INDEX = 2;
@@ -89,7 +85,7 @@ export function getServiceRevenues(
   currentStaffIDRow: number,
   revCol: number,
   staffID: TStaffID,
-  getStaffHurdleForContext: StaffHurdleGetter = getStaffHurdle,
+  getStaffHurdleForContext: StaffHurdleGetter,
 ): TServRevenueMap {
   const numSearchRows = currentTotalRow - currentStaffIDRow - 1;
   const servRevenueMap: TServRevenueMap = new Map<
@@ -159,7 +155,7 @@ export function extractStaffPayrollData(
   endRow: number,
   revCol: number,
   staffID: TStaffID,
-  getStaffHurdleForContext: StaffHurdleGetter = getStaffHurdle,
+  getStaffHurdleForContext: StaffHurdleGetter,
 ): StaffPayrollData {
   let tips = 0;
   let productCommission = 0;
