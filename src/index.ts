@@ -8,7 +8,7 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 import "./checkStartup.js";
 import { config } from "node-config-ts";
-import { TStaffHurdles, TTalenoxInfoStaffMap, monthName } from "./types.js";
+import { TStaffHurdles, TTalenoxInfoStaffMap } from "./types.js";
 import {
   createAdHocPayments,
   getTalenoxEmployees,
@@ -68,13 +68,10 @@ export { doPooling } from "./payrollShell.js";
 // Type-safe interface for custom global properties
 interface CustomGlobals {
   staffHurdles: TStaffHurdles;
-  PAYROLL_MONTH: monthName;
-  PAYROLL_YEAR: string;
   PAYMENTS_WB_NAME: string;
   PAYMENTS_WS_NAME: string;
   LOGS_DIR: string;
   PAYMENTS_DIR: string;
-  firstDay: Date;
 }
 
 // Type-safe global setter - provides type checking for both key and value
@@ -116,13 +113,10 @@ async function main() {
   }
 
   // Set global variables for use in other functions
-  setGlobal("PAYROLL_MONTH", PAYROLL_MONTH);
-  setGlobal("PAYROLL_YEAR", PAYROLL_YEAR);
   setGlobal("PAYMENTS_WB_NAME", PAYMENTS_WB_NAME);
   setGlobal("PAYMENTS_WS_NAME", PAYMENTS_WS_NAME);
 
   const firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
-  setGlobal("firstDay", firstDay);
 
   infoLogger.info(`Commission run begins ${firstDay.toDateString()}`);
   if (config.updateTalenox === false) {
