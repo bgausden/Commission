@@ -43,7 +43,11 @@ import parseFilename from "./parseFilename.js";
 import { processEnv } from "./env_functions.js";
 import { resolveFromProjectRoot } from "./projectRoot.js";
 import { revenueCol } from "./payrollWorksheet.js";
-import { doPooling, processPayrollExcelData } from "./payrollShell.js";
+import {
+  doPooling,
+  logPoolShares,
+  processPayrollExcelData,
+} from "./payrollShell.js";
 import { emitProgress, emitProgressAndInfo } from "./payrollProgress.js";
 import {
   readPayrollWorksheetRows,
@@ -222,7 +226,18 @@ async function main() {
 
   // Apply pooling logic to commission map
   emitProgressAndInfo("Applying pooling rules");
-  const pooledCommMap = doPooling(commMap, staffHurdles, talenoxStaff);
+  const { pooledCommMap, reports } = doPooling(commMap, staffHurdles);
+  for (const report of reports) {
+    logPoolShares(
+      report.poolMembers,
+      report.aggregate,
+      report.pooledEntries,
+      talenoxStaff,
+    );
+  }
+  infoLogger.info("");
+  infoLogger.info("=======================================");
+  infoLogger.info("");
 
   // Create payment spreadsheet and upload to Talenox
   emitProgressAndInfo("Creating Talenox payment entries");

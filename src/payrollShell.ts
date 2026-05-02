@@ -33,6 +33,7 @@ import {
   calculatePooledCommissionMap,
   type PoolAggregate,
   type PooledStaffEntry,
+  type PoolingReport,
 } from "./payrollPooling.js";
 
 export type PayrollProcessingOptions = {
@@ -50,7 +51,7 @@ function formatPoolStaffName(
   }`;
 }
 
-function logPoolShares(
+export function logPoolShares(
   poolMembers: TStaffID[],
   aggregate: PoolAggregate,
   pooledEntries: PooledStaffEntry[],
@@ -102,27 +103,8 @@ function logPoolShares(
 export function doPooling(
   commMap: TCommMap,
   staffHurdle: TStaffHurdles,
-  talenoxStaff: TTalenoxInfoStaffMap,
-): TCommMap {
-  const { pooledCommMap, reports } = calculatePooledCommissionMap(
-    commMap,
-    staffHurdle,
-  );
-
-  for (const report of reports) {
-    logPoolShares(
-      report.poolMembers,
-      report.aggregate,
-      report.pooledEntries,
-      talenoxStaff,
-    );
-  }
-
-  infoLogger.info("");
-  infoLogger.info("=======================================");
-  infoLogger.info("");
-
-  return pooledCommMap;
+): { pooledCommMap: TCommMap; reports: PoolingReport[] } {
+  return calculatePooledCommissionMap(commMap, staffHurdle);
 }
 
 function logStaffCommission(
