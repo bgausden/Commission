@@ -242,10 +242,13 @@ async function main() {
     const missingEnvVars = getMissingGoogleDriveEnvVars();
     if (missingEnvVars.length > 0) {
       const detail = `Missing environment variable(s): ${missingEnvVars.join(", ")}`;
+      const message = `Google Drive upload skipped: ${detail}`;
       warnLogger.warn(
         `Google Drive upload is enabled but cannot run. ${detail}.`,
       );
       emitProgressAndInfo("Skipping Google Drive upload", detail);
+      // Always surface upload misconfiguration to stderr, even when LOG4JS_CONSOLE=off.
+      console.error(message);
     } else {
       emitProgressAndInfo("Uploading artifacts to Google Drive");
       const hierarchy = buildFolderHierarchy(PAYROLL_YEAR, PAYROLL_MONTH);
@@ -259,9 +262,16 @@ async function main() {
       );
       const driveResult = await uploadRunArtifacts(artifacts, hierarchy);
       if (!driveResult.ok) {
-        warnLogger.warn(`Google Drive upload skipped: ${driveResult.error}`);
+        const message = `Google Drive upload skipped: ${driveResult.error}`;
+        warnLogger.warn(message);
         emitProgressAndInfo("Google Drive upload skipped", driveResult.error);
+        // Always surface upload failure to stderr, even when LOG4JS_CONSOLE=off.
+        console.error(message);
       } else {
+        emitProgressAndInfo(
+          "Google Drive upload completed",
+          `${hierarchy.year}/${hierarchy.month}`,
+        );
         infoLogger.info(
           `Artifacts uploaded to Google Drive: ${hierarchy.year}/${hierarchy.month}`,
         );

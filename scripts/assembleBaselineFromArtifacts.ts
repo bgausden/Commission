@@ -8,7 +8,7 @@
  */
 
 import { gunzipSync } from "zlib";
-import { join, dirname, basename } from "path";
+import { join, dirname, basename, resolve } from "path";
 import { fileURLToPath } from "url";
 import { readdir, readFile, rm, stat, writeFile } from "fs/promises";
 import { createInterface } from "readline/promises";
@@ -913,7 +913,10 @@ async function requireConfirmation(options: CliOptions): Promise<void> {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
+const isMain = invokedPath !== "" && invokedPath === resolve(__filename);
+
+if (isMain) {
   const args = process.argv.slice(2);
 
   if (args.includes("--help")) {
