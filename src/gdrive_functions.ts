@@ -1,5 +1,6 @@
 import { google, drive_v3 } from "googleapis";
 import { createReadStream } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { Result, ok, err } from "./types.js";
 
@@ -105,6 +106,20 @@ export function getMissingGoogleDriveEnvVars(
   });
 }
 
+export function expandHomeDirPath(filePath: string): string {
+  const normalized = filePath.trim();
+
+  if (normalized === "~") {
+    return os.homedir();
+  }
+
+  if (normalized.startsWith("~/") || normalized.startsWith("~\\")) {
+    return path.join(os.homedir(), normalized.slice(2));
+  }
+
+  return normalized;
+}
+
 // ---------------------------------------------------------------------------
 // Imperative shell — all I/O, returns Result
 // ---------------------------------------------------------------------------
@@ -121,10 +136,12 @@ async function attempt<T>(
 }
 
 export async function authenticate(): Promise<Result<drive_v3.Drive>> {
-  const keyFile = process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
-  if (!keyFile) {
+  const keyFileRaw = process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
+  if (!keyFileRaw) {
     return err("GDRIVE_SERVICE_ACCOUNT_KEY is not set in environment");
   }
+  const keyFile = expandHomeDirPath(keyFileRaw);
+
   return attempt("Failed to authenticate with Google Drive", async () => {
     const auth = new google.auth.GoogleAuth({
       keyFile,

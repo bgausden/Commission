@@ -133,6 +133,36 @@ Control whether log4js writes to stdout/stderr via `LOG4JS_CONSOLE`:
 - `LOG4JS_CONSOLE=errors`: only error/fatal to console
 - `LOG4JS_CONSOLE=off`: no log4js console output (file logs still written)
 
+## Local Google Drive Secrets
+
+This project currently documents Google Drive credentials for local development only (no CI workflow).
+
+Recommended local setup:
+
+1. Keep the service-account JSON file outside the repository.
+2. Store the file under your home directory (for example `~/.secrets/`).
+3. Set Google Drive variables in your local `.env`.
+4. Keep `config/default.json` with `uploadToGDrive: true` only when you intend to upload artifacts.
+
+Example `.env` entries:
+
+```env
+GDRIVE_SERVICE_ACCOUNT_KEY=~/.secrets/commission-service-account.json
+GDRIVE_TALENOX_FOLDER_ID=your-google-drive-folder-id
+```
+
+Cross-platform notes:
+
+- `~` home-directory shorthand is supported for `GDRIVE_SERVICE_ACCOUNT_KEY`.
+- Both `~/.secrets/file.json` and `~\\.secrets\\file.json` forms are handled.
+- Absolute paths also work when preferred.
+
+Security notes:
+
+- Do not commit the service-account JSON.
+- Do not commit a real `.env`; commit only a sanitized template if needed.
+- Grant the service account access only to the target Drive folder.
+
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Detailed architecture and development guide

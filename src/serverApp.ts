@@ -312,10 +312,20 @@ export function createApp() {
       const folderId = asBodyString(req.body, "GDRIVE_TALENOX_FOLDER_ID");
 
       if (keyFile !== undefined) {
-        gdriveEnvUpdates.GDRIVE_SERVICE_ACCOUNT_KEY = keyFile.trim();
+        const keyFileTrimmed = keyFile.trim();
+        if (keyFileTrimmed === "") {
+          delete guiGoogleDriveEnvOverrides.GDRIVE_SERVICE_ACCOUNT_KEY;
+        } else {
+          gdriveEnvUpdates.GDRIVE_SERVICE_ACCOUNT_KEY = keyFileTrimmed;
+        }
       }
       if (folderId !== undefined) {
-        gdriveEnvUpdates.GDRIVE_TALENOX_FOLDER_ID = folderId.trim();
+        const folderIdTrimmed = folderId.trim();
+        if (folderIdTrimmed === "") {
+          delete guiGoogleDriveEnvOverrides.GDRIVE_TALENOX_FOLDER_ID;
+        } else {
+          gdriveEnvUpdates.GDRIVE_TALENOX_FOLDER_ID = folderIdTrimmed;
+        }
       }
 
       Object.assign(guiGoogleDriveEnvOverrides, gdriveEnvUpdates);

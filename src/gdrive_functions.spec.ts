@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getMissingGoogleDriveEnvVars } from "./gdrive_functions.js";
+import {
+  expandHomeDirPath,
+  getMissingGoogleDriveEnvVars,
+} from "./gdrive_functions.js";
 
 describe("getMissingGoogleDriveEnvVars", () => {
   it("returns both required vars when neither is set", () => {
@@ -26,5 +29,31 @@ describe("getMissingGoogleDriveEnvVars", () => {
     });
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("expandHomeDirPath", () => {
+  it("expands Unix-style home prefix", () => {
+    const expanded = expandHomeDirPath("~/.secrets/key.json");
+
+    expect(expanded).not.toBe("~/.secrets/key.json");
+    expect(expanded.replaceAll("\\", "/").endsWith(".secrets/key.json")).toBe(
+      true,
+    );
+  });
+
+  it("expands Windows-style home prefix", () => {
+    const expanded = expandHomeDirPath("~\\.secrets\\key.json");
+
+    expect(expanded).not.toBe("~\\.secrets\\key.json");
+    expect(expanded.replaceAll("\\", "/").endsWith(".secrets/key.json")).toBe(
+      true,
+    );
+  });
+
+  it("leaves non-home paths untouched", () => {
+    const asIs = "C:\\secrets\\key.json";
+
+    expect(expandHomeDirPath(asIs)).toBe(asIs);
   });
 });

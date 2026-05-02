@@ -307,6 +307,49 @@ describe("/update-config endpoint", () => {
       expect(process.env.GDRIVE_SERVICE_ACCOUNT_KEY).toBeUndefined();
       expect(process.env.GDRIVE_TALENOX_FOLDER_ID).toBeUndefined();
     });
+
+    it("should clear blank Google Drive runtime overrides and fall back to .env", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+        uploadToGDrive: false,
+      };
+
+      configFileContents = JSON.stringify(existingConfig);
+      envFileContents =
+        "EXISTING=1\nGDRIVE_SERVICE_ACCOUNT_KEY=/env/sa-key.json\nGDRIVE_TALENOX_FOLDER_ID=env-folder\n";
+
+      // Set non-empty runtime overrides first.
+      const firstResponse = await postUpdateConfig({
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+        uploadToGDrive: true,
+        GDRIVE_SERVICE_ACCOUNT_KEY: "/tmp/override-key.json",
+        GDRIVE_TALENOX_FOLDER_ID: "override-folder",
+      });
+      expect(firstResponse.status).toBe(200);
+
+      let currentConfig = (await getConfig()) as Record<string, unknown>;
+      expect(currentConfig.GDRIVE_SERVICE_ACCOUNT_KEY).toBe(
+        "/tmp/override-key.json",
+      );
+      expect(currentConfig.GDRIVE_TALENOX_FOLDER_ID).toBe("override-folder");
+
+      // Empty values should clear runtime overrides and expose .env values again.
+      const secondResponse = await postUpdateConfig({
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+        uploadToGDrive: true,
+        GDRIVE_SERVICE_ACCOUNT_KEY: "   ",
+        GDRIVE_TALENOX_FOLDER_ID: "",
+      });
+      expect(secondResponse.status).toBe(200);
+
+      currentConfig = (await getConfig()) as Record<string, unknown>;
+      expect(currentConfig.GDRIVE_SERVICE_ACCOUNT_KEY).toBe("/env/sa-key.json");
+      expect(currentConfig.GDRIVE_TALENOX_FOLDER_ID).toBe("env-folder");
+    });
   });
 
   describe("boolean coercion", () => {

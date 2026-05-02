@@ -44,14 +44,28 @@ If the month subfolder already exists **and contains files**, the upload is skip
 4. Paste the service account email and set the role to **Content Manager**
 5. Uncheck "Notify people" and confirm
 
-### Step 3 — Add credentials to `.env`
+### Step 3 — Add credentials to local `.env`
+
+This project currently documents Google Drive credentials for local development only.
 
 Open (or create) `.env` in the project root and add:
 
 ```
-GDRIVE_SERVICE_ACCOUNT_KEY=/Users/barryg/.secrets/commission-488916-e52ad9d61061.json
+GDRIVE_SERVICE_ACCOUNT_KEY=~/.secrets/commission-488916-e52ad9d61061.json
 GDRIVE_TALENOX_FOLDER_ID=1-gRqG1vlvru7c7-Xn9jPfzsJG5almLnC
 ```
+
+Cross-platform path notes:
+
+- `~` home-directory shorthand is supported for `GDRIVE_SERVICE_ACCOUNT_KEY`.
+- Both `~/.secrets/file.json` and `~\\.secrets\\file.json` forms are handled.
+- Absolute paths also work when preferred.
+
+Local security notes:
+
+- Keep the service-account JSON outside the repository.
+- Do not commit a real `.env` file.
+- Grant the service account access only to the target Shared Drive folder.
 
 The folder ID is the string after `/folders/` in the Google Drive URL when you have the Talenox folder open.
 

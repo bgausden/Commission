@@ -7,7 +7,7 @@
     "type": "module",
     "scripts": {
         "test": "vitest --run",
-        "test:regression": "vitest --run regression.spec.ts",
+        "test:regression": "vitest --run scripts/regression.spec.ts",
         "create-baseline": "npx tsx scripts/createBaseline.ts",
         "assemble-baseline": "npx tsx scripts/assembleBaselineFromArtifacts.ts",
         "update-baseline": "npx tsx scripts/updateBaseline.ts",
