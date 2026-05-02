@@ -74,7 +74,7 @@ export type PooledStaffEntry = {
   comm: TCommComponents;
 };
 
-export type PoolCalculationReport = {
+export type PoolingReport = {
   poolMembers: TStaffID[];
   aggregate: PoolAggregate;
   pooledEntries: PooledStaffEntry[];
@@ -397,10 +397,10 @@ function assertPoolAggregatePreserved(
 export function calculatePooledCommissionMap(
   commMap: TCommMap,
   staffHurdle: TStaffHurdles,
-): { pooledCommMap: TCommMap; reports: PoolCalculationReport[] } {
+): { pooledCommMap: TCommMap; reports: PoolingReport[] } {
   const pools = collectPools(staffHurdle);
   const pooledCommMap = new Map(commMap);
-  const reports: PoolCalculationReport[] = [];
+  const reports: PoolingReport[] = [];
 
   for (const poolMembers of pools) {
     assert(poolMembers.length > 1, "Pool must contain at least 2 members.");
