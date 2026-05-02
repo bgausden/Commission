@@ -2,7 +2,7 @@
  * Script to anonymize staff names in test fixture files
  */
 
-import XLSX from "../vendor/xlsx-0.20.3/xlsx.mjs";
+import XLSX from "xlsx";
 import * as fs from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
