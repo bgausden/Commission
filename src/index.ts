@@ -65,23 +65,6 @@ export {
 } from "./payrollWorksheet.js";
 export { doPooling } from "./payrollShell.js";
 
-// Type-safe interface for custom global properties
-interface CustomGlobals {
-  PAYMENTS_WB_NAME: string;
-  PAYMENTS_WS_NAME: string;
-  LOGS_DIR: string;
-  PAYMENTS_DIR: string;
-}
-
-// Type-safe global setter - provides type checking for both key and value
-const setGlobal = <K extends keyof CustomGlobals>(
-  key: K,
-  value: CustomGlobals[K],
-): void => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (globalThis as any)[key] = value;
-};
-
 const REGRESSION_OFFLINE_MODE = process.env.REGRESSION_OFFLINE === "1";
 
 async function main() {
@@ -111,10 +94,6 @@ async function main() {
     }
   }
 
-  // Set global variables for use in other functions
-  setGlobal("PAYMENTS_WB_NAME", PAYMENTS_WB_NAME);
-  setGlobal("PAYMENTS_WS_NAME", PAYMENTS_WS_NAME);
-
   const firstDay = new Date(Date.parse(`01 ${PAYROLL_MONTH} ${PAYROLL_YEAR}`));
 
   infoLogger.info(`Commission run begins ${firstDay.toDateString()}`);
@@ -126,12 +105,7 @@ async function main() {
   emitProgressAndInfo("Loading environment configuration");
   const envConfig = processEnv();
   const DATA_DIR = envConfig.DATA_DIR;
-  const LOGS_DIR = envConfig.LOGS_DIR;
   const PAYMENTS_DIR = envConfig.PAYMENTS_DIR;
-
-  // Set global variables for use in other functions
-  setGlobal("LOGS_DIR", LOGS_DIR);
-  setGlobal("PAYMENTS_DIR", PAYMENTS_DIR);
 
   assert(isValidDirectory(DATA_DIR));
 

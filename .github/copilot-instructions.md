@@ -8,16 +8,6 @@ TypeScript-based commission calculator for salon staff that processes Mindbody p
 
 ## Non-Obvious Constraints
 
-### Global State — ESLint comment required
-
-Files using `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR`, etc. must include a comment at the top:
-
-```typescript
-/* global PAYROLL_MONTH, PAYROLL_YEAR */
-```
-
-Full set declared in [src/globals.d.ts](../src/globals.d.ts). Without this comment ESLint reports undefined variable errors.
-
 ### `updateTalenox: false` is a dry-run safety flag
 
 `config/default.json` → `updateTalenox`. When `false`, commissions are calculated and the payments Excel is generated but nothing is pushed to the Talenox API. **Do not set to `true`** unless running a real payroll.
@@ -46,14 +36,18 @@ If any gate fails, fix it before merging. Do not merge with a known failure on t
 
 ## Key Behavioral Notes
 
-### `staffHurdle.json` default fallback
+### Missing staff in `staffHurdle.json` is always fatal
 
-Staff ID `"000"` is the fallback entry used when a staff member appears in the Mindbody report but has no entry in `config/staffHurdle.json`. Behaviour is controlled by `config.missingStaffAreFatal`:
+Every staff ID found in the Mindbody payroll report must have an entry in `config/staffHurdle.json`. There is no fallback `"000"` default. If a staff ID is missing, `lookupStaffHurdle` always throws.
 
-1. Staff ID found → use their config directly
-2. Staff ID missing + `missingStaffAreFatal: true` → throw error
-3. Staff ID missing + `missingStaffAreFatal: false` → warn and return `"000"` config
-4. `"000"` itself missing → always throws regardless of config
+### `config.missingStaffAreFatal` — Talenox staff lookup
+
+`config.missingStaffAreFatal` controls what happens when a staff member is found in the Mindbody report but **not** in the Talenox employee list:
+
+- `true` → throw a fatal error (strict mode)
+- `false` → log a warning and continue
+
+This flag has no effect on `staffHurdle.json` lookups — those always throw on a missing entry.
 
 ### Mindbody Excel format assumptions
 
@@ -103,12 +97,12 @@ Key functions: `getTalenoxEmployees()`, `createPayroll()`, `uploadAdHocPayments(
 
 ## Common Gotchas
 
-1. **Missing staff IDs**: Behaviour controlled by `config.missingStaffAreFatal` — see above.
-2. **File archiving**: `moveFilesToOldSubDir()` automatically gzip-compresses and archives old data/payment files to an `old/` subdirectory on each run.
-3. **Rounding**: General service commission amounts use `Math.round(value * 100) / 100`. Custom pay rate rounding has a known floating-point precision issue (active TODO).
-4. **ESM imports**: Always use `.js` extension in relative imports even for `.ts` source files.
-5. **Result vs assert vs throw**: Use `Result<T>` for functions that can fail on external input (file I/O, Excel parsing, API calls, schema validation). Use `assert()` for logic invariants — conditions impossible if types/schema hold. Reserve `throw` for the `main()` imperative shell boundary when unwrapping a failed Result to abort the run. Never throw inside functional-core modules.
-6. **`setGlobal()`**: Defined in `src/index.ts` (not exported) — CLI-only. Type-safe setter for the `CustomGlobals` interface. Never write to `globalThis` directly.
+1. **Missing staff in staffHurdle.json**: Always throws — no fallback. Ensure every staff ID in the Mindbody report has an entry in `config/staffHurdle.json`.
+2. **Missing staff in Talenox**: Controlled by `config.missingStaffAreFatal` — throw or warn.
+3. **File archiving**: `moveFilesToOldSubDir()` automatically gzip-compresses and archives old data/payment files to an `old/` subdirectory on each run.
+4. **Rounding**: General service commission amounts use `Math.round(value * 100) / 100`. Custom pay rate rounding has a known floating-point precision issue (active TODO).
+5. **ESM imports**: Always use `.js` extension in relative imports even for `.ts` source files.
+6. **Result vs assert vs throw**: Use `Result<T>` for functions that can fail on external input (file I/O, Excel parsing, API calls, schema validation). Use `assert()` for logic invariants — conditions impossible if types/schema hold. Reserve `throw` for the `main()` imperative shell boundary when unwrapping a failed Result to abort the run. Never throw inside functional-core modules.
 
 ## Active TODOs
 
