@@ -37,7 +37,13 @@ npm run anonymize-fixtures  # Anonymize test fixture data
 Regression tests auto-discover the oldest available baseline in `test-baselines/` (sorted by `createdDate` in each baseline's `metadata.json`). To target a specific baseline:
 
 ```bash
-BASELINE_NAME=dec-2025-baseline npm run test:regression
+BASELINE_NAME=2025-12 npm run test:regression
+```
+
+PowerShell (Windows):
+
+```powershell
+$env:BASELINE_NAME = "2025-12"; npm run test:regression
 ```
 
 Baselines are gitignored — create one locally before regression tests will do anything meaningful:
@@ -100,7 +106,7 @@ Use this workflow to confirm that code changes haven't altered the results for a
 Pass the git commit SHA from when that payroll was run so the baseline captures results at a known-good point:
 
 ```bash
-npm run create-baseline -- dec-2025-baseline <commit-sha>
+npm run create-baseline -- 2025-12 <commit-sha>
 ```
 
 Omit the SHA to create the baseline from the current commit instead.
@@ -112,7 +118,13 @@ Omit the SHA to create the baseline from the current commit instead.
 ```bash
 npm run test:regression
 # or, to target this baseline explicitly:
-BASELINE_NAME=dec-2025-baseline npm run test:regression
+BASELINE_NAME=2025-12 npm run test:regression
+```
+
+PowerShell (Windows):
+
+```powershell
+$env:BASELINE_NAME = "2025-12"; npm run test:regression
 ```
 
 The test re-runs the calculation with the December source data using the current codebase and compares per-staff payment totals against the baseline. Any modifications, additions, or removals are reported.

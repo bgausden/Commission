@@ -96,7 +96,14 @@ describe("payrollWorksheet", () => {
       ["Sales Commission:", "", "", "", "", 50],
       ["Total for Wong, Rex", "", "", "", "", 2600],
     ];
-    const result = extractStaffPayrollData(rows, 0, 7, 5, "019", getStaffHurdleForContext);
+    const result = extractStaffPayrollData(
+      rows,
+      0,
+      7,
+      5,
+      "019",
+      getStaffHurdleForContext,
+    );
     expect(result.staffID).toBe("019");
     expect(result.tips).toBe(150);
     expect(result.productCommission).toBe(50);
@@ -118,7 +125,14 @@ describe("payrollWorksheet", () => {
       ["Sales Commission:", "", "", "", "", 30],
       ["Total for Wong, Rex", "", "", "", "", 1800],
     ];
-    const result = extractStaffPayrollData(rows, 0, 4, 5, "019", getStaffHurdleForContext);
+    const result = extractStaffPayrollData(
+      rows,
+      0,
+      4,
+      5,
+      "019",
+      getStaffHurdleForContext,
+    );
     expect(result.tips).toBe(0);
     expect(result.productCommission).toBe(30);
   });
@@ -138,7 +152,14 @@ describe("payrollWorksheet", () => {
       ["Tips:", "", "", "", "", 200],
       ["Total for Kate", "", "", "", "", 3000],
     ];
-    const result = extractStaffPayrollData(rows, 0, 3, 5, "012", getStaffHurdleForContext);
+    const result = extractStaffPayrollData(
+      rows,
+      0,
+      3,
+      5,
+      "012",
+      getStaffHurdleForContext,
+    );
     expect(result.tips).toBe(200);
     expect(result.productCommission).toBe(0);
   });
@@ -159,7 +180,14 @@ describe("payrollWorksheet", () => {
       ["Sales Commission:", "", "", "", "", ""],
       ["Total for Test", "", "", "", "", 0],
     ];
-    const result = extractStaffPayrollData(rows, 0, 4, 5, "001", getStaffHurdleForContext);
+    const result = extractStaffPayrollData(
+      rows,
+      0,
+      4,
+      5,
+      "001",
+      getStaffHurdleForContext,
+    );
     expect(result.tips).toBe(0);
     expect(result.productCommission).toBe(0);
   });
@@ -176,15 +204,22 @@ describe("payrollWorksheet", () => {
     const rows: unknown[][] = [
       ["Kate, Staff ID #: 012"],
       ["Services..."],
-      ["Total for Kate", "", "", "", "", 5000],  // endRow = 2
-      ["Tips:", "", "", "", "", 100],             // index 3: outside window (window is 0..2)
+      ["Total for Kate", "", "", "", "", 5000], // endRow = 2
+      ["Tips:", "", "", "", "", 100], // index 3: outside window (window is 0..2)
       ["Row index 4", "", "", "", "", 0],
-      ["Sales Commission:", "", "", "", "", 25],  // index 5: outside window
+      ["Sales Commission:", "", "", "", "", 25], // index 5: outside window
       ["Row index 6", "", "", "", "", 0],
     ];
     // endRow=2: search window covers indices endRow-3..endRow = -1, 0, 1, 2
     // Tips at index 3 and Sales Commission at index 5 are outside the window
-    const result = extractStaffPayrollData(rows, 0, 2, 5, "012", getStaffHurdleForContext);
+    const result = extractStaffPayrollData(
+      rows,
+      0,
+      2,
+      5,
+      "012",
+      getStaffHurdleForContext,
+    );
     expect(result.tips).toBe(0);
     expect(result.productCommission).toBe(0);
   });
@@ -202,7 +237,8 @@ describe("getServiceRevenues", () => {
     payViaTalenox: true,
     customPayRates: [{ Extensions: 0.15 }],
   };
-  const kateGetter: StaffHurdleGetter = (_staffID, _context) => Option.some(kateHurdle);
+  const kateGetter: StaffHurdleGetter = (_staffID, _context) =>
+    Option.some(kateHurdle);
 
   const plainHurdle: StaffHurdle = {
     staffName: "Default",
@@ -212,7 +248,8 @@ describe("getServiceRevenues", () => {
     contractor: false,
     payViaTalenox: true,
   };
-  const plainGetter: StaffHurdleGetter = (_staffID, _context) => Option.some(plainHurdle);
+  const plainGetter: StaffHurdleGetter = (_staffID, _context) =>
+    Option.some(plainHurdle);
 
   it("extracts general service revenue from a simple block", () => {
     const rows: unknown[][] = [

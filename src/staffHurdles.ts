@@ -1,4 +1,10 @@
-import { type TStaffHurdles, type TStaffID, type Result, ok, err } from "./types.js";
+import {
+  type TStaffHurdles,
+  type TStaffID,
+  type Result,
+  ok,
+  err,
+} from "./types.js";
 import { loadJsonFromFile } from "./utility_functions.js";
 import { DEFAULT_STAFF_HURDLES_FILE } from "./constants.js";
 import { StaffHurdle } from "./IStaffHurdle.js";

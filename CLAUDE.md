@@ -39,7 +39,13 @@ The regression test processes a **fixed input file** (the Mindbody commission xl
 `regression.spec.ts` does not hardcode a baseline name. On each run it scans `test-baselines/`, reads `metadata.json` from each subdirectory, and selects the entry with the earliest `createdDate`. Set `BASELINE_NAME` to override:
 
 ```bash
-BASELINE_NAME=dec-2025-baseline npm run test:regression
+BASELINE_NAME=2025-12 npm run test:regression
+```
+
+PowerShell (Windows):
+
+```powershell
+$env:BASELINE_NAME = "2025-12"; npm run test:regression
 ```
 
 `test-baselines/` is gitignored. Regression tests fail with a clear error when no baseline exists.
