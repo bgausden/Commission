@@ -281,7 +281,7 @@ export function createApp() {
     res.json({ ...config, ...googleDriveEnv, ...guiGoogleDriveEnvOverrides });
   });
 
-  app.post("/upload", (req: Request, res: Response) => {
+  app.post("/upload-commission", (req: Request, res: Response) => {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "No file uploaded" });
     }

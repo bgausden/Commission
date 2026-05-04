@@ -23,121 +23,127 @@
 
         <div class="panel-group">
 
-        <!-- Upload Panel -->
-        <div class="panel">
-            <h2 class="panel-title">Payroll Workbook</h2>
-            <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-swap="none">
-                <div id="drop-zone" class="drop-zone">
-                    Drop a payroll workbook here, or click to select — .xlsx only
-                </div>
-                <div class="mt-4 flex items-center gap-3">
-                    <span class="form-label form-label--inline">Payroll Workbook:</span>
-                    <span id="payroll-wb-name" class="status-value"></span>
-                </div>
-                <input type="file" id="file-input" name="file" class="hidden" accept=".xlsx">
-            </form>
-        </div>
+            <!-- Upload Panel -->
+            <div class="panel">
+                <h2 class="panel-title">Payroll Workbook</h2>
+                <form id="upload-form" hx-post="/upload-commission" hx-encoding="multipart/form-data" hx-swap="none">
+                    <div id="drop-zone" class="drop-zone">
+                        Drop a payroll workbook here, or click to select — .xlsx only
+                    </div>
+                    <div class="mt-4 flex items-center gap-3">
+                        <span class="form-label form-label--inline">Payroll Workbook:</span>
+                        <span id="payroll-wb-name" class="status-value"></span>
+                    </div>
+                    <input type="file" id="file-input" name="file" class="hidden" accept=".xlsx">
+                </form>
+            </div>
 
-        <!-- Config Panel -->
-        <div class="panel">
-            <h2 class="panel-title">Run Settings</h2>
-            <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none">
-                <div class="checkbox-group">
-                    <div class="form-group">
-                        <label class="form-label-inline">
-                            <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
-                            <span>Missing Staff are Fatal</span>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label-inline">
-                            <input type="checkbox" id="updateTalenox" name="updateTalenox">
-                            <span>Update Talenox</span>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label-inline">
-                            <input type="checkbox" id="uploadToGDrive" name="uploadToGDrive">
-                            <span>Upload to Google Drive</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Advanced Settings -->
-                <div>
-                    <button type="button" id="advanced-settings-toggle" class="collapsible-trigger collapsible-trigger--section" onclick="toggleAdvancedSettings()" aria-expanded="false" aria-controls="advanced-settings">
-                        <span class="collapsible-icon" id="advanced-settings-toggle-icon">&#9654;</span>
-                        Advanced Config
-                    </button>
-                    <div id="advanced-settings" class="collapsible-content">
-                        <p class="mt-4 text-xs">
-                            These settings override the .env for testing purposes and will not persist across server restarts.
-                        </p>
+            <!-- Config Panel -->
+            <div class="panel">
+                <h2 class="panel-title">Run Settings</h2>
+                <form id="config-form" hx-post="/update-config" hx-trigger="submit" hx-swap="none">
+                    <div class="checkbox-group">
                         <div class="form-group">
-                            <label for="GDRIVE_SERVICE_ACCOUNT_KEY" class="form-label">Google Drive Service Account</label>
-                            <input type="text" id="GDRIVE_SERVICE_ACCOUNT_KEY" name="GDRIVE_SERVICE_ACCOUNT_KEY"
-                                class="form-input" placeholder="/path/to/your/service-account-secret.json">
+                            <label class="form-label-inline">
+                                <input type="checkbox" id="missingStaffAreFatal" name="missingStaffAreFatal">
+                                <span>Missing Staff are Fatal</span>
+                            </label>
                         </div>
                         <div class="form-group">
-                            <label for="GDRIVE_TALENOX_FOLDER_ID" class="form-label">Google Drive Talenox Folder ID</label>
-                            <input type="text" id="GDRIVE_TALENOX_FOLDER_ID" name="GDRIVE_TALENOX_FOLDER_ID"
-                                class="form-input" placeholder="Google Drive folder ID">
+                            <label class="form-label-inline">
+                                <input type="checkbox" id="updateTalenox" name="updateTalenox">
+                                <span>Update Talenox</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label-inline">
+                                <input type="checkbox" id="uploadToGDrive" name="uploadToGDrive">
+                                <span>Upload to Google Drive</span>
+                            </label>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn">Update Config</button>
-                    <button type="button" id="run-commission-btn" class="btn btn-primary">Run Commission</button>
-                </div>
-            </form>
-        </div>
+                    <!-- Advanced Settings -->
+                    <div>
+                        <button type="button" id="advanced-settings-toggle"
+                            class="collapsible-trigger collapsible-trigger--section" onclick="toggleAdvancedSettings()"
+                            aria-expanded="false" aria-controls="advanced-settings">
+                            <span class="collapsible-icon" id="advanced-settings-toggle-icon">&#9654;</span>
+                            Advanced Config
+                        </button>
+                        <div id="advanced-settings" class="collapsible-content">
+                            <p class="mt-4 text-xs">
+                                These settings override the .env for testing purposes and will not persist across server
+                                restarts.
+                            </p>
+                            <div class="form-group">
+                                <label for="GDRIVE_SERVICE_ACCOUNT_KEY" class="form-label">Google Drive Service
+                                    Account</label>
+                                <input type="text" id="GDRIVE_SERVICE_ACCOUNT_KEY" name="GDRIVE_SERVICE_ACCOUNT_KEY"
+                                    class="form-input" placeholder="/path/to/your/service-account-secret.json">
+                            </div>
+                            <div class="form-group">
+                                <label for="GDRIVE_TALENOX_FOLDER_ID" class="form-label">Google Drive Talenox Folder
+                                    ID</label>
+                                <input type="text" id="GDRIVE_TALENOX_FOLDER_ID" name="GDRIVE_TALENOX_FOLDER_ID"
+                                    class="form-input" placeholder="Google Drive folder ID">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn">Update Config</button>
+                        <button type="button" id="run-commission-btn" class="btn btn-primary">Run Commission</button>
+                    </div>
+                </form>
+            </div>
 
         </div><!-- /.panel-group -->
 
         <div class="panel-group">
 
-        <!-- Current Config Panel -->
-        <div class="panel">
-            <button type="button" id="config-toggle" class="collapsible-trigger" onclick="toggleConfig()" aria-expanded="false" aria-controls="config-content">
-                <span class="collapsible-icon" id="toggle-icon">&#9654;</span>
-                Current Config
-            </button>
-            <div id="config-content" class="collapsible-content">
-                <pre id="config-json" class="log-output"></pre>
-            </div>
-        </div>
-
-        <!-- Commission Run Panel -->
-        <div class="panel" id="commission-panel">
-            <div class="panel-header">
-                <h2 class="panel-title">Commission Run</h2>
-                <div class="flex items-center gap-4">
-                    <label class="form-label-inline">
-                        <input type="checkbox" id="commission-show-logs">
-                        <span>Show logs</span>
-                    </label>
-                    <label class="form-label-inline">
-                        <input type="checkbox" id="commission-show-stderr">
-                        <span>Show stderr</span>
-                    </label>
-                    <button type="button" id="commission-clear-btn" class="btn btn-ghost">Clear</button>
+            <!-- Current Config Panel -->
+            <div class="panel">
+                <button type="button" id="config-toggle" class="collapsible-trigger" onclick="toggleConfig()"
+                    aria-expanded="false" aria-controls="config-content">
+                    <span class="collapsible-icon" id="toggle-icon">&#9654;</span>
+                    Current Config
+                </button>
+                <div id="config-content" class="collapsible-content">
+                    <pre id="config-json" class="log-output"></pre>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <span class="status-label">Status:</span>
-                <span id="commission-status" class="status-value">Idle</span>
-                <span id="commission-jobid" class="status-value status-value--jobid"></span>
+
+            <!-- Commission Run Panel -->
+            <div class="panel" id="commission-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Commission Run</h2>
+                    <div class="flex items-center gap-4">
+                        <label class="form-label-inline">
+                            <input type="checkbox" id="commission-show-logs">
+                            <span>Show logs</span>
+                        </label>
+                        <label class="form-label-inline">
+                            <input type="checkbox" id="commission-show-stderr">
+                            <span>Show stderr</span>
+                        </label>
+                        <button type="button" id="commission-clear-btn" class="btn btn-ghost">Clear</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="status-label">Status:</span>
+                    <span id="commission-status" class="status-value">Idle</span>
+                    <span id="commission-jobid" class="status-value status-value--jobid"></span>
+                </div>
+                <div class="mt-4">
+                    <span class="form-label">Progress</span>
+                    <ol id="commission-steps" class="steps-list"></ol>
+                </div>
+                <div id="commission-log-container" class="mt-4 hidden">
+                    <pre id="commission-log" class="log-output"></pre>
+                </div>
+                <div id="commission-result" class="mt-4 text-sm"></div>
             </div>
-            <div class="mt-4">
-                <span class="form-label">Progress</span>
-                <ol id="commission-steps" class="steps-list"></ol>
-            </div>
-            <div id="commission-log-container" class="mt-4 hidden">
-                <pre id="commission-log" class="log-output"></pre>
-            </div>
-            <div id="commission-result" class="mt-4 text-sm"></div>
-        </div>
 
         </div><!-- /.panel-group -->
 
@@ -462,7 +468,7 @@
             setCommissionJobId(jobId);
 
             if (currentEventSource) {
-                try { currentEventSource.close(); } catch { }
+                try {currentEventSource.close();} catch { }
                 currentEventSource = null;
             }
 
@@ -500,7 +506,7 @@
 
                 es.addEventListener('done', (event) => {
                     let payload = null;
-                    try { payload = JSON.parse(event.data); } catch { }
+                    try {payload = JSON.parse(event.data);} catch { }
 
                     if (payload && payload.status) {
                         setCommissionStatus(payload.status);
@@ -514,12 +520,12 @@
                     }
 
                     disableRunButton(false);
-                    try { es.close(); } catch { }
+                    try {es.close();} catch { }
                     currentEventSource = null;
                 });
 
                 es.onerror = () => {
-                    try { es.close(); } catch { }
+                    try {es.close();} catch { }
                     currentEventSource = null;
                     pollCommissionStatus(statusUrl);
                 };
