@@ -102,6 +102,48 @@ export type Result<T, E = string> = Ok<T> | Err<E>;
 export const ok = <T>(value: T): Ok<T> => ({ ok: true, value });
 export const err = <E>(error: E): Err<E> => ({ ok: false, error });
 
+// ---------------------------------------------------------------------------
+// Redo workbook types
+// ---------------------------------------------------------------------------
+
+/** A single validated row from the redo workbook, as output by the parser. */
+export type TRedoWorkbookRow = {
+  sourceRowNumber: number; // 1-based row number in the workbook (including header)
+  originalServiceDate: Date;
+  clientName: string;
+  originalStaffID: TStaffID;
+  originalStaffName: string;
+  redoStaffID: TStaffID | null; // null = debit-only row
+  redoStaffName: string;
+  debitAmount: number;
+  creditAmount: number | null; // null when redoStaffID is absent
+};
+
+/** A per-staff ledger entry produced by the redo adjustment builder. */
+export type TRedoLedgerEntry = {
+  direction: "DEBIT" | "CREDIT";
+  amount: number;
+  clientName: string;
+  originalServiceDate: Date;
+  sourceRowNumber: number;
+  counterpartyStaffID: TStaffID | null;
+  counterpartyStaffName: string;
+  originalStaffID: TStaffID;
+  originalStaffName: string;
+};
+
+/** Accumulated redo adjustments for a single staff member. */
+export type TRedoAdjustment = {
+  redoEntries: TRedoLedgerEntry[];
+  redoDebitTotal: number;
+  redoCreditTotal: number;
+  /** Net effect on Total Payable: credits − debits (positive = net credit, negative = net debit). */
+  redoNetAdjustment: number;
+};
+
+/** Map of staff ID → accumulated redo adjustments. */
+export type TRedoMap = Map<TStaffID, TRedoAdjustment>;
+
 // Hurdle calculation types
 export interface HurdleConfig {
   baseRate: number;
