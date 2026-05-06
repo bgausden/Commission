@@ -38,6 +38,22 @@
                 </form>
             </div>
 
+            <!-- Redo Upload Panel -->
+            <div class="panel">
+                <h2 class="panel-title">Redo Workbook <span class="text-xs"
+                        style="font-weight:normal;opacity:0.7">(optional)</span></h2>
+                <form id="redo-upload-form" hx-post="/upload-redo" hx-encoding="multipart/form-data" hx-swap="none">
+                    <div id="redo-drop-zone" class="drop-zone">
+                        Drop a redo workbook here, or click to select — .xlsx only
+                    </div>
+                    <div class="mt-4 flex items-center gap-3">
+                        <span class="form-label form-label--inline">Redo Workbook:</span>
+                        <span id="redo-wb-name" class="status-value"></span>
+                    </div>
+                    <input type="file" id="redo-file-input" name="file" class="hidden" accept=".xlsx">
+                </form>
+            </div>
+
             <!-- Config Panel -->
             <div class="panel">
                 <h2 class="panel-title">Run Settings</h2>
@@ -172,10 +188,12 @@
         const configForm = document.getElementById('config-form');
         const configJson = document.getElementById('config-json');
         const payrollWbName = document.getElementById('payroll-wb-name');
+        const redoWbName = document.getElementById('redo-wb-name');
         const errorDialog = document.getElementById('error-dialog');
         const configContent = document.getElementById('config-content');
         const confirmationDialog = document.getElementById('confirmation-dialog');
 
+        // --- Payroll workbook drop zone ---
         dropZone.addEventListener('click', () => {
             fileInput.click();
         });
@@ -219,20 +237,68 @@
             }
         });
 
+        // --- Redo workbook drop zone ---
+        const redoDropZone = document.getElementById('redo-drop-zone');
+        const redoFileInput = document.getElementById('redo-file-input');
+        const redoUploadForm = document.getElementById('redo-upload-form');
+
+        redoDropZone.addEventListener('click', () => {
+            redoFileInput.click();
+        });
+
+        redoDropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            redoDropZone.classList.add('active');
+        });
+
+        redoDropZone.addEventListener('dragleave', () => {
+            redoDropZone.classList.remove('active');
+        });
+
+        redoDropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            redoDropZone.classList.remove('active');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (fileExtension !== 'xlsx') {
+                    showError('Invalid file type. Only .xlsx files are allowed.');
+                    return;
+                }
+                redoFileInput.files = files;
+                htmx.trigger(redoUploadForm, 'submit');
+            }
+        });
+
+        redoFileInput.addEventListener('change', () => {
+            const files = redoFileInput.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (fileExtension !== 'xlsx') {
+                    showError('Invalid file type. Only .xlsx files are allowed.');
+                    return;
+                }
+                htmx.trigger(redoUploadForm, 'submit');
+            }
+        });
+
         htmx.on('htmx:beforeRequest', (event) => {
-            if (event.detail.elt.id === 'upload-form') {
+            if (event.detail.elt.id === 'upload-form' || event.detail.elt.id === 'redo-upload-form') {
                 hideError();
             }
         });
 
         htmx.on('htmx:responseError', (event) => {
-            if (event.detail.elt.id === 'upload-form') {
+            if (event.detail.elt.id === 'upload-form' || event.detail.elt.id === 'redo-upload-form') {
                 showError(event.detail.xhr.responseText);
             }
         });
 
         htmx.on('htmx:afterRequest', (event) => {
-            if (event.detail.elt.id === 'upload-form' || event.detail.elt.id === 'config-form') {
+            if (event.detail.elt.id === 'upload-form' || event.detail.elt.id === 'redo-upload-form' || event.detail.elt.id === 'config-form') {
                 fetchConfig();
                 const response = JSON.parse(event.detail.xhr.responseText);
                 showConfirmation(response.message);
@@ -245,6 +311,7 @@
                 .then(data => {
                     configJson.textContent = JSON.stringify(data, null, 4);
                     payrollWbName.textContent = data.PAYROLL_WB_FILENAME;
+                    redoWbName.textContent = data.REDO_WB_FILENAME || '';
                     document.getElementById('missingStaffAreFatal').checked = data.missingStaffAreFatal;
                     document.getElementById('updateTalenox').checked = data.updateTalenox;
                     document.getElementById('uploadToGDrive').checked = data.uploadToGDrive;
