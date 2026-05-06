@@ -2,11 +2,12 @@
 /* eslint-disable */
 declare module "node-config-ts" {
   interface IConfig {
-    PAYROLL_WB_FILENAME: string
-    missingStaffAreFatal: boolean
-    updateTalenox: boolean
-    uploadToGDrive: boolean
+    PAYROLL_WB_FILENAME: string;
+    REDO_WB_FILENAME: string;
+    missingStaffAreFatal: boolean;
+    updateTalenox: boolean;
+    uploadToGDrive: boolean;
   }
-  export const config: Config
-  export type Config = IConfig
+  export const config: Config;
+  export type Config = IConfig;
 }
