@@ -110,3 +110,17 @@ Wrong abstractions are harder to undo than duplication; in small teams the cost 
 ### GUI and design work
 
 When working on the web UI (`public/`) or any design/styling task, read [`.impeccable.md`](.impeccable.md) for the project's design context — color palette, typography, spacing, component guidelines, and design principles derived from HBO's aesthetic.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for this repo. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the five default triage role labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context repo — one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agents/domain.md`.
