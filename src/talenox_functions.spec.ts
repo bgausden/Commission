@@ -1,8 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPayroll, uploadAdHocPayments } from "./talenox_functions.js";
+import {
+  createAdHocPayments,
+  createPayroll,
+  uploadAdHocPayments,
+} from "./talenox_functions.js";
 import type { ITalenoxPayment } from "./ITalenoxPayment.js";
 import type { PayrollRunContext } from "./payrollContext.js";
-import type { TTalenoxInfoStaffMap } from "./types.js";
+import type {
+  TRedoAdjustment,
+  TRedoMap,
+  TTalenoxInfoStaffMap,
+  TCommMap,
+} from "./types.js";
+import { isContractor } from "./utility_functions.js";
 
 vi.mock("./logging_functions.js", () => ({
   debugLogger: { debug: vi.fn() },
@@ -153,5 +163,247 @@ describe("uploadAdHocPayments", () => {
         },
       ],
     });
+  });
+});
+
+describe("createAdHocPayments redo export", () => {
+  const payrollContext: PayrollRunContext = {
+    month: "April",
+    year: "2024",
+    firstDay: new Date("2024-04-01T00:00:00.000Z"),
+  };
+
+  const staffMap: TTalenoxInfoStaffMap = new Map([
+    ["001", { first_name: "Active", last_name: "Staff" }],
+    ["002", { first_name: "Redo", last_name: "Worker" }],
+  ]);
+
+  const emptyCommMap: TCommMap = new Map();
+
+  function makeRedoAdj(
+    entries: TRedoAdjustment["redoEntries"],
+  ): TRedoAdjustment {
+    const debitTotal = entries
+      .filter((e) => e.direction === "DEBIT")
+      .reduce((sum, e) => sum + e.amount, 0);
+    const creditTotal = entries
+      .filter((e) => e.direction === "CREDIT")
+      .reduce((sum, e) => sum + e.amount, 0);
+    return {
+      redoEntries: entries,
+      redoDebitTotal: debitTotal,
+      redoCreditTotal: creditTotal,
+      redoNetAdjustment: creditTotal - debitTotal,
+    };
+  }
+
+  it("emits Commission (Irregular) for a CREDIT entry with positive amount", () => {
+    const redoMap: TRedoMap = new Map([
+      [
+        "002",
+        makeRedoAdj([
+          {
+            direction: "CREDIT",
+            amount: 80,
+            clientName: "Alice",
+            originalServiceDate: new Date("2024-04-05T00:00:00.000Z"),
+            sourceRowNumber: 2,
+            counterpartyStaffID: "001",
+            counterpartyStaffName: "Active Staff",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+    ]);
+
+    const payments = createAdHocPayments(
+      emptyCommMap,
+      staffMap,
+      redoMap,
+      payrollContext,
+    );
+
+    expect(payments).toHaveLength(1);
+    expect(payments[0].type).toBe("Commission (Irregular)");
+    expect(payments[0].amount).toBe(80);
+    expect(payments[0].remarks).toBe("REDO Alice for Active Staff");
+    expect(payments[0].staffID).toBe("002");
+  });
+
+  it("emits Deduction for a DEBIT entry in the current payroll month", () => {
+    const redoMap: TRedoMap = new Map([
+      [
+        "001",
+        makeRedoAdj([
+          {
+            direction: "DEBIT",
+            amount: 100,
+            clientName: "Bob",
+            originalServiceDate: new Date("2024-04-10T00:00:00.000Z"),
+            sourceRowNumber: 3,
+            counterpartyStaffID: null,
+            counterpartyStaffName: "",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+    ]);
+
+    const payments = createAdHocPayments(
+      emptyCommMap,
+      staffMap,
+      redoMap,
+      payrollContext,
+    );
+
+    expect(payments).toHaveLength(1);
+    expect(payments[0].type).toBe("Deduction");
+    expect(payments[0].amount).toBe(100);
+    expect(payments[0].remarks).toBe("REDO 2024-04-10 Bob");
+  });
+
+  it("emits Deduction (from Net Salary) for a DEBIT entry in a prior month", () => {
+    const redoMap: TRedoMap = new Map([
+      [
+        "001",
+        makeRedoAdj([
+          {
+            direction: "DEBIT",
+            amount: 60,
+            clientName: "Carol",
+            originalServiceDate: new Date("2024-03-20T00:00:00.000Z"),
+            sourceRowNumber: 4,
+            counterpartyStaffID: null,
+            counterpartyStaffName: "",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+    ]);
+
+    const payments = createAdHocPayments(
+      emptyCommMap,
+      staffMap,
+      redoMap,
+      payrollContext,
+    );
+
+    expect(payments).toHaveLength(1);
+    expect(payments[0].type).toBe("Deduction (from Net Salary)");
+    expect(payments[0].amount).toBe(60);
+    expect(payments[0].remarks).toBe("REDO 2024-03-20 Carol");
+  });
+
+  it("omits zero-amount CREDIT entries from export", () => {
+    const redoMap: TRedoMap = new Map([
+      [
+        "002",
+        makeRedoAdj([
+          {
+            direction: "CREDIT",
+            amount: 0,
+            clientName: "Dave",
+            originalServiceDate: new Date("2024-04-15T00:00:00.000Z"),
+            sourceRowNumber: 5,
+            counterpartyStaffID: "001",
+            counterpartyStaffName: "Active Staff",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+    ]);
+
+    const payments = createAdHocPayments(
+      emptyCommMap,
+      staffMap,
+      redoMap,
+      payrollContext,
+    );
+
+    expect(payments).toHaveLength(0);
+  });
+
+  it("omits redo rows for contractor staff", () => {
+    vi.mocked(isContractor).mockImplementation((id) => id === "001");
+
+    const redoMap: TRedoMap = new Map([
+      [
+        "001",
+        makeRedoAdj([
+          {
+            direction: "DEBIT",
+            amount: 50,
+            clientName: "Eve",
+            originalServiceDate: new Date("2024-04-01T00:00:00.000Z"),
+            sourceRowNumber: 6,
+            counterpartyStaffID: null,
+            counterpartyStaffName: "",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+    ]);
+
+    const payments = createAdHocPayments(
+      emptyCommMap,
+      staffMap,
+      redoMap,
+      payrollContext,
+    );
+
+    expect(payments).toHaveLength(0);
+  });
+
+  it("all redo payment amounts are positive", () => {
+    const redoMap: TRedoMap = new Map([
+      [
+        "001",
+        makeRedoAdj([
+          {
+            direction: "DEBIT",
+            amount: 75,
+            clientName: "Frank",
+            originalServiceDate: new Date("2024-04-03T00:00:00.000Z"),
+            sourceRowNumber: 7,
+            counterpartyStaffID: null,
+            counterpartyStaffName: "",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+      [
+        "002",
+        makeRedoAdj([
+          {
+            direction: "CREDIT",
+            amount: 60,
+            clientName: "Frank",
+            originalServiceDate: new Date("2024-04-03T00:00:00.000Z"),
+            sourceRowNumber: 7,
+            counterpartyStaffID: "001",
+            counterpartyStaffName: "Active Staff",
+            originalStaffID: "001",
+            originalStaffName: "Active Staff",
+          },
+        ]),
+      ],
+    ]);
+
+    const payments = createAdHocPayments(
+      emptyCommMap,
+      staffMap,
+      redoMap,
+      payrollContext,
+    );
+
+    for (const p of payments) {
+      expect(p.amount).toBeGreaterThan(0);
+    }
   });
 });

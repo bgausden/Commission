@@ -15,3 +15,5 @@ export const TALENOX_2ND_HALF_OF_MONTH = "2nd Half of Month";
 export const TALENOX_COMMISSION_IRREGULAR = "Commission (Irregular)";
 export const TALENOX_TIPS = "Tips";
 export const TALENOX_OTHERS = "Others";
+export const TALENOX_DEDUCTION = "Deduction";
+export const TALENOX_DEDUCTION_FROM_NET = "Deduction (from Net Salary)";

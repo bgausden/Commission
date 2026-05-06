@@ -10,12 +10,15 @@ import {
   COMM_COMPONENT_CUSTOM_RATE_COMMISSIONS,
   COMM_COMPONENT_TOTAL_SERVICE_COMMISSION,
   TTalenoxInfoStaffMap,
+  TRedoMap,
 } from "./types.js";
 import {
   TALENOX_TIPS,
   TALENOX_COMMISSION_IRREGULAR,
   TALENOX_ADHOC_PAYMENT_ENDPOINT,
   TALENOX_API_TOKEN,
+  TALENOX_DEDUCTION,
+  TALENOX_DEDUCTION_FROM_NET,
 } from "./talenox_constants.js";
 import { isContractor, isValidStaffID } from "./utility_functions.js";
 import { ITalenoxAdHocPayment } from "./ITalenoxAdHocPayment.js";
@@ -55,6 +58,8 @@ function talenoxDebug(
 export function createAdHocPayments(
   _commMap: TCommMap,
   staffMap: TTalenoxInfoStaffMap,
+  redoMap: TRedoMap = new Map(),
+  payrollContext: PayrollRunContext = getGlobalPayrollContext(),
 ): ITalenoxPayment[] {
   const emptyTalenoxPayment: ITalenoxPayment = {
     staffID: "000",
@@ -146,6 +151,50 @@ export function createAdHocPayments(
       }
     }
   });
+
+  // Redo payments
+  redoMap.forEach((redoAdj, staffID) => {
+    if (isContractor(staffID)) {
+      return;
+    }
+    const staffMapEntry = staffMap.get(staffID);
+    if (staffMapEntry === undefined) {
+      throw new Error(`Empty staffMap returned for redo staffID ${staffID}`);
+    }
+    const staffName = `${staffMapEntry.last_name} ${staffMapEntry.first_name}`;
+    const payrollYear = payrollContext.firstDay.getUTCFullYear();
+    const payrollMonth = payrollContext.firstDay.getUTCMonth();
+
+    for (const entry of redoAdj.redoEntries) {
+      const dateStr = entry.originalServiceDate.toISOString().slice(0, 10);
+      if (entry.direction === "CREDIT") {
+        if (entry.amount === 0) continue;
+        payments.push({
+          staffID,
+          staffName,
+          type: TALENOX_COMMISSION_IRREGULAR,
+          amount: entry.amount,
+          remarks: `REDO ${entry.clientName} for ${entry.originalStaffName}`,
+        });
+      } else {
+        const serviceYear = entry.originalServiceDate.getUTCFullYear();
+        const serviceMonth = entry.originalServiceDate.getUTCMonth();
+        const isCurrentMonth =
+          serviceYear === payrollYear && serviceMonth === payrollMonth;
+        const deductionType = isCurrentMonth
+          ? TALENOX_DEDUCTION
+          : TALENOX_DEDUCTION_FROM_NET;
+        payments.push({
+          staffID,
+          staffName,
+          type: deductionType,
+          amount: entry.amount,
+          remarks: `REDO ${dateStr} ${entry.clientName}`,
+        });
+      }
+    }
+  });
+
   return payments;
 }
 
