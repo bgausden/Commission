@@ -8,6 +8,7 @@ import type {
   TStaffHurdles,
   TServRevenueMap,
   TTalenoxInfoStaffMap,
+  TRedoMap,
 } from "./types.js";
 import {
   isPayViaTalenoxForLookup,
@@ -39,6 +40,7 @@ export type PayrollProcessingOptions = {
   regressionOfflineMode: boolean;
   missingStaffAreFatal: boolean;
   getStaffHurdleForContext?: StaffHurdleGetter;
+  redoMap?: TRedoMap;
 };
 
 function formatPoolStaffName(
@@ -131,6 +133,7 @@ function logStaffCommission(
   commComponents: TCommComponents,
   servicesRevenues: TServRevenueMap,
   getStaffHurdleForContext: StaffHurdleGetter = getStaffHurdle,
+  redoMap: TRedoMap = new Map(),
 ): void {
   const isStaffContractor = isContractorForLookup(
     getStaffHurdleForContext,
@@ -185,6 +188,30 @@ function logStaffCommission(
     fws14RightHKD(commComponents.productCommission),
   );
   logger.info(fws32Left(`Tips:`), fws14RightHKD(commComponents.tips));
+
+  const redoAdj = redoMap.get(staffID);
+  if (redoAdj) {
+    logger.info("");
+    for (const entry of redoAdj.redoEntries) {
+      const dateStr = entry.originalServiceDate.toISOString().slice(0, 10);
+      if (entry.direction === "DEBIT") {
+        logger.info(
+          fws32Left(`Redo Debit (${entry.clientName} ${dateStr}):`),
+          fws14RightHKD(-entry.amount),
+        );
+      } else {
+        logger.info(
+          fws32Left(`Redo Credit (${entry.clientName} ${dateStr}):`),
+          fws14RightHKD(entry.amount),
+        );
+      }
+    }
+    logger.info(
+      fws32Left("Redo Net Adjustment:"),
+      fws14RightHKD(redoAdj.redoNetAdjustment),
+    );
+  }
+
   logger.info(fws32Left(""), fws14Right("------------"));
   logger.info(
     fws32Left(`Total Payable`),
@@ -193,6 +220,7 @@ function logStaffCommission(
         .plus(commComponents.generalServiceCommission)
         .plus(commComponents.productCommission)
         .plus(commComponents.tips)
+        .plus(redoAdj?.redoNetAdjustment ?? 0)
         .toNumber(),
     ),
   );
@@ -245,6 +273,7 @@ export function processPayrollExcelData(
     regressionOfflineMode,
     missingStaffAreFatal,
     getStaffHurdleForContext = getStaffHurdle,
+    redoMap = new Map(),
   } = options;
   const commMap: TCommMap = new Map();
   let staffID: TStaffID | undefined;
@@ -314,6 +343,7 @@ export function processPayrollExcelData(
       commComponents,
       payrollData.servicesRevenues,
       getStaffHurdleForContext,
+      redoMap,
     );
 
     staffID = undefined;
