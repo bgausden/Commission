@@ -300,12 +300,34 @@ export function createApp() {
     });
   });
 
+  app.post("/upload-redo", (req: Request, res: Response) => {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const file = req.files.file as UploadedFile;
+    const config = loadConfig();
+    config.REDO_WB_FILENAME = file.name;
+    saveConfig(config);
+
+    const savePath = path.join(DATA_DIR_PATH, file.name);
+    file.mv(savePath, (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Failed to save file." });
+      }
+      res.status(200).json({ message: "File uploaded and saved successfully" });
+    });
+  });
+
   app.post("/update-config", (req: Request, res: Response) => {
     try {
       const config = loadConfig();
       config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
       config.updateTalenox = Boolean(req.body.updateTalenox);
       config.uploadToGDrive = Boolean(req.body.uploadToGDrive);
+      if (req.body.REDO_WB_FILENAME !== undefined) {
+        config.REDO_WB_FILENAME = String(req.body.REDO_WB_FILENAME);
+      }
 
       const gdriveEnvUpdates: Partial<GoogleDriveEnvValues> = {};
       const keyFile = asBodyString(req.body, "GDRIVE_SERVICE_ACCOUNT_KEY");
@@ -728,6 +750,7 @@ export function createApp() {
         return {
           // return some safe default values
           PAYROLL_WB_FILENAME: "payroll.xlsx",
+          REDO_WB_FILENAME: "",
           missingStaffAreFatal: true,
           updateTalenox: false,
           uploadToGDrive: false,

@@ -52,6 +52,23 @@ describe("/update-config endpoint", () => {
     return response.json();
   }
 
+  async function postUploadRedo(
+    formData?: FormData,
+  ): Promise<{ status: number; json: unknown }> {
+    const response = await fetch(`${baseUrl}/upload-redo`, {
+      method: "POST",
+      body: formData,
+    });
+    const text = await response.text();
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = undefined;
+    }
+    return { status: response.status, json };
+  }
+
   beforeEach(async () => {
     // Reset all mocks first so we don't wipe out mockReturnValue/mockImplementation set below.
     vi.clearAllMocks();
@@ -604,6 +621,106 @@ describe("/update-config endpoint", () => {
         /config[\\/]+default\.json$/,
       );
       expect(typeof writeFileSyncSpy.mock.calls[0][1]).toBe("string");
+    });
+  });
+
+  describe("REDO_WB_FILENAME", () => {
+    it("GET /config exposes REDO_WB_FILENAME from the config file", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        REDO_WB_FILENAME: "redo-march.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+      };
+      configFileContents = JSON.stringify(existingConfig);
+
+      const currentConfig = (await getConfig()) as Record<string, unknown>;
+      expect(currentConfig.REDO_WB_FILENAME).toBe("redo-march.xlsx");
+    });
+
+    it("GET /config exposes empty REDO_WB_FILENAME when absent from config file", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+      };
+      configFileContents = JSON.stringify(existingConfig);
+
+      const currentConfig = (await getConfig()) as Record<string, unknown>;
+      // Field may be undefined when not in file (no default injection in GET /config)
+      expect(
+        currentConfig.REDO_WB_FILENAME === "" ||
+          currentConfig.REDO_WB_FILENAME === undefined,
+      ).toBe(true);
+    });
+
+    it("preserves REDO_WB_FILENAME across unrelated config updates", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        REDO_WB_FILENAME: "redo-march.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+      };
+      configFileContents = JSON.stringify(existingConfig);
+
+      const response = await postUpdateConfig({
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+      });
+
+      expect(response.status).toBe(200);
+      const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
+      const writtenConfig = JSON.parse(writtenData);
+      expect(writtenConfig.REDO_WB_FILENAME).toBe("redo-march.xlsx");
+    });
+
+    it("persists REDO_WB_FILENAME when explicitly provided in update-config body", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        REDO_WB_FILENAME: "",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+      };
+      configFileContents = JSON.stringify(existingConfig);
+
+      const response = await postUpdateConfig({
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+        REDO_WB_FILENAME: "redo-april.xlsx",
+      });
+
+      expect(response.status).toBe(200);
+      const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
+      const writtenConfig = JSON.parse(writtenData);
+      expect(writtenConfig.REDO_WB_FILENAME).toBe("redo-april.xlsx");
+    });
+
+    it("default fallback includes REDO_WB_FILENAME as empty string on ENOENT", async () => {
+      const error = new Error(
+        "ENOENT: no such file or directory",
+      ) as NodeJS.ErrnoException;
+      error.code = "ENOENT";
+      configReadError = error;
+
+      const response = await postUpdateConfig({
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+      });
+
+      expect(response.status).toBe(200);
+      const writtenData = writeFileSyncSpy.mock.calls[0][1] as string;
+      const writtenConfig = JSON.parse(writtenData);
+      expect(writtenConfig.REDO_WB_FILENAME).toBe("");
+    });
+  });
+
+  describe("/upload-redo", () => {
+    it("returns 400 when no file is provided", async () => {
+      const response = await postUploadRedo();
+      expect(response.status).toBe(400);
+      expect((response.json as { message: string }).message).toBe(
+        "No file uploaded",
+      );
     });
   });
 });
