@@ -8,7 +8,12 @@ Total for Gausden, Elizabeth			0	0	0	HK$ 0		1,567.10
 // TODO consider how custom pay rate services should contribute to achieving hurdles (or make a clear argument as to why not. Add a diagram showing how commissions are calculated across different revenue types).
 import "./checkStartup.js";
 import { config } from "node-config-ts";
-import { TStaffHurdles, TTalenoxInfoStaffMap, monthName } from "./types.js";
+import {
+  TStaffHurdles,
+  TTalenoxInfoStaffMap,
+  monthName,
+  TRedoMap,
+} from "./types.js";
 import {
   createAdHocPayments,
   getTalenoxEmployees,
@@ -49,6 +54,8 @@ import {
   readPayrollWorksheetRows,
   writePaymentsWorkbook,
 } from "./payrollWorkbook.js";
+import { parseRedoWorkbook } from "./staffRedoWorkbook.js";
+import { buildRedoMap } from "./staffRedoAdjustments.js";
 import assert from "node:assert";
 import { existsSync, readdirSync } from "node:fs";
 export {
@@ -170,6 +177,7 @@ async function main() {
   );
   await moveFilesToOldSubDir(DATA_DIR, DEFAULT_OLD_DIR, true, 2, [
     config.PAYROLL_WB_FILENAME,
+    ...(config.REDO_WB_FILENAME ? [config.REDO_WB_FILENAME] : []),
   ]);
 
   emitProgressAndInfo("Loading staff hurdle configuration");
@@ -212,12 +220,30 @@ async function main() {
   emitProgressAndInfo("Locating revenue column");
   const revCol = revenueCol(wsaa);
 
+  // Load redo workbook when configured (must happen before processPayrollExcelData
+  // so the redoMap can be threaded into report rendering)
+  let redoMap: TRedoMap = new Map();
+  const redoWbFilename = config.REDO_WB_FILENAME;
+  if (redoWbFilename) {
+    const redoWorkbookPath = path.join(DATA_DIR, redoWbFilename);
+    emitProgressAndInfo("Loading redo workbook", redoWbFilename);
+    const redoResult = parseRedoWorkbook(redoWorkbookPath, staffHurdles);
+    if (!redoResult.ok) {
+      throw new Error(`Redo workbook error: ${redoResult.error}`);
+    }
+    redoMap = buildRedoMap(redoResult.value);
+    infoLogger.info(
+      `Redo workbook loaded: ${redoResult.value.length} row(s), ${redoMap.size} staff affected`,
+    );
+  }
+
   // Process all staff payroll data from Excel
   emitProgressAndInfo("Parsing payroll rows and calculating commissions");
   const commMap = processPayrollExcelData(wsaa, revCol, talenoxStaff, {
     getStaffHurdleForContext: getPayrollStaffHurdle,
     missingStaffAreFatal: config.missingStaffAreFatal,
     regressionOfflineMode: REGRESSION_OFFLINE_MODE,
+    redoMap,
   });
 
   // Apply pooling logic to commission map
@@ -226,7 +252,13 @@ async function main() {
 
   // Create payment spreadsheet and upload to Talenox
   emitProgressAndInfo("Creating Talenox payment entries");
-  const payments = createAdHocPayments(pooledCommMap, talenoxStaff);
+  const payrollContext = { month: PAYROLL_MONTH, year: PAYROLL_YEAR, firstDay };
+  const payments = createAdHocPayments(
+    pooledCommMap,
+    talenoxStaff,
+    redoMap,
+    payrollContext,
+  );
 
   emitProgressAndInfo("Archiving old payment spreadsheets");
   await moveFilesToOldSubDir(PAYMENTS_DIR, undefined, true, 2);
@@ -290,7 +322,6 @@ async function main() {
 
   debugLogger.debug(`Requesting new payroll payment creation from Talenox`);
   emitProgressAndInfo("Creating payroll in Talenox");
-  const payrollContext = { month: PAYROLL_MONTH, year: PAYROLL_YEAR, firstDay };
   const createPayrollResult = await createPayroll(talenoxStaff, payrollContext);
   debugLogger.debug(`New payroll payment is created in Talenox.`);
   if (!createPayrollResult[1]) {
