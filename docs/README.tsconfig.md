@@ -54,7 +54,7 @@ Useful for script-focused validation and editor behavior scoped to tooling code.
 
 ## How Build Uses This
 
-`npm run build` runs [scripts/build.js](scripts/build.js), which calls:
+`npm run build` runs [scripts/build.js](../scripts/build.js), which calls:
 
 - `tsc -p tsconfig.build.json`
 

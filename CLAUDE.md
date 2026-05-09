@@ -67,6 +67,16 @@ All new features and bug fixes must be developed on a separate branch. Do not im
 
 `test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names. See `test-fixtures/README.md` for update instructions.
 
+### TypeScript config guide location
+
+TypeScript config documentation lives in `docs/README.tsconfig.md`.
+It explains why the repo uses multiple tsconfig files (`tsconfig.json`, `tsconfig.build.json`, `scripts/tsconfig.json`), what each config includes/excludes, and which commands to use for full type-checking vs production build compilation.
+
+### Google Drive setup guide location
+
+Google Drive integration documentation lives in `docs/GOOGLE_DRIVE_SETUP.md`.
+It covers service-account provisioning, Shared Drive membership requirements, local `.env` variables (`GDRIVE_SERVICE_ACCOUNT_KEY`, `GDRIVE_TALENOX_FOLDER_ID`), no-overwrite safety behavior, and troubleshooting for auth/quota/folder access errors.
+
 ## Coding Philosophy
 
 ## Development Principles
