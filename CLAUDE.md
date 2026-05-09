@@ -1,122 +1,20 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file is only for Claude-agent-specific guidance in this repository.
+Project architecture and domain contracts live in `AGENTS.md`.
 
-## Decisions and Constraints
+## Claude-Agent Workflow
 
-### xlsx is vendored — do not install from npm
+1. Read `AGENTS.md` first for architecture, domain contracts, and execution invariants.
+2. Read `.github/copilot-instructions.md` for repo-level agent behavior split.
+3. Keep edits minimal and high signal; avoid duplicating rules across instruction files.
 
-This project uses a vendored copy of xlsx installed via npm from the tarball under the vendor directory. The xlsx package is intentionally installed from a downloaded tarball to ensure version stability.
+## Claude-Specific Trigger
 
-### ESM imports require `.js` extension
+When the user input is `/graphify`, invoke the `graphify` skill before any other action.
 
-This is an ESM project (`"type": "module"`). All relative imports must use `.js` even when the source file is `.ts`. TypeScript resolves these correctly at compile time.
+## What Belongs Here
 
-### ESLint global declarations
-
-Files that use `global.PAYROLL_MONTH`, `global.PAYROLL_YEAR`, etc. must include a comment at the top to satisfy ESLint:
-
-```ts
-/* global PAYROLL_MONTH, PAYROLL_YEAR */
-```
-
-The full set of globals is declared in `src/globals.d.ts`.
-
-### Always `await shutdownLogging()` before process exit
-
-log4js buffers writes asynchronously. `shutdownLogging()` returns a `Promise<void>` — any code path that exits the process must `await` it or log entries will be lost.
-
-### `updateTalenox: false` is a dry-run safety flag
-
-`config/default.json` contains `updateTalenox`. When `false`, commissions are calculated and the payments Excel is generated but nothing is pushed to the Talenox API. Leave this `false` unless running a real payroll.
-
-### Regression test axiom
-
-The regression test processes a **fixed input file** (the Mindbody commission xlsx stored in the baseline) and asserts that **all generated outputs** (payments Excel, commission log, contractor log) are field-for-field identical to the baseline outputs. Any difference — including added staff, removed staff, or modified values — is a test failure. All changes to regression logic must preserve this invariant.
-
-### Regression tests auto-discover the oldest baseline
-
-`regression.spec.ts` does not hardcode a baseline name. On each run it scans `test-baselines/`, reads `metadata.json` from each subdirectory, and selects the entry with the earliest `createdDate`. Set `BASELINE_NAME` to override:
-
-```bash
-BASELINE_NAME=2025-12 npm run test:regression
-```
-
-PowerShell (Windows):
-
-```powershell
-$env:BASELINE_NAME = "2025-12"; npm run test:regression
-```
-
-`test-baselines/` is gitignored. Regression tests fail with a clear error when no baseline exists.
-
-### Baseline assembly from archived artifacts
-
-Use `npm run assemble-baseline -- ...` to build a baseline directly from archived artifacts without rerunning historical payrolls.
-
-- Supports auto-discovery from `data[/old]`, `payments[/old]`, and `logs[/old]`
-- Requires matching `commission-*` and `contractor-*` run logs
-- `--preflight` validates availability without writing files
-- `--force` requires confirmation; use `--confirm-force` for non-interactive runs
-
-### Git workflow — do not work in master
-
-All new features and bug fixes must be developed on a separate branch. Do not implement feature/fix work directly on `master`.
-
-### Test fixtures use anonymized staff names
-
-`test-fixtures/sample-payments.xlsx` has real staff names replaced with generic labels ("Staff A", "Staff B", etc.). This is intentional. Do not replace them with real names. See `test-fixtures/README.md` for update instructions.
-
-### TypeScript config guide location
-
-TypeScript config documentation lives in `docs/README.tsconfig.md`.
-It explains why the repo uses multiple tsconfig files (`tsconfig.json`, `tsconfig.build.json`, `scripts/tsconfig.json`), what each config includes/excludes, and which commands to use for full type-checking vs production build compilation.
-
-### Google Drive setup guide location
-
-Google Drive integration documentation lives in `docs/GOOGLE_DRIVE_SETUP.md`.
-It covers service-account provisioning, Shared Drive membership requirements, local `.env` variables (`GDRIVE_SERVICE_ACCOUNT_KEY`, `GDRIVE_TALENOX_FOLDER_ID`), no-overwrite safety behavior, and troubleshooting for auth/quota/folder access errors.
-
-## Coding Philosophy
-
-## Development Principles
-
-**Functional core, imperative shell**
-Pure logic at the centre; I/O and side-effects at the boundary.
-Enables deterministic testing of all business logic without mocking infrastructure.
-
-**Consistency by construction**
-Model your domain so invalid state cannot be expressed in the type system.
-Eliminates entire classes of defensive checks and the bugs that occur when they're forgotten.
-
-**Use assertions to catch logic errors**
-Assert invariants and preconditions that correct code should never violate.
-Assertions are documentation that executes; they surface logic errors at the point of cause, not downstream.
-
-**Parse, don't validate**
-Accept raw input once at the system boundary; convert it to a guaranteed-valid type immediately.
-Never re-validate the same data downstream — if it's in the system, it's already known-good.
-
-**Total functions**
-Every function handles its full input domain; return Result/Option rather than throwing or returning null.
-Forces callers to handle failure paths explicitly; eliminates hidden control flow.
-
-**Push effects to the leaves**
-Clocks, randomness, and I/O belong as close to the entry point as possible.
-Keeps the functional core pure and makes time/environment-dependent behaviour easy to control in tests.
-
-**Explicit over implicit**
-Functions declare all dependencies as arguments; no hidden control flow or global mutable state.
-In small teams, implicit behaviour has no institutional memory to compensate for it — it becomes a trap.
-
-**Ports and adapters**
-Domain logic depends on interfaces, not concrete infrastructure.
-Swapping databases, queues, or external APIs becomes a non-event; enforces FCIS at the module level.
-
-**Prefer duplication over the wrong abstraction**
-Abstract only when ≥3 concrete cases exist and the shared shape is unambiguous.
-Wrong abstractions are harder to undo than duplication; in small teams the cost per person is high.
-
-### GUI and design work
-
-When working on the web UI (`public/`) or any design/styling task, read [`.impeccable.md`](.impeccable.md) for the project's design context — color palette, typography, spacing, component guidelines, and design principles derived from HBO's aesthetic.
+- Claude-only workflow notes
+- Claude-specific trigger/skill behavior
+- No repository business rules or architecture details

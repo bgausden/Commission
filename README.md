@@ -177,8 +177,9 @@ Security notes:
 
 ## Documentation
 
-- [CLAUDE.md](CLAUDE.md) - Detailed architecture and development guide
+- [AGENTS.md](AGENTS.md) - Architecture, domain behavior contracts, and non-obvious execution invariants
+- [CLAUDE.md](CLAUDE.md) - Claude-agent-specific guidance only
+- [.github/copilot-instructions.md](.github/copilot-instructions.md) - Copilot-specific behavior and workflow expectations
 - [docs/README.tsconfig.md](docs/README.tsconfig.md) - TypeScript config guide covering why this repo uses multiple tsconfig files, what each one is for, and which commands to run for build vs full-project checks
 - [docs/GOOGLE_DRIVE_SETUP.md](docs/GOOGLE_DRIVE_SETUP.md) - Google Drive integration setup covering service-account setup, Shared Drive permissions, local .env variables, safety behavior that prevents overwrite, and troubleshooting
-- [.github/copilot-instructions.md](.github/copilot-instructions.md) - AI agent instructions for this codebase
 - [test-fixtures/README.md](test-fixtures/README.md) - Test data documentation
