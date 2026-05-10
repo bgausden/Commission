@@ -77,6 +77,8 @@ Any output difference is a failure.
 5. Files using payroll globals need ESLint global comment (`/* global PAYROLL_MONTH, PAYROLL_YEAR */`).
 6. Do feature/fix work on a branch, not `master`.
 7. At session start, detect host OS and available shell utilities before running commands; use PowerShell-native commands on Windows and POSIX tooling on macOS.
+8. Put temporary scripts in a gitignored workspace folder such as `scripts/temp/`; do not create one-off helper scripts in the project root.
+9. In PowerShell sessions, do not use POSIX heredocs; use here-strings and native PowerShell cmdlets/pipelines instead.
 
 ## Fresh-Session Accelerator
 
