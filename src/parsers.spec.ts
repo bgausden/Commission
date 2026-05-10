@@ -12,12 +12,27 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("NA_PATTERN", () => {
-  it.each(["NA", "na", "Na", "N/A", "n/a", "None", "none", "NONE", "nil", "NIL", "n.a.", "N.A.", "-", "TBC", "tbc", "TBD", "tbd"])(
-    "matches '%s'",
-    (value) => {
-      expect(NA_PATTERN.test(value)).toBe(true);
-    },
-  );
+  it.each([
+    "NA",
+    "na",
+    "Na",
+    "N/A",
+    "n/a",
+    "None",
+    "none",
+    "NONE",
+    "nil",
+    "NIL",
+    "n.a.",
+    "N.A.",
+    "-",
+    "TBC",
+    "tbc",
+    "TBD",
+    "tbd",
+  ])("matches '%s'", (value) => {
+    expect(NA_PATTERN.test(value)).toBe(true);
+  });
 
   it.each(["  NA  ", "  -  ", "  TBC  "])(
     "matches '%s' with surrounding whitespace",
