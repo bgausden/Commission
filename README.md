@@ -12,6 +12,10 @@ npm run server:tsx     # Web UI on port 3000
 npm test               # Run test suite
 ```
 
+## Instruction Files
+
+`AGENTS.md` is the source of truth for architecture/domain/runbook rules, while `CLAUDE.md` and `.github/copilot-instructions.md` contain Claude-specific and Copilot-specific behavior.
+
 ## Key Features
 
 - Tiered commission structure with configurable hurdles
