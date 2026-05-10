@@ -2,7 +2,7 @@ node_modules/
 .DS_Store
 *.xls
 *.xlsx
-!test-fixtures/*.xlsx
+test-features/*
 .fuse_hidden*
 uploads/
 dist/
