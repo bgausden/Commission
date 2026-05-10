@@ -2,6 +2,9 @@
     "files.eol": "\n",
     "liveServer.settings.port": 5501,
     "search.useIgnoreFiles": false,
+    "files.exclude": {
+        "**/node_modules": true
+    },
     "terminal.integrated.env.osx": {
         "RIPGREP_CONFIG_PATH": "${workspaceFolder}/.ripgreprc"
     },
