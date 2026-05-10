@@ -8,8 +8,12 @@ import {
   ok,
   err,
 } from "./types.js";
+import { debugLogger } from "./logging_functions.js";
 
 XLSX.set_fs(fs);
+
+/** Cell values treated as zero for amount columns. */
+const NA_PATTERN = /^\s*(na|n\/a|none|nil|n\.a\.|-|tbc|tbd)\s*$/i;
 
 const REQUIRED_HEADERS = [
   "Original Service Date",
@@ -22,16 +26,18 @@ const REQUIRED_HEADERS = [
   "Credit Amount",
 ] as const;
 
-const COL = {
-  ORIGINAL_SERVICE_DATE: 0,
-  CLIENT_NAME: 1,
-  ORIGINAL_STAFF_ID: 2,
-  ORIGINAL_STAFF_NAME: 3,
-  REDO_STAFF_ID: 4,
-  REDO_STAFF_NAME: 5,
-  DEBIT_AMOUNT: 6,
-  CREDIT_AMOUNT: 7,
-} as const;
+type RequiredHeader = (typeof REQUIRED_HEADERS)[number];
+
+type ColIndex = {
+  ORIGINAL_SERVICE_DATE: number;
+  CLIENT_NAME: number;
+  ORIGINAL_STAFF_ID: number;
+  ORIGINAL_STAFF_NAME: number;
+  REDO_STAFF_ID: number;
+  REDO_STAFF_NAME: number;
+  DEBIT_AMOUNT: number;
+  CREDIT_AMOUNT: number;
+};
 
 export function parseRedoWorkbook(
   filePath: string,
@@ -60,10 +66,11 @@ export function parseRedoWorkbook(
     return err(`Redo workbook '${filePath}' is empty`);
   }
 
-  const headerValidation = validateHeaders(rows[0], filePath);
-  if (!headerValidation.ok) {
-    return headerValidation;
+  const colResult = resolveColumns(rows[0], filePath);
+  if (!colResult.ok) {
+    return colResult;
   }
+  const COL = colResult.value;
 
   const dataRows = rows.slice(1);
   const result: TRedoWorkbookRow[] = [];
@@ -71,7 +78,7 @@ export function parseRedoWorkbook(
   for (let i = 0; i < dataRows.length; i++) {
     const row = dataRows[i];
     const rowNumber = i + 2; // 1-based, row 1 is header
-    const parsed = parseRow(row, rowNumber, staffHurdles);
+    const parsed = parseRow(row, rowNumber, staffHurdles, COL);
     if (!parsed.ok) {
       return parsed;
     }
@@ -81,23 +88,41 @@ export function parseRedoWorkbook(
   return ok(result);
 }
 
-function validateHeaders(headerRow: unknown[], filePath: string): Result<void> {
-  for (let i = 0; i < REQUIRED_HEADERS.length; i++) {
-    const actual = String(headerRow[i] ?? "").trim();
-    const expected = REQUIRED_HEADERS[i];
-    if (actual !== expected) {
-      return err(
-        `Redo workbook '${filePath}' header mismatch at column ${i + 1}: expected '${expected}', got '${actual}'`,
-      );
-    }
+function resolveColumns(
+  headerRow: unknown[],
+  filePath: string,
+): Result<ColIndex> {
+  const index = new Map<string, number>();
+  for (let i = 0; i < headerRow.length; i++) {
+    index.set(String(headerRow[i] ?? "").trim(), i);
   }
-  return ok(undefined);
+
+  const missing: RequiredHeader[] = REQUIRED_HEADERS.filter(
+    (h) => !index.has(h),
+  );
+  if (missing.length > 0) {
+    return err(
+      `Redo workbook '${filePath}' is missing required header(s): ${missing.map((h) => `'${h}'`).join(", ")}`,
+    );
+  }
+
+  return ok({
+    ORIGINAL_SERVICE_DATE: index.get("Original Service Date")!,
+    CLIENT_NAME: index.get("Client Name")!,
+    ORIGINAL_STAFF_ID: index.get("Original Staff ID")!,
+    ORIGINAL_STAFF_NAME: index.get("Original Staff Name")!,
+    REDO_STAFF_ID: index.get("Redo Staff ID")!,
+    REDO_STAFF_NAME: index.get("Redo Staff Name")!,
+    DEBIT_AMOUNT: index.get("Debit Amount")!,
+    CREDIT_AMOUNT: index.get("Credit Amount")!,
+  });
 }
 
 function parseRow(
   row: unknown[],
   rowNumber: number,
   staffHurdles: TStaffHurdles,
+  COL: ColIndex,
 ): Result<TRedoWorkbookRow> {
   const rawDate = row[COL.ORIGINAL_SERVICE_DATE];
   const originalServiceDate = parseDate(rawDate);
@@ -134,25 +159,45 @@ function parseRow(
   const redoStaffName = String(row[COL.REDO_STAFF_NAME] ?? "").trim();
 
   const rawDebitAmount = row[COL.DEBIT_AMOUNT];
-  const debitAmount = parsePositiveNumber(rawDebitAmount);
-  if (debitAmount === null) {
-    return err(
-      `Row ${rowNumber}: 'Debit Amount' must be a strictly positive number (got ${JSON.stringify(rawDebitAmount)})`,
-    );
+  const debitCoerced = coerceAmountToZero(
+    rawDebitAmount,
+    rowNumber,
+    "Debit Amount",
+  );
+  if (debitCoerced !== null) {
+    // NA/blank coerced to 0 — use it directly
+  } else {
+    const debitParsed = parsePositiveNumber(rawDebitAmount);
+    if (debitParsed === null) {
+      return err(
+        `Row ${rowNumber}: 'Debit Amount' must be a strictly positive number (got ${JSON.stringify(rawDebitAmount)})`,
+      );
+    }
   }
+  const debitAmount =
+    debitCoerced !== null ? 0 : parsePositiveNumber(rawDebitAmount)!;
 
   const rawCreditAmount = row[COL.CREDIT_AMOUNT];
-  const rawCreditStr = String(rawCreditAmount ?? "").trim();
+  const creditCoerced = coerceAmountToZero(
+    rawCreditAmount,
+    rowNumber,
+    "Credit Amount",
+  );
 
   if (redoStaffID === null) {
-    if (
-      rawCreditAmount !== null &&
-      rawCreditAmount !== undefined &&
-      rawCreditStr !== ""
-    ) {
-      return err(
-        `Row ${rowNumber}: 'Credit Amount' must be blank when 'Redo Staff ID' is absent`,
-      );
+    // Credit must be absent, zero, or NA-like when there is no redo staff
+    if (creditCoerced === null) {
+      const creditParsed = parseNonNegativeNumber(rawCreditAmount);
+      if (
+        rawCreditAmount !== null &&
+        rawCreditAmount !== undefined &&
+        String(rawCreditAmount).trim() !== "" &&
+        creditParsed !== 0
+      ) {
+        return err(
+          `Row ${rowNumber}: 'Credit Amount' must be blank when 'Redo Staff ID' is absent`,
+        );
+      }
     }
     return ok({
       sourceRowNumber: rowNumber,
@@ -167,21 +212,17 @@ function parseRow(
     });
   }
 
-  if (
-    rawCreditAmount === null ||
-    rawCreditAmount === undefined ||
-    rawCreditStr === ""
-  ) {
-    return err(
-      `Row ${rowNumber}: 'Credit Amount' is required when 'Redo Staff ID' is present`,
-    );
-  }
-
-  const creditAmount = parseNonNegativeNumber(rawCreditAmount);
-  if (creditAmount === null) {
-    return err(
-      `Row ${rowNumber}: 'Credit Amount' must be a non-negative number (got ${JSON.stringify(rawCreditAmount)})`,
-    );
+  let creditAmount: number;
+  if (creditCoerced !== null) {
+    creditAmount = 0;
+  } else {
+    const creditParsed = parseNonNegativeNumber(rawCreditAmount);
+    if (creditParsed === null) {
+      return err(
+        `Row ${rowNumber}: 'Credit Amount' must be a non-negative number (got ${JSON.stringify(rawCreditAmount)})`,
+      );
+    }
+    creditAmount = creditParsed;
   }
 
   return ok({
@@ -211,6 +252,41 @@ function parseDate(raw: unknown): Date | null {
   if (typeof raw === "string") {
     const d = new Date(raw);
     return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+/**
+ * Returns 0 if the raw cell value is blank, null/undefined, or an NA-like
+ * string ("NA", "N/A", "None", "nil", "-", "TBC", "TBD", etc.).
+ * Returns null when the value is not NA-like (caller should attempt numeric parse).
+ * Logs at debug level when coercion occurs.
+ */
+function coerceAmountToZero(
+  raw: unknown,
+  rowNumber: number,
+  columnName: string,
+): 0 | null {
+  if (raw === null || raw === undefined) {
+    debugLogger.debug(
+      `staffRedoWorkbook row ${rowNumber}: '${columnName}' is blank/missing — treating as 0`,
+    );
+    return 0;
+  }
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      debugLogger.debug(
+        `staffRedoWorkbook row ${rowNumber}: '${columnName}' is empty string — treating as 0`,
+      );
+      return 0;
+    }
+    if (NA_PATTERN.test(trimmed)) {
+      debugLogger.debug(
+        `staffRedoWorkbook row ${rowNumber}: '${columnName}' is NA-like value '${trimmed}' — treating as 0`,
+      );
+      return 0;
+    }
   }
   return null;
 }
