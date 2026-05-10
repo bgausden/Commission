@@ -79,7 +79,7 @@ describe("parseRedoWorkbook", () => {
       const result = parseRedoWorkbook(filePath, makeStaffHurdles([]));
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error).toContain("header mismatch");
+        expect(result.error).toContain("missing required header");
         expect(result.error).toContain("Original Service Date");
       }
     });
@@ -283,7 +283,7 @@ describe("parseRedoWorkbook", () => {
       }
     });
 
-    it("returns Err when Credit Amount is blank but Redo Staff ID is present", () => {
+    it("treats blank Credit Amount as 0 when Redo Staff ID is present", () => {
       ensureOutputDir();
       const filePath = path.join(OUTPUT_DIR, "no-credit-with-redo.xlsx");
       writeRedoWorkbook(filePath, [
@@ -303,10 +303,10 @@ describe("parseRedoWorkbook", () => {
         filePath,
         makeStaffHurdles(["001", "002"]),
       );
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error).toContain("Credit Amount");
-        expect(result.error).toContain("required");
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].creditAmount).toBe(0);
+        expect(result.value[0].debitAmount).toBe(100);
       }
     });
 
@@ -334,6 +334,149 @@ describe("parseRedoWorkbook", () => {
       if (!result.ok) {
         expect(result.error).toContain("Credit Amount");
         expect(result.error).toContain("non-negative");
+      }
+    });
+  });
+
+  describe("NA/blank coercion", () => {
+    it("treats 'NA' string in Debit Amount as 0", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "na-debit.xlsx");
+      writeRedoWorkbook(filePath, [
+        [
+          new Date(2026, 3, 1),
+          "Client A",
+          "001",
+          "Alice",
+          null,
+          "",
+          "NA",
+          null,
+        ],
+      ]);
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].debitAmount).toBe(0);
+      }
+    });
+
+    it("treats 'N/A' string in Debit Amount as 0", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "n-a-debit.xlsx");
+      writeRedoWorkbook(filePath, [
+        [
+          new Date(2026, 3, 1),
+          "Client A",
+          "001",
+          "Alice",
+          null,
+          "",
+          "N/A",
+          null,
+        ],
+      ]);
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].debitAmount).toBe(0);
+      }
+    });
+
+    it("treats 'None' string in Debit Amount as 0", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "none-debit.xlsx");
+      writeRedoWorkbook(filePath, [
+        [
+          new Date(2026, 3, 1),
+          "Client A",
+          "001",
+          "Alice",
+          null,
+          "",
+          "None",
+          null,
+        ],
+      ]);
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].debitAmount).toBe(0);
+      }
+    });
+
+    it("treats blank (null) Debit Amount as 0", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "null-debit.xlsx");
+      writeRedoWorkbook(filePath, [
+        [
+          new Date(2026, 3, 1),
+          "Client A",
+          "001",
+          "Alice",
+          null,
+          "",
+          null,
+          null,
+        ],
+      ]);
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].debitAmount).toBe(0);
+      }
+    });
+
+    it("treats 'NA' Credit Amount as 0 when Redo Staff ID is present", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "na-credit-with-redo.xlsx");
+      writeRedoWorkbook(filePath, [
+        [
+          new Date(2026, 3, 1),
+          "Client A",
+          "001",
+          "Alice",
+          "002",
+          "Bob",
+          100,
+          "NA",
+        ],
+      ]);
+      const result = parseRedoWorkbook(
+        filePath,
+        makeStaffHurdles(["001", "002"]),
+      );
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].creditAmount).toBe(0);
+        expect(result.value[0].debitAmount).toBe(100);
+      }
+    });
+
+    it("treats NA-like Credit Amount as null when Redo Staff ID is absent", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "na-credit-no-redo.xlsx");
+      writeRedoWorkbook(filePath, [
+        [new Date(2026, 3, 1), "Client A", "001", "Alice", null, "", 100, "NA"],
+      ]);
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0].creditAmount).toBeNull();
+      }
+    });
+
+    it("still rejects a literal numeric zero for Debit Amount", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "numeric-zero-debit.xlsx");
+      writeRedoWorkbook(filePath, [
+        [new Date(2026, 3, 1), "Client A", "001", "Alice", null, "", 0, null],
+      ]);
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("Debit Amount");
+        expect(result.error).toContain("strictly positive");
       }
     });
   });
