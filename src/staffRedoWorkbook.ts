@@ -8,12 +8,14 @@ import {
   ok,
   err,
 } from "./types.js";
-import { debugLogger } from "./logging_functions.js";
+import {
+  parseDate,
+  parsePositiveNumber,
+  parseNonNegativeNumber,
+  coerceAmountToZero,
+} from "./parsers.js";
 
 XLSX.set_fs(fs);
-
-/** Cell values treated as zero for amount columns. */
-const NA_PATTERN = /^\s*(na|n\/a|none|nil|n\.a\.|-|tbc|tbd)\s*$/i;
 
 const REQUIRED_HEADERS = [
   "Original Service Date",
@@ -163,6 +165,7 @@ function parseRow(
     rawDebitAmount,
     rowNumber,
     "Debit Amount",
+    "staffRedoWorkbook",
   );
   if (debitCoerced !== null) {
     // NA/blank coerced to 0 — use it directly
@@ -182,6 +185,7 @@ function parseRow(
     rawCreditAmount,
     rowNumber,
     "Credit Amount",
+    "staffRedoWorkbook",
   );
 
   if (redoStaffID === null) {
@@ -238,77 +242,4 @@ function parseRow(
   });
 }
 
-function parseDate(raw: unknown): Date | null {
-  if (raw === null || raw === undefined || raw === "") return null;
-  if (raw instanceof Date) {
-    return isNaN(raw.getTime()) ? null : raw;
-  }
-  if (typeof raw === "number") {
-    // Excel serial date
-    const date = XLSX.SSF.parse_date_code(raw);
-    if (!date) return null;
-    return new Date(date.y, date.m - 1, date.d);
-  }
-  if (typeof raw === "string") {
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? null : d;
-  }
-  return null;
-}
 
-/**
- * Returns 0 if the raw cell value is blank, null/undefined, or an NA-like
- * string ("NA", "N/A", "None", "nil", "-", "TBC", "TBD", etc.).
- * Returns null when the value is not NA-like (caller should attempt numeric parse).
- * Logs at debug level when coercion occurs.
- */
-function coerceAmountToZero(
-  raw: unknown,
-  rowNumber: number,
-  columnName: string,
-): 0 | null {
-  if (raw === null || raw === undefined) {
-    debugLogger.debug(
-      `staffRedoWorkbook row ${rowNumber}: '${columnName}' is blank/missing — treating as 0`,
-    );
-    return 0;
-  }
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (trimmed === "") {
-      debugLogger.debug(
-        `staffRedoWorkbook row ${rowNumber}: '${columnName}' is empty string — treating as 0`,
-      );
-      return 0;
-    }
-    if (NA_PATTERN.test(trimmed)) {
-      debugLogger.debug(
-        `staffRedoWorkbook row ${rowNumber}: '${columnName}' is NA-like value '${trimmed}' — treating as 0`,
-      );
-      return 0;
-    }
-  }
-  return null;
-}
-
-function parsePositiveNumber(raw: unknown): number | null {
-  if (typeof raw === "number") {
-    return raw > 0 ? raw : null;
-  }
-  if (typeof raw === "string") {
-    const n = parseFloat(raw);
-    if (!isNaN(n) && n > 0) return n;
-  }
-  return null;
-}
-
-function parseNonNegativeNumber(raw: unknown): number | null {
-  if (typeof raw === "number") {
-    return raw >= 0 ? raw : null;
-  }
-  if (typeof raw === "string") {
-    const n = parseFloat(raw);
-    if (!isNaN(n) && n >= 0) return n;
-  }
-  return null;
-}
