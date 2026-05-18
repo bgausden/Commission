@@ -41,7 +41,7 @@
         "express": "^4.21.2",
         "express-fileupload": "^1.5.1",
         "fixed-width-string": "^2.0.0",
-        "googleapis": "^144.0.0",
+        "googleapis": "^171.4.0",
         "log4js": "^6.3.0",
         "node-config-ts": "^3.3.1",
         "xlsx": "file:vendor/xlsx-0.20.3.tgz",
