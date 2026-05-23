@@ -38,7 +38,7 @@
     "dependencies": {
         "decimal.js": "^10.6.0",
         "dotenv": "^16.4.7",
-        "express": "^4.21.2",
+        "express": "^4.22.2",
         "express-fileupload": "^1.5.1",
         "fixed-width-string": "^2.0.0",
         "googleapis": "^144.0.0",
