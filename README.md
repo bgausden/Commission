@@ -21,10 +21,65 @@ npm test               # Run test suite
 - Tiered commission structure with configurable hurdles
 - Custom pay rates for specific services
 - Commission pooling for paired staff members
+- Redo deductions and credits from a payroll-team-supplied workbook
 - Contractor vs. employee handling
 - Talenox payroll API integration
 - Google Drive upload of run artifacts (configurable)
 - Regression testing with baseline snapshots
+
+## Redo Workbook
+
+The redo workbook is an optional per-run input that records client redos supplied by the payroll team. When configured, each row debits the original staff member and optionally credits the redo staff member. Redo adjustments are applied after pooling and appear in commission/contractor logs and Talenox ad hoc payments.
+
+### Enabling
+
+Set `REDO_WB_FILENAME` in `config/default.json` to the filename of the redo spreadsheet placed in `DATA_DIR` (default: `data/`):
+
+```json
+"REDO_WB_FILENAME": "Redos April 2026.xlsx"
+```
+
+Leave it empty (the default) to skip redo processing entirely.
+
+Via the web UI, use the **Redo Workbook** upload panel on the configuration page — the `/upload-redo` endpoint saves the file and persists `REDO_WB_FILENAME` automatically.
+
+### Worksheet layout
+
+The parser reads the **first sheet** of the workbook. The first row must be a header row with exactly these column names (order does not matter):
+
+| Column                  | Required    | Description                                                                                                                                                                          |
+| ----------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Original Service Date` | Yes         | Date the original service was performed. Must be a parseable date.                                                                                                                   |
+| `Client Name`           | Yes         | Client name — used in log lines and Talenox remarks.                                                                                                                                 |
+| `Original Staff ID`     | Yes         | Staff ID of the person who performed the original service. Must exist in `staffHurdle.json`.                                                                                         |
+| `Original Staff Name`   | Yes         | Display name for the original staff member. Used in Talenox credit remarks; falls back to the ID if blank.                                                                           |
+| `Redo Staff ID`         | No          | Staff ID of the person who performed the redo. When present, a credit entry is emitted for this staff member. Must exist in `staffHurdle.json` if non-blank.                         |
+| `Redo Staff Name`       | No          | Display name for the redo staff member. Informational only; never validated.                                                                                                         |
+| `Debit Amount`          | Yes         | Amount to deduct from the original staff member. Must be a strictly positive number (or NA-like, which is treated as zero).                                                          |
+| `Credit Amount`         | Conditional | Amount to credit the redo staff member. Required and must be ≥ 0 when `Redo Staff ID` is present. Must be blank when `Redo Staff ID` is absent. Zero is valid (salaried redo staff). |
+
+### Validation rules
+
+- `Original Staff ID` must exist in `staffHurdle.json`; unknown ID fails the run.
+- `Redo Staff ID`, if non-blank, must also exist in `staffHurdle.json`.
+- `Credit Amount` must be blank when `Redo Staff ID` is absent; a non-blank credit without a redo staff ID fails the run.
+
+### Talenox export
+
+Redo entries are exported as ad hoc payments using positive amounts:
+
+| Scenario                                                              | Item type                     |
+| --------------------------------------------------------------------- | ----------------------------- |
+| Credit entry (redo staff receives commission)                         | `Commission (Irregular)`      |
+| Debit entry — `Original Service Date` is in the current payroll month | `Deduction`                   |
+| Debit entry — `Original Service Date` is in any prior month           | `Deduction (from Net Salary)` |
+
+Zero-amount credit entries are logged but not exported to Talenox. Contractor staff are excluded from Talenox export (redo entries still appear in the contractor log).
+
+Talenox remarks follow a fixed format:
+
+- Credit: `REDO {clientName} for {originalStaffName}`
+- Debit: `REDO {originalServiceDate yyyy-mm-dd} {clientName}`
 
 ## Testing
 
