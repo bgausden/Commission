@@ -59,8 +59,8 @@
         "eslint-plugin-prettier": "^5.2.1",
         "expect": "^29.7.0",
         "memfs": "^4.13.0",
-        "tsx": "^4.16.0",
+        "tsx": "^4.22.4",
         "typescript": "^5.7.2",
-        "vitest": "^4.0.18"
+        "vitest": "^4.1.8"
     }
 }
