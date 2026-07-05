@@ -21,6 +21,17 @@ import { loadStaffHurdlesFromFile } from "./staffHurdles.js";
 import { TStaffHurdles } from "./types.js";
 import { IConfig } from "node-config-ts";
 import { debugLogger, webEchoLogger } from "./logging_functions.js";
+import { z } from "zod"; // Zod for request validation
+
+// Schema for the /update-config endpoint payload
+const updateConfigSchema = z.object({
+  // Use Zod's built‑in coercion to accept strings, numbers, etc. and turn them into booleans.
+  missingStaffAreFatal: z.coerce.boolean().optional(),
+  updateTalenox:        z.coerce.boolean().optional(),
+  uploadToGDrive:      z.coerce.boolean().optional(),
+  GDRIVE_SERVICE_ACCOUNT_KEY: z.string().optional(),
+  GDRIVE_TALENOX_FOLDER_ID:   z.string().optional(),
+});
 
 type CommissionJobStatus = "queued" | "running" | "success" | "failed";
 
@@ -302,10 +313,22 @@ export function createApp() {
 
   app.post("/update-config", (req: Request, res: Response) => {
     try {
+      // Validate and type‑guard the incoming payload using Zod
+      const parsed = updateConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid config payload", errors: parsed.error.issues });
+      }
+      const payload = parsed.data;
       const config = loadConfig();
-      config.missingStaffAreFatal = Boolean(req.body.missingStaffAreFatal);
-      config.updateTalenox = Boolean(req.body.updateTalenox);
-      config.uploadToGDrive = Boolean(req.body.uploadToGDrive);
+      if (payload.missingStaffAreFatal !== undefined) {
+        config.missingStaffAreFatal = payload.missingStaffAreFatal;
+      }
+      if (payload.updateTalenox !== undefined) {
+        config.updateTalenox = payload.updateTalenox;
+      }
+      if (payload.uploadToGDrive !== undefined) {
+        config.uploadToGDrive = payload.uploadToGDrive;
+      }
 
       const gdriveEnvUpdates: Partial<GoogleDriveEnvValues> = {};
       const keyFile = asBodyString(req.body, "GDRIVE_SERVICE_ACCOUNT_KEY");
