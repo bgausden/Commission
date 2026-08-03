@@ -348,9 +348,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url))
       process.exitCode = 1;
 
       if (error instanceof Error) {
-        errorLogger.error(`${error.message}`);
+        // Include error.cause (if any) so network-level failures like
+        // "fetch failed" surface the underlying reason (e.g. TLS/DNS errors)
+        // instead of the opaque top-level message.
+        const cause = error.cause;
+        const causeStr =
+          cause instanceof Error
+            ? ` [cause: ${cause.message}${"code" in cause && typeof cause.code === "string" ? ` (${cause.code})` : ""}]`
+            : cause
+              ? ` [cause: ${String(cause)}]`
+              : "";
+        errorLogger.error(`${error.message}${causeStr}`);
         // Also write to stderr so the web UI (child process stderr) always surfaces the failure.
-        console.error(error.message);
+        console.error(`${error.message}${causeStr}`);
       } else if (typeof error === "string") {
         errorLogger.error(`${error.toString()}`);
         console.error(error.toString());

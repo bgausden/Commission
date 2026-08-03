@@ -118,6 +118,40 @@ function getGuiWorkerInspectorArg(): "--inspect" | "--inspect-brk" | undefined {
   return undefined;
 }
 
+// Candidate system CA bundle paths (checked in order). The first existing file
+// is used. macOS Homebrew/Keychain exposes /etc/ssl/cert.pem; Linux distros vary.
+const SYSTEM_CA_BUNDLE_CANDIDATES = [
+  "/etc/ssl/cert.pem", // macOS (Homebrew openssl) and some Linux distros
+  "/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu
+  "/etc/pki/tls/certs/ca-bundle.crt", // RHEL/Fedora
+  "/etc/ssl/certs/ca-bundle.crt", // Alpine/others
+];
+
+/**
+ * Builds a `NODE_EXTRA_CA_CERTS` env entry for the commission child process.
+ *
+ * Socket Firewall (sfw) intercepts HTTPS traffic and sets `NODE_EXTRA_CA_CERTS`
+ * to its own per-invocation CA cert. However, sfw presents the *real* upstream
+ * certificate (e.g. Let's Encrypt) rather than re-signing with its CA, so Node
+ * cannot build the chain to sfw's CA and fails with
+ * `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`. Pointing the child at the system CA
+ * bundle instead lets Node verify the real cert chain. We unconditionally
+ * prefer the system bundle when one is available; if not found, we leave the
+ * existing value untouched so non-sfw environments are unaffected.
+ */
+function buildNodeExtraCaCertsEnv(): Record<string, string> {
+  for (const candidate of SYSTEM_CA_BUNDLE_CANDIDATES) {
+    try {
+      if (fs.existsSync(candidate)) {
+        return { NODE_EXTRA_CA_CERTS: candidate };
+      }
+    } catch {
+      // Ignore stat errors (e.g. permission); try the next candidate.
+    }
+  }
+  return {};
+}
+
 function stripAnsi(input: string): string {
   // Matches ANSI escape sequences like "\u001b[32m" (colors), cursor controls, etc.
   // Keeps the textual content for clean display in the web UI.
@@ -572,16 +606,21 @@ export function createApp() {
         }
       }, 500);
 
+      const childEnv = {
+        ...process.env,
+        ...guiGoogleDriveEnvOverrides,
+        LOG4JS_CONSOLE: "on",
+        // When the server is launched under Socket Firewall (sfw), its network
+        // interception prevents Node from accessing the macOS system trust store,
+        // causing TLS verification to fail with UNABLE_TO_GET_ISSUER_CERT_LOCALLY.
+        // Provide the system CA bundle explicitly so the child can verify cert
+        // chains (e.g. api.talenox.com) even under sfw. No-op when sfw is absent.
+        ...buildNodeExtraCaCertsEnv(),
+      };
+
       const child = spawn("node", childNodeArgs, {
         cwd: projectRoot,
-        // For web UI runs, we want rich logs to stream back to the browser.
-        // Force the child process to emit log4js console output to stdout/stderr,
-        // regardless of the server's own LOG4JS_CONSOLE setting.
-        env: {
-          ...process.env,
-          ...guiGoogleDriveEnvOverrides,
-          LOG4JS_CONSOLE: "on",
-        },
+        env: childEnv,
         stdio: "pipe",
       });
 
