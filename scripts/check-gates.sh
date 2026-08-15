@@ -66,5 +66,6 @@ console.log(JSON.stringify({
   exit 0
 fi
 
-printf '{"systemMessage":"All definition-of-done gates passed (tests, regression 2025-12, build)."}\n'
+# Success is silent: keep the gate enforced without surfacing a noisy stop-hook
+# message in the chat UI. The hook still exits 0 only when all required gates pass.
 exit 0

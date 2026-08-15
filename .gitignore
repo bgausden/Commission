@@ -27,3 +27,6 @@ other_source/staff.json
 docs/superpowers
 graphify-out
 scripts/temp/
+.agents/skills
+.claude/skills
+skills-lock.json
