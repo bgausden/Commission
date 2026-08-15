@@ -1,5 +1,4 @@
 import XLSX from "xlsx";
-import { debugLogger } from "./logging_functions.js";
 
 /** Cell values treated as zero for amount columns. */
 export const NA_PATTERN = /^\s*(na|n\/a|none|nil|n\.a\.|-|tbc|tbd)\s*$/i;
@@ -61,37 +60,21 @@ export function parseNonNegativeNumber(raw: unknown): number | null {
  * Returns 0 if the raw cell value is blank, null/undefined, or an NA-like
  * string ("NA", "N/A", "None", "nil", "-", "TBC", "TBD", etc.).
  * Returns null when the value is not NA-like (caller should attempt numeric parse).
- * Logs at debug level when coercion occurs.
- *
- * @param raw        Raw cell value from Excel
- * @param rowNumber  1-based row number (for log messages)
- * @param columnName Column display name (for log messages)
- * @param logPrefix  Prefix for debug log messages (e.g. "staffRedoWorkbook")
  */
 export function coerceAmountToZero(
   raw: unknown,
   rowNumber: number,
   columnName: string,
-  logPrefix: string,
 ): 0 | null {
   if (raw === null || raw === undefined) {
-    debugLogger.debug(
-      `${logPrefix} row ${rowNumber}: '${columnName}' is blank/missing — treating as 0`,
-    );
     return 0;
   }
   if (typeof raw === "string") {
     const trimmed = raw.trim();
     if (trimmed === "") {
-      debugLogger.debug(
-        `${logPrefix} row ${rowNumber}: '${columnName}' is empty string — treating as 0`,
-      );
       return 0;
     }
     if (NA_PATTERN.test(trimmed)) {
-      debugLogger.debug(
-        `${logPrefix} row ${rowNumber}: '${columnName}' is NA-like value '${trimmed}' — treating as 0`,
-      );
       return 0;
     }
   }

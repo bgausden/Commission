@@ -8,14 +8,43 @@ import {
   ok,
   err,
 } from "./types.js";
+import { debugLogger } from "./logging_functions.js";
 import {
   parseDate,
   parsePositiveNumber,
   parseNonNegativeNumber,
   coerceAmountToZero,
+  NA_PATTERN,
 } from "./parsers.js";
 
 XLSX.set_fs(fs);
+
+function logAmountCoercionIfNeeded(
+  raw: unknown,
+  rowNumber: number,
+  columnName: string,
+): void {
+  if (raw === null || raw === undefined) {
+    debugLogger.debug(
+      `staffRedoWorkbook row ${rowNumber}: '${columnName}' is blank/missing — treating as 0`,
+    );
+    return;
+  }
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      debugLogger.debug(
+        `staffRedoWorkbook row ${rowNumber}: '${columnName}' is empty string — treating as 0`,
+      );
+      return;
+    }
+    if (NA_PATTERN.test(trimmed)) {
+      debugLogger.debug(
+        `staffRedoWorkbook row ${rowNumber}: '${columnName}' is NA-like value '${trimmed}' — treating as 0`,
+      );
+    }
+  }
+}
 
 const REQUIRED_HEADERS = [
   "Original Service Date",
@@ -161,11 +190,11 @@ function parseRow(
   const redoStaffName = String(row[COL.REDO_STAFF_NAME] ?? "").trim();
 
   const rawDebitAmount = row[COL.DEBIT_AMOUNT];
+  logAmountCoercionIfNeeded(rawDebitAmount, rowNumber, "Debit Amount");
   const debitCoerced = coerceAmountToZero(
     rawDebitAmount,
     rowNumber,
     "Debit Amount",
-    "staffRedoWorkbook",
   );
   if (debitCoerced !== null) {
     // NA/blank coerced to 0 — use it directly
@@ -181,27 +210,18 @@ function parseRow(
     debitCoerced !== null ? 0 : parsePositiveNumber(rawDebitAmount)!;
 
   const rawCreditAmount = row[COL.CREDIT_AMOUNT];
+  logAmountCoercionIfNeeded(rawCreditAmount, rowNumber, "Credit Amount");
   const creditCoerced = coerceAmountToZero(
     rawCreditAmount,
     rowNumber,
     "Credit Amount",
-    "staffRedoWorkbook",
   );
 
   if (redoStaffID === null) {
-    // Credit must be absent, zero, or NA-like when there is no redo staff
     if (creditCoerced === null) {
-      const creditParsed = parseNonNegativeNumber(rawCreditAmount);
-      if (
-        rawCreditAmount !== null &&
-        rawCreditAmount !== undefined &&
-        String(rawCreditAmount).trim() !== "" &&
-        creditParsed !== 0
-      ) {
-        return err(
-          `Row ${rowNumber}: 'Credit Amount' must be blank when 'Redo Staff ID' is absent`,
-        );
-      }
+      return err(
+        `Row ${rowNumber}: 'Credit Amount' must be blank when 'Redo Staff ID' is absent`,
+      );
     }
     return ok({
       sourceRowNumber: rowNumber,

@@ -283,6 +283,30 @@ describe("parseRedoWorkbook", () => {
       }
     });
 
+    it("returns Err when Credit Amount is numeric zero and Redo Staff ID is absent", () => {
+      ensureOutputDir();
+      const filePath = path.join(OUTPUT_DIR, "credit-zero-no-redo.xlsx");
+      writeRedoWorkbook(filePath, [
+        [
+          new Date(2026, 2, 15),
+          "Client A",
+          "001",
+          "Staff One",
+          null,
+          "",
+          100,
+          0,
+        ],
+      ]);
+
+      const result = parseRedoWorkbook(filePath, makeStaffHurdles(["001"]));
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("Credit Amount");
+        expect(result.error).toContain("blank");
+      }
+    });
+
     it("treats blank Credit Amount as 0 when Redo Staff ID is present", () => {
       ensureOutputDir();
       const filePath = path.join(OUTPUT_DIR, "no-credit-with-redo.xlsx");

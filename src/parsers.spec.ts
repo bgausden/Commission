@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   NA_PATTERN,
   parseDate,
@@ -186,70 +186,39 @@ describe("parseNonNegativeNumber", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// coerceAmountToZero
-// ---------------------------------------------------------------------------
-
-vi.mock("./logging_functions.js", () => ({
-  debugLogger: { debug: vi.fn() },
-}));
-
 describe("coerceAmountToZero", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("returns 0 for null", () => {
-    expect(coerceAmountToZero(null, 2, "Amount", "test")).toBe(0);
+    expect(coerceAmountToZero(null, 2, "Amount")).toBe(0);
   });
 
   it("returns 0 for undefined", () => {
-    expect(coerceAmountToZero(undefined, 2, "Amount", "test")).toBe(0);
+    expect(coerceAmountToZero(undefined, 2, "Amount")).toBe(0);
   });
 
   it("returns 0 for empty string", () => {
-    expect(coerceAmountToZero("", 2, "Amount", "test")).toBe(0);
+    expect(coerceAmountToZero("", 2, "Amount")).toBe(0);
   });
 
   it("returns 0 for whitespace-only string", () => {
-    expect(coerceAmountToZero("   ", 2, "Amount", "test")).toBe(0);
+    expect(coerceAmountToZero("   ", 2, "Amount")).toBe(0);
   });
 
   it.each(["NA", "N/A", "None", "nil", "n.a.", "-", "TBC", "TBD"])(
     "returns 0 for NA-like value '%s'",
     (value) => {
-      expect(coerceAmountToZero(value, 2, "Amount", "test")).toBe(0);
+      expect(coerceAmountToZero(value, 2, "Amount")).toBe(0);
     },
   );
 
   it("returns null for a numeric string (not NA-like)", () => {
-    expect(coerceAmountToZero("100", 2, "Amount", "test")).toBeNull();
+    expect(coerceAmountToZero("100", 2, "Amount")).toBeNull();
   });
 
   it("returns null for a positive number", () => {
-    expect(coerceAmountToZero(50, 2, "Amount", "test")).toBeNull();
+    expect(coerceAmountToZero(50, 2, "Amount")).toBeNull();
   });
 
   it("returns null for a numeric string that looks like a number", () => {
-    expect(coerceAmountToZero("0", 2, "Amount", "test")).toBeNull();
-  });
-
-  it("includes logPrefix in the debug log message for null input", async () => {
-    const { debugLogger } = await import("./logging_functions.js");
-    coerceAmountToZero(null, 3, "Debit Amount", "staffRedoWorkbook");
-    expect(debugLogger.debug).toHaveBeenCalledWith(
-      expect.stringContaining("staffRedoWorkbook"),
-    );
-    expect(debugLogger.debug).toHaveBeenCalledWith(
-      expect.stringContaining("Debit Amount"),
-    );
-  });
-
-  it("includes logPrefix in the debug log message for NA-like string", async () => {
-    const { debugLogger } = await import("./logging_functions.js");
-    coerceAmountToZero("NA", 5, "Credit Amount", "myModule");
-    expect(debugLogger.debug).toHaveBeenCalledWith(
-      expect.stringContaining("myModule"),
-    );
+    expect(coerceAmountToZero("0", 2, "Amount")).toBeNull();
   });
 });
