@@ -56,17 +56,19 @@ afterEach(() => {
 
 describe("createPayroll", () => {
   it("uses explicit payroll context for the payment and resign-date filtering", async () => {
-    const fetchMock = vi.fn(async () => {
-      return new Response(
-        JSON.stringify({
-          message: "Successfully updated payment.",
-          month: "April",
-          period: "Whole Month",
-          year: "2024",
-        }),
-        { status: 200 },
-      );
-    });
+    const fetchMock = vi.fn((_input: string, _init?: RequestInit) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            message: "Successfully updated payment.",
+            month: "April",
+            period: "Whole Month",
+            year: "2024",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const [error, result] = await createPayroll(
@@ -78,8 +80,8 @@ describe("createPayroll", () => {
     expect(result?.message).toBe("Successfully updated payment.");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(init.body))).toEqual({
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(JSON.parse(String(init?.body))).toEqual({
       employee_ids: ["001", "003"],
       payment: {
         year: "2024",
@@ -94,17 +96,19 @@ describe("createPayroll", () => {
 
 describe("uploadAdHocPayments", () => {
   it("uses explicit payroll context and skips resigned staff before first day", async () => {
-    const fetchMock = vi.fn(async () => {
-      return new Response(
-        JSON.stringify({
-          message: "Successfully updated payment.",
-          month: "April",
-          period: "Whole Month",
-          year: "2024",
-        }),
-        { status: 200 },
-      );
-    });
+    const fetchMock = vi.fn((_input: string, _init?: RequestInit) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            message: "Successfully updated payment.",
+            month: "April",
+            period: "Whole Month",
+            year: "2024",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -137,8 +141,8 @@ describe("uploadAdHocPayments", () => {
       "Former Staff has commission due but resigned prior to this payroll month",
     );
 
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(init.body))).toEqual({
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(JSON.parse(String(init?.body))).toEqual({
       payment: {
         year: "2024",
         month: "April",
