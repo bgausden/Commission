@@ -15,6 +15,7 @@ vi.mock("./logging_functions.js", () => ({
 describe("/update-config endpoint", () => {
   let readFileSyncSpy: ReturnType<typeof vi.spyOn>;
   let writeFileSyncSpy: ReturnType<typeof vi.spyOn>;
+  let _existsSyncSpy: ReturnType<typeof vi.spyOn>;
 
   let configFileContents = "";
   let envFileContents = "";
@@ -22,6 +23,7 @@ describe("/update-config endpoint", () => {
   let configWriteError: unknown | undefined;
   let envReadError: unknown | undefined;
   let envWriteError: unknown | undefined;
+  let envExistsOverride: boolean | undefined;
 
   let originalGdriveServiceAccountKey: string | undefined;
   let originalGdriveFolderId: string | undefined;
@@ -72,6 +74,7 @@ describe("/update-config endpoint", () => {
     configWriteError = undefined;
     envReadError = undefined;
     envWriteError = undefined;
+    envExistsOverride = undefined;
 
     originalGdriveServiceAccountKey = process.env.GDRIVE_SERVICE_ACCOUNT_KEY;
     originalGdriveFolderId = process.env.GDRIVE_TALENOX_FOLDER_ID;
@@ -84,6 +87,18 @@ describe("/update-config endpoint", () => {
     const isEnvPath = (p: unknown) => typeof p === "string" && /\.env$/.test(p);
     const realReadFileSync = fs.readFileSync.bind(fs);
     const realWriteFileSync = fs.writeFileSync.bind(fs);
+    const realExistsSync = fs.existsSync.bind(fs);
+
+    // Spy on fs.existsSync so .env path existence is controlled by the test,
+    // not by the local filesystem. Other paths delegate to the real implementation.
+    _existsSyncSpy = vi
+      .spyOn(fs, "existsSync")
+      .mockImplementation((pathLike: fs.PathLike) => {
+        if (isEnvPath(pathLike)) {
+          return envExistsOverride ?? true;
+        }
+        return realExistsSync(pathLike);
+      });
 
     // Spy on fs functions and prevent real file I/O
     readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockImplementation(((
@@ -349,6 +364,34 @@ describe("/update-config endpoint", () => {
       currentConfig = (await getConfig()) as Record<string, unknown>;
       expect(currentConfig.GDRIVE_SERVICE_ACCOUNT_KEY).toBe("/env/sa-key.json");
       expect(currentConfig.GDRIVE_TALENOX_FOLDER_ID).toBe("env-folder");
+    });
+
+    it("should fall back to process.env when .env file is missing", async () => {
+      const existingConfig = {
+        PAYROLL_WB_FILENAME: "test.xlsx",
+        missingStaffAreFatal: false,
+        updateTalenox: false,
+        uploadToGDrive: false,
+      };
+
+      configFileContents = JSON.stringify(existingConfig);
+      // Set envFileContents to prove readFileSync is never reached.
+      envFileContents =
+        "GDRIVE_SERVICE_ACCOUNT_KEY=/env/sa-key.json\nGDRIVE_TALENOX_FOLDER_ID=env-folder\n";
+      // Override existsSync to report .env as missing.
+      envExistsOverride = false;
+
+      const response = await postUpdateConfig({
+        missingStaffAreFatal: true,
+        updateTalenox: false,
+      });
+      expect(response.status).toBe(200);
+
+      // With no .env file and no process.env values (deleted in beforeEach),
+      // getConfig() should return empty strings.
+      const currentConfig = (await getConfig()) as Record<string, unknown>;
+      expect(currentConfig.GDRIVE_SERVICE_ACCOUNT_KEY).toBe("");
+      expect(currentConfig.GDRIVE_TALENOX_FOLDER_ID).toBe("");
     });
   });
 
