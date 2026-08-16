@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
+import { existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -71,6 +72,7 @@ const PROJECT_ROOT = join(__dirname, "..");
 const BASELINES_ROOT = join(PROJECT_ROOT, "test-baselines");
 
 let baseline: LoadedBaseline;
+let baselineArtifactsPresent = false;
 const requestedRegressionTolerance = parseRegressionTolerance(
   process.env.REGRESSION_TOLERANCE,
 );
@@ -93,30 +95,57 @@ describe("Regression: fixed input must produce identical outputs to baseline", (
         dir,
         metadata: await readJSON<BaselineMetadata>(metadataPath),
       };
-      return;
+    } else {
+      const oldest = await findOldestBaseline(BASELINES_ROOT);
+      if (!oldest.ok) {
+        throw new Error(oldest.error);
+      }
+
+      const dir = join(BASELINES_ROOT, oldest.value);
+      const metadataPath = join(dir, "metadata.json");
+      if (!(await fileExists(metadataPath))) {
+        throw new Error(
+          `Baseline "${oldest.value}" exists but has no metadata.json`,
+        );
+      }
+
+      baseline = {
+        name: oldest.value,
+        dir,
+        metadata: await readJSON<BaselineMetadata>(metadataPath),
+      };
     }
 
-    const oldest = await findOldestBaseline(BASELINES_ROOT);
-    if (!oldest.ok) {
-      throw new Error(oldest.error);
-    }
+    // Check whether baseline artifact directories are present on disk.
+    // These are gitignored, so clean checkouts / CI won't have them.
+    // See issue #55.
+    const sourceDir = join(baseline.dir, "source");
+    const configDir = join(baseline.dir, "config");
+    const outputsDir = join(baseline.dir, "outputs");
+    baselineArtifactsPresent =
+      existsSync(sourceDir) &&
+      existsSync(configDir) &&
+      existsSync(outputsDir) &&
+      existsSync(join(sourceDir, baseline.metadata.sourceFile)) &&
+      existsSync(join(configDir, "default.json")) &&
+      existsSync(join(configDir, "staffHurdle.json"));
 
-    const dir = join(BASELINES_ROOT, oldest.value);
-    const metadataPath = join(dir, "metadata.json");
-    if (!(await fileExists(metadataPath))) {
-      throw new Error(
-        `Baseline "${oldest.value}" exists but has no metadata.json`,
+    if (!baselineArtifactsPresent) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `\nRegression test skipped: baseline "${baseline.name}" artifact directories ` +
+          `(source/, config/, outputs/) are not present on disk.\n` +
+          `Run scripts/createBaseline.ts to generate them locally, or clone with LFS.\n` +
+          `See issue #55 for details.`,
       );
     }
-
-    baseline = {
-      name: oldest.value,
-      dir,
-      metadata: await readJSON<BaselineMetadata>(metadataPath),
-    };
   });
 
-  it("replays baseline source with current branch code and matches baseline outputs", async () => {
+  it("replays baseline source with current branch code and matches baseline outputs", async (ctx) => {
+    if (!baselineArtifactsPresent) {
+      ctx.skip();
+      return;
+    }
     expect(baseline).toBeDefined();
     expect(baseline.metadata.baselineName).toBe(baseline.name);
     const toleranceOverrides = getBaselineToleranceOverrides(baseline.metadata);
