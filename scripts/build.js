@@ -10,12 +10,19 @@ const exec = promisify(noPromiseExec);
 
 async function copyBuildArtifacts() {
   await mkdir(DIST, {recursive: true});
+  try {
+    await copyFile("./config/staffHurdle.json", path.join(DIST, "staffHurdle.json"));
+    console.log(`Copied staffHurdle.json to ${DIST}`);
+  } catch (err) {
+    console.warn(`config/staffHurdle.json not found — skipping copy (${String(err)})`);
+  }
 
-  await copyFile("./config/staffHurdle.json", path.join(DIST, "staffHurdle.json"));
-  console.log(`Copied staffHurdle.json to ${DIST}`);
-
-  await copyFile("./log4js.json", path.join(DIST, "log4js.json"));
-  console.log(`Copied logging config template to ${DIST}`);
+  try {
+    await copyFile("./log4js.json", path.join(DIST, "log4js.json"));
+    console.log(`Copied logging config template to ${DIST}`);
+  } catch (err) {
+    console.warn(`log4js.json not found — skipping copy (${String(err)})`);
+  }
 }
 
 exec("node ./node_modules/typescript/bin/tsc -p tsconfig.build.json")

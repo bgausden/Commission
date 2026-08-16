@@ -13,6 +13,7 @@ export interface Some<T> extends Option<T> {
 
 export interface None extends Option<never> {
   readonly _tag: "None";
+  getOrElse<U>(defaultValue: U): U;
 }
 
 // eslint-disable-next-line no-redeclare -- Option is intentionally both a type and a value namespace.
