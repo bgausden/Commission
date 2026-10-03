@@ -36,13 +36,16 @@ Use `loadStaffHurdlesFromFile(filePath?)` in `src/staffHurdles.ts` as the only l
 
 Do not introduce parallel loaders.
 
-### Missing-staff semantics are business policy
+### Missing staff must halt the run
 
-`config/staffHurdle.json` fallback id `"000"` is used when staff config is missing and `missingStaffAreFatal` is false.
+Every staff ID found in the Mindbody payroll report must have an explicit entry in `config/staffHurdle.json`.
 
-- Missing explicit id + `missingStaffAreFatal: true` => fail
-- Missing explicit id + `missingStaffAreFatal: false` => use `"000"`
-- Missing `"000"` => always fail
+- Missing explicit staff ID => fail the commission run
+- Staff ID `"000"` has no reserved or fallback meaning
+- Do not substitute another staff member's rates or policy
+- `missingStaffAreFatal` is obsolete and should be removed when this policy is implemented
+
+Implementation is pending and tracked in `docs/ISSUES.md` as COM-014. Until it lands, existing fallback behavior is a known violation of this target contract.
 
 ### Mindbody parsing is exact-string dependent
 
