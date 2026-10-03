@@ -26,7 +26,8 @@ config/staffHurdle.json
 other_source/staff.json
 docs/superpowers
 graphify-out
-.claude/skills/
+.claude/skills/*
+!.claude/skills/commission-run
 skills-lock.json
 
 
